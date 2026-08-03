@@ -1,0 +1,84 @@
+LIZENZBEDINGUNGEN
+Rechnungsgenerator für Kleinunternehmer
+
+Stand: 2026
+
+
+1. GEGENSTAND
+
+Gegenstand dieser Lizenz ist die Datei "rechnungsgenerator.html" nebst
+zugehoeriger Dokumentation (nachfolgend "das Produkt").
+
+
+2. NUTZUNGSRECHT
+
+Mit dem Kauf erhaeltst du ein zeitlich unbefristetes, nicht ausschliessliches
+Recht, das Produkt zu nutzen:
+
+  a) fuer eigene geschaeftliche und private Zwecke,
+  b) auf beliebig vielen Geraeten, die du selbst nutzt,
+  c) innerhalb deines Unternehmens, sofern die Belege im Namen dieses
+     Unternehmens erstellt werden,
+  d) in angepasster Form - du darfst Texte, Farben und Layout fuer deinen
+     eigenen Gebrauch veraendern.
+
+Es faellt keine wiederkehrende Gebuehr an. Es gibt keine Aktivierung, keine
+Lizenzpruefung und keine Verbindung zu einem Server.
+
+
+3. EINSCHRAENKUNGEN
+
+Nicht gestattet ist:
+
+  a) die Weitergabe, der Weiterverkauf, die Vermietung oder Veroeffentlichung
+     des Produkts oder daraus abgeleiteter Fassungen an Dritte, entgeltlich
+     oder unentgeltlich,
+  b) das Anbieten des Produkts als eigenes Produkt, als Bestandteil eines
+     eigenen Produktbundles oder als Bestandteil einer Vorlagensammlung,
+  c) das Bereitstellen des Produkts zum Download auf oeffentlich zugaenglichen
+     Seiten,
+  d) das Entfernen von Urheberrechtshinweisen aus dem Quelltext.
+
+Die mit dem Produkt erstellten Rechnungen und Angebote gehoeren
+selbstverstaendlich uneingeschraenkt dir und duerfen frei verwendet werden.
+
+
+4. WEITERGABE INNERHALB EINES TEAMS
+
+Fuer den Einsatz durch mehrere Personen in derselben Organisation ist je Person
+eine Lizenz erforderlich. Auf Anfrage sind Mehrfachlizenzen erhaeltlich.
+
+
+5. GEWAEHRLEISTUNG UND HAFTUNG
+
+Das Produkt wird ohne Zusicherung bestimmter Eigenschaften bereitgestellt.
+
+Das Produkt unterstuetzt beim Erstellen von Belegen und weist auf fehlende
+Pflichtangaben nach § 14 UStG hin. Es ersetzt keine Steuer- oder
+Rechtsberatung und keine Buchhaltungssoftware. Die inhaltliche und steuerliche
+Richtigkeit der erstellten Belege liegt in deiner Verantwortung.
+
+Eine Haftung fuer Schaeden, die aus der Nutzung des Produkts entstehen, ist
+ausgeschlossen, soweit gesetzlich zulaessig. Unberuehrt bleibt die Haftung
+fuer Vorsatz, grobe Fahrlaessigkeit sowie fuer Schaeden aus der Verletzung
+des Lebens, des Koerpers oder der Gesundheit.
+
+
+6. DATENVERARBEITUNG
+
+Das Produkt verarbeitet saemtliche Eingaben ausschliesslich lokal im Browser
+des Nutzers (localStorage). Es findet keine Uebertragung von Daten an den
+Anbieter oder an Dritte statt. Es werden keine externen Ressourcen geladen.
+
+
+7. WIDERRUF BEI DIGITALEN INHALTEN
+
+Bei digitalen Inhalten erlischt das Widerrufsrecht, sobald der Download
+begonnen wurde und du diesem Erloeschen zuvor ausdruecklich zugestimmt hast
+(§ 356 Abs. 5 BGB). Die entsprechende Zustimmung wird beim Kauf eingeholt.
+
+
+8. SCHLUSSBESTIMMUNGEN
+
+Sollte eine Bestimmung dieser Lizenz unwirksam sein, bleibt die Wirksamkeit
+der uebrigen Bestimmungen unberuehrt.

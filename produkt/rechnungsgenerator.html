@@ -1,0 +1,1108 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rechnungsgenerator für Kleinunternehmer</title>
+<style>
+  :root{
+    --bg:#f4f5f7; --panel:#fff; --ink:#1c1f24; --muted:#6b7280;
+    --line:#e2e5ea; --accent:#2f6feb; --accent-soft:#eaf1fe;
+    --ok:#0f7b4f; --warn:#a35b00; --radius:10px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    background:var(--bg); color:var(--ink); font-size:15px; line-height:1.45;
+  }
+  /* ---------- Layout ---------- */
+  .app{display:grid; grid-template-columns:minmax(380px,1fr) minmax(0,1.15fr); gap:24px; padding:24px; align-items:start; max-width:1600px; margin:0 auto}
+  @media (max-width:1100px){ .app{grid-template-columns:1fr} }
+  .editor{display:flex; flex-direction:column; gap:16px; min-width:0}
+  .preview-wrap{position:sticky; top:24px; min-width:0}
+  @media (max-width:1100px){ .preview-wrap{position:static} }
+
+  /* ---------- Toolbar ---------- */
+  .toolbar{
+    display:flex; flex-wrap:wrap; gap:8px; align-items:center;
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+    padding:12px; position:sticky; top:0; z-index:20;
+  }
+  .toolbar .brand{font-weight:700; margin-right:auto; letter-spacing:-.2px}
+  .toolbar .brand small{display:block; font-weight:400; color:var(--muted); font-size:12px}
+
+  button{
+    font:inherit; font-size:14px; padding:8px 13px; border-radius:8px; cursor:pointer;
+    border:1px solid var(--line); background:#fff; color:var(--ink);
+  }
+  button:hover{background:#f7f8fa}
+  button.primary{background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600}
+  button.primary:hover{background:#255ed4}
+  button.ghost{background:transparent}
+  button.danger{color:#a11; border-color:#f0d0d0}
+  button.tiny{padding:4px 9px; font-size:13px}
+
+  /* ---------- Cards ---------- */
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden}
+  .card > h2{
+    margin:0; font-size:14px; letter-spacing:.02em; text-transform:uppercase; color:var(--muted);
+    padding:12px 16px; border-bottom:1px solid var(--line); background:#fafbfc;
+    display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none;
+  }
+  .card > h2::before{content:"▾"; font-size:11px; color:var(--muted); transition:transform .15s}
+  .card.collapsed > h2::before{transform:rotate(-90deg)}
+  .card.collapsed > .card-body{display:none}
+  .card-body{padding:16px; display:flex; flex-direction:column; gap:14px}
+
+  .grid{display:grid; gap:12px}
+  .g2{grid-template-columns:1fr 1fr}
+  .g3{grid-template-columns:1fr 1fr 1fr}
+  .g-plz{grid-template-columns:90px 1fr}
+  @media (max-width:560px){ .g2,.g3,.g-plz{grid-template-columns:1fr} }
+
+  label{display:flex; flex-direction:column; gap:4px; font-size:13px; color:var(--muted); min-width:0}
+  input,textarea,select{
+    font:inherit; font-size:14px; color:var(--ink); background:#fff;
+    border:1px solid var(--line); border-radius:7px; padding:8px 10px; width:100%;
+  }
+  input:focus,textarea:focus,select:focus{outline:2px solid var(--accent-soft); border-color:var(--accent)}
+  textarea{resize:vertical; min-height:70px}
+  .check{flex-direction:row; align-items:flex-start; gap:9px; color:var(--ink); font-size:14px}
+  .check input{width:auto; margin-top:3px; flex:0 0 auto}
+  .check span small{display:block; color:var(--muted); font-size:12px; line-height:1.35}
+  .hint{font-size:12px; color:var(--muted); margin:0}
+  .hint.warn{color:var(--warn)}
+
+  /* ---------- Positionen ---------- */
+  .pos-table{width:100%; border-collapse:collapse}
+  .pos-table th{
+    font-size:11px; text-transform:uppercase; letter-spacing:.03em; color:var(--muted);
+    text-align:left; font-weight:600; padding:0 6px 6px;
+  }
+  .pos-table th.r,.pos-table td.r{text-align:right}
+  .pos-table td{padding:3px 6px 3px 0; vertical-align:top}
+  .pos-table input,.pos-table select{padding:7px 8px; font-size:14px}
+  .pos-table input.num{text-align:right}
+  .pos-row + .pos-row td{padding-top:8px}
+  .pos-sum{font-variant-numeric:tabular-nums; font-size:13px; color:var(--muted); white-space:nowrap; padding-top:14px}
+  .pos-actions{display:flex; gap:6px; align-items:center; padding-top:9px}
+  .icon-btn{border:none; background:transparent; color:var(--muted); font-size:15px; padding:3px 5px; line-height:1; border-radius:5px}
+  .icon-btn:hover{background:#f0f1f4; color:var(--ink)}
+  .icon-btn:disabled{opacity:.25; cursor:default; background:none}
+
+  .totals-mini{
+    margin-top:4px; padding-top:12px; border-top:1px solid var(--line);
+    display:flex; flex-direction:column; gap:5px; font-variant-numeric:tabular-nums;
+  }
+  .totals-mini div{display:flex; justify-content:space-between; font-size:14px; color:var(--muted)}
+  .totals-mini div.big{font-size:16px; font-weight:700; color:var(--ink); padding-top:5px}
+
+  /* ---------- Kunden / Logo ---------- */
+  .row-inline{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
+  .logo-preview{max-height:52px; max-width:180px; border:1px solid var(--line); border-radius:6px; padding:4px; background:#fff}
+
+  /* ---------- Vorschau (A4) ---------- */
+  .page{
+    background:#fff; width:210mm; min-height:297mm; padding:18mm 20mm 16mm;
+    box-shadow:0 2px 18px rgba(20,25,40,.14); border-radius:2px;
+    font-size:10.5pt; line-height:1.5; color:#15181d;
+    display:flex; flex-direction:column;
+    transform-origin:top left;
+  }
+  .page-scaler{overflow:hidden}
+  .doc-head{display:flex; justify-content:space-between; align-items:flex-start; gap:16mm; margin-bottom:12mm}
+  .doc-logo{max-height:22mm; max-width:60mm}
+  .sender-block{font-size:9pt; line-height:1.45; text-align:right; color:#3a3f47; white-space:pre-line}
+  .sender-block strong{color:#15181d; font-size:10pt}
+  .addr-line{font-size:7pt; color:#7a8089; border-bottom:.4pt solid #c9ced6; padding-bottom:1mm; margin-bottom:2mm}
+  .recipient{white-space:pre-line; min-height:24mm}
+  .doc-meta{display:flex; justify-content:space-between; gap:10mm; align-items:flex-start; margin:8mm 0 5mm}
+  .doc-meta dl{margin:0; display:grid; grid-template-columns:auto auto; gap:1mm 6mm; font-size:9.5pt}
+  .doc-meta dt{color:#5c626b}
+  .doc-meta dd{margin:0; text-align:right}
+  h1.doc-title{font-size:16pt; margin:0 0 1mm; letter-spacing:-.3px}
+  .doc-subject{font-weight:600; margin:0 0 4mm}
+  .intro,.outro{white-space:pre-line; margin:0}
+  .intro{margin-bottom:5mm}
+  .outro{margin-top:6mm}
+
+  table.items{width:100%; border-collapse:collapse; font-size:9.5pt; margin-bottom:4mm}
+  table.items th{
+    text-align:left; font-size:8pt; text-transform:uppercase; letter-spacing:.04em; color:#5c626b;
+    border-bottom:.8pt solid #15181d; padding:0 2mm 1.5mm 0; font-weight:600;
+  }
+  table.items td{padding:2mm 2mm 2mm 0; border-bottom:.4pt solid #e3e6ea; vertical-align:top}
+  table.items .r{text-align:right; white-space:nowrap}
+  table.items .pos-nr{color:#8a9099; width:8mm}
+  table.items .desc{white-space:pre-line}
+  table.items .desc em{display:block; font-style:normal; color:#5c626b; font-size:8.5pt}
+
+  .totals{margin-left:auto; width:78mm; font-size:10pt}
+  .totals .t-row{display:flex; justify-content:space-between; padding:1.2mm 0}
+  .totals .t-row.sub{color:#5c626b; font-size:9.5pt}
+  .totals .t-row.grand{
+    border-top:.8pt solid #15181d; margin-top:1.5mm; padding-top:2mm;
+    font-weight:700; font-size:11.5pt;
+  }
+  .note{margin-top:5mm; font-size:9pt; color:#3a3f47; white-space:pre-line}
+  .pay-box{
+    margin-top:6mm; border:.4pt solid #c9ced6; border-radius:1.5mm; padding:3mm 4mm;
+    font-size:9pt; background:#fafbfc;
+  }
+  .pay-box strong{display:block; margin-bottom:1mm; font-size:9.5pt}
+  .pay-grid{display:grid; grid-template-columns:auto 1fr; gap:.6mm 5mm; color:#3a3f47}
+  .pay-grid span:nth-child(odd){color:#5c626b}
+  .doc-footer{
+    margin-top:auto; padding-top:5mm; border-top:.4pt solid #c9ced6;
+    font-size:7.6pt; color:#6b717a; display:grid; grid-template-columns:repeat(3,1fr); gap:5mm;
+    white-space:pre-line;
+  }
+  .num{font-variant-numeric:tabular-nums}
+
+  .zoom-bar{display:flex; gap:8px; align-items:center; justify-content:flex-end; margin-bottom:10px; font-size:13px; color:var(--muted)}
+
+  /* ---------- Toast ---------- */
+  #toast{
+    position:fixed; bottom:22px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:#1c1f24; color:#fff; padding:10px 18px; border-radius:8px; font-size:14px;
+    opacity:0; pointer-events:none; transition:opacity .2s, transform .2s; z-index:100;
+  }
+  #toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+
+  /* ---------- Druck ---------- */
+  @page{ size:A4; margin:0 }
+  @media print{
+    body{background:#fff}
+    .app{display:block; padding:0; max-width:none}
+    .editor,.zoom-bar,.toolbar,#toast{display:none !important}
+    .preview-wrap{position:static}
+    .page-scaler{overflow:visible}
+    .page{
+      width:210mm; min-height:auto; box-shadow:none; border-radius:0; margin:0;
+      transform:none !important; padding:16mm 20mm;
+    }
+    table.items{page-break-inside:auto}
+    table.items tr{page-break-inside:avoid}
+    .totals,.pay-box{page-break-inside:avoid}
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- ============ EDITOR ============ -->
+  <div class="editor">
+
+    <div class="toolbar">
+      <div class="brand">Rechnungsgenerator
+        <small>Läuft offline · Daten bleiben im Browser</small>
+      </div>
+      <button class="primary" id="btn-print">PDF / Drucken</button>
+      <button id="btn-new">Neuer Beleg</button>
+      <button id="btn-export">Sichern (.json)</button>
+      <button id="btn-import-trigger">Laden</button>
+      <input type="file" id="file-import" accept="application/json,.json" hidden>
+    </div>
+
+    <!-- Belegdaten -->
+    <section class="card" data-card>
+      <h2>Beleg</h2>
+      <div class="card-body">
+        <div class="grid g3">
+          <label>Belegart
+            <select id="f-typ">
+              <option value="rechnung">Rechnung</option>
+              <option value="angebot">Angebot</option>
+              <option value="gutschrift">Stornorechnung</option>
+            </select>
+          </label>
+          <label>Nummer
+            <input id="f-nummer" placeholder="RE-2026-001">
+          </label>
+          <label>Datum
+            <input type="date" id="f-datum">
+          </label>
+        </div>
+        <div class="grid g2">
+          <label id="lbl-leistung">Leistungsdatum / -zeitraum
+            <input id="f-leistung" placeholder="z. B. 01.–31.03.2026">
+          </label>
+          <label id="lbl-frist">Zahlungsziel (Tage)
+            <input type="number" id="f-zahlungsziel" min="0" step="1" class="num">
+          </label>
+        </div>
+        <label>Betreff
+          <input id="f-betreff" placeholder="Webdesign-Projekt Frühjahr 2026">
+        </label>
+        <label>Einleitungstext
+          <textarea id="f-intro"></textarea>
+        </label>
+      </div>
+    </section>
+
+    <!-- Empfänger -->
+    <section class="card" data-card>
+      <h2>Empfänger</h2>
+      <div class="card-body">
+        <div class="row-inline">
+          <select id="f-kunde-select" style="flex:1 1 200px">
+            <option value="">– gespeicherte Kunden –</option>
+          </select>
+          <button class="tiny" id="btn-kunde-save">Kunde merken</button>
+          <button class="tiny danger" id="btn-kunde-del">Löschen</button>
+        </div>
+        <div class="grid g2">
+          <label>Firma
+            <input id="f-e-firma" placeholder="Muster GmbH">
+          </label>
+          <label>Ansprechpartner / Name
+            <input id="f-e-name" placeholder="Frau Erika Muster">
+          </label>
+        </div>
+        <label>Straße &amp; Nr.
+          <input id="f-e-strasse">
+        </label>
+        <div class="grid g-plz">
+          <label>PLZ<input id="f-e-plz"></label>
+          <label>Ort<input id="f-e-ort"></label>
+        </div>
+        <div class="grid g2">
+          <label>Land <span class="hint">leer lassen bei Inland</span>
+            <input id="f-e-land" placeholder="Österreich">
+          </label>
+          <label>Kundennummer
+            <input id="f-e-kdnr">
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <!-- Positionen -->
+    <section class="card" data-card>
+      <h2>Positionen</h2>
+      <div class="card-body">
+        <table class="pos-table">
+          <thead>
+            <tr>
+              <th style="width:34%">Beschreibung</th>
+              <th style="width:13%" class="r">Menge</th>
+              <th style="width:15%">Einheit</th>
+              <th style="width:17%" class="r">Einzelpreis</th>
+              <th style="width:15%" class="r ust-col">USt</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="pos-body"></tbody>
+        </table>
+        <div class="row-inline">
+          <button class="tiny" id="btn-pos-add">+ Position</button>
+        </div>
+        <div class="totals-mini" id="totals-mini"></div>
+      </div>
+    </section>
+
+    <!-- Steuer & Optionen -->
+    <section class="card" data-card>
+      <h2>Steuer &amp; Optionen</h2>
+      <div class="card-body">
+        <label class="check">
+          <input type="checkbox" id="f-kleinunternehmer">
+          <span>Kleinunternehmerregelung (§ 19 UStG)
+            <small>Keine Umsatzsteuer ausweisen. Der Hinweistext erscheint automatisch auf dem Beleg.</small>
+          </span>
+        </label>
+        <label class="check">
+          <input type="checkbox" id="f-reverse">
+          <span>Reverse-Charge (EU-B2B, § 13b UStG)
+            <small>Steuerschuldnerschaft des Leistungsempfängers. USt-IdNr. beider Seiten muss angegeben sein.</small>
+          </span>
+        </label>
+        <div class="grid g2">
+          <label>Rabatt auf Nettosumme (%)
+            <input type="number" id="f-rabatt" min="0" max="100" step="0.01" class="num">
+          </label>
+          <label>Bezeichnung des Rabatts
+            <input id="f-rabatt-text" placeholder="Projektrabatt">
+          </label>
+        </div>
+        <label>Schlusstext
+          <textarea id="f-outro"></textarea>
+        </label>
+        <label>Zusätzlicher Hinweis (optional)
+          <textarea id="f-hinweis" placeholder="z. B. Hinweis auf Aufbewahrungspflicht oder Gewährleistung"></textarea>
+        </label>
+      </div>
+    </section>
+
+    <!-- Absender -->
+    <section class="card" id="card-absender" data-card>
+      <h2>Absender &amp; Stammdaten</h2>
+      <div class="card-body">
+        <p class="hint">Diese Angaben werden dauerhaft gespeichert und für jeden neuen Beleg übernommen.</p>
+        <div class="grid g2">
+          <label>Firma / Bezeichnung<input id="f-a-firma"></label>
+          <label>Inhaber / Name<input id="f-a-name"></label>
+        </div>
+        <label>Straße &amp; Nr.<input id="f-a-strasse"></label>
+        <div class="grid g-plz">
+          <label>PLZ<input id="f-a-plz"></label>
+          <label>Ort<input id="f-a-ort"></label>
+        </div>
+        <div class="grid g3">
+          <label>Telefon<input id="f-a-telefon"></label>
+          <label>E-Mail<input id="f-a-email"></label>
+          <label>Website<input id="f-a-web"></label>
+        </div>
+        <div class="grid g2">
+          <label>Steuernummer<input id="f-a-steuernummer"></label>
+          <label>USt-IdNr.<input id="f-a-ustid" placeholder="DE123456789"></label>
+        </div>
+        <div class="grid g3">
+          <label>Bank<input id="f-a-bank"></label>
+          <label>IBAN<input id="f-a-iban"></label>
+          <label>BIC<input id="f-a-bic"></label>
+        </div>
+        <label>Zusatz für die Fußzeile
+          <textarea id="f-a-fusszeile" placeholder="z. B. Handelsregister, Geschäftsführung"></textarea>
+        </label>
+        <div class="row-inline">
+          <button class="tiny" id="btn-logo">Logo wählen</button>
+          <button class="tiny ghost" id="btn-logo-del">Logo entfernen</button>
+          <input type="file" id="file-logo" accept="image/*" hidden>
+          <img id="logo-preview" class="logo-preview" alt="" hidden>
+        </div>
+        <p class="hint">Empfehlung: PNG/JPG unter 300 kB, Höhe ca. 200 px.</p>
+      </div>
+    </section>
+
+    <p class="hint">
+      Alle Daten liegen ausschließlich in diesem Browser (localStorage). Es findet keine Übertragung
+      ins Internet statt. Für ein Backup die Funktion „Sichern (.json)“ nutzen.
+    </p>
+  </div>
+
+  <!-- ============ VORSCHAU ============ -->
+  <div class="preview-wrap">
+    <div class="zoom-bar">
+      <span>Vorschau</span>
+      <button class="tiny" id="zoom-out">−</button>
+      <span id="zoom-label" class="num">100 %</span>
+      <button class="tiny" id="zoom-in">+</button>
+    </div>
+    <div class="page-scaler" id="scaler">
+      <div class="page" id="page"></div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+
+/* =========================================================
+   Rechnungsgenerator – eigenständig, ohne externe Abhängigkeiten
+   ========================================================= */
+
+const LS = { stamm:"rg.stammdaten.v1", beleg:"rg.beleg.v1", kunden:"rg.kunden.v1",
+             zoom:"rg.zoom.v1", zoomManuell:"rg.zoom.manuell.v1" };
+
+const USt_SAETZE = [
+  { wert:19, label:"19 %" },
+  { wert:7,  label:"7 %"  },
+  { wert:0,  label:"0 %"  }
+];
+
+const TYP_LABEL = {
+  rechnung:  { titel:"Rechnung",       nrLabel:"Rechnungsnummer", praefix:"RE" },
+  angebot:   { titel:"Angebot",        nrLabel:"Angebotsnummer",  praefix:"AN" },
+  gutschrift:{ titel:"Stornorechnung", nrLabel:"Belegnummer",     praefix:"ST" }
+};
+
+/* ---------- Standardwerte ---------- */
+function leerStammdaten(){
+  return { firma:"", name:"", strasse:"", plz:"", ort:"", telefon:"", email:"", web:"",
+           steuernummer:"", ustid:"", bank:"", iban:"", bic:"", fusszeile:"", logo:"" };
+}
+function leerBeleg(){
+  return {
+    typ:"rechnung", nummer:"", datum:heuteISO(), leistung:"", zahlungsziel:14,
+    betreff:"", intro:"vielen Dank für Ihren Auftrag. Vereinbarungsgemäß berechne ich Ihnen die folgenden Leistungen:",
+    outro:"Mit freundlichen Grüßen", hinweis:"",
+    kleinunternehmer:false, reverse:false, rabatt:0, rabattText:"Rabatt",
+    empfaenger:{ firma:"", name:"", strasse:"", plz:"", ort:"", land:"", kdnr:"" },
+    positionen:[ leerPosition() ]
+  };
+}
+function leerPosition(){
+  return { beschreibung:"", menge:1, einheit:"Std.", einzelpreis:0, ust:19 };
+}
+
+/* ---------- Zustand ---------- */
+let stamm  = ladeJSON(LS.stamm)  || leerStammdaten();
+let beleg  = ladeJSON(LS.beleg)  || beispielBeleg();
+let kunden = ladeJSON(LS.kunden) || [];
+let zoom   = Number(localStorage.getItem(LS.zoom)) || 100;
+
+function beispielBeleg(){
+  const b = leerBeleg();
+  b.nummer = naechsteNummer("rechnung");
+  b.betreff = "Leistungen im März 2026";
+  b.positionen = [
+    { beschreibung:"Konzeption und Beratung", menge:6,  einheit:"Std.", einzelpreis:85, ust:19 },
+    { beschreibung:"Umsetzung Startseite",    menge:12, einheit:"Std.", einzelpreis:85, ust:19 }
+  ];
+  return b;
+}
+
+/* =========================================================
+   Hilfsfunktionen
+   ========================================================= */
+function ladeJSON(key){
+  try{ const r = localStorage.getItem(key); return r ? JSON.parse(r) : null; }
+  catch(e){ return null; }
+}
+function speichereJSON(key,wert){
+  try{ localStorage.setItem(key, JSON.stringify(wert)); }
+  catch(e){ toast("Speichern fehlgeschlagen – Speicher voll?"); }
+}
+function heuteISO(){
+  const d = new Date();
+  return [d.getFullYear(), String(d.getMonth()+1).padStart(2,"0"), String(d.getDate()).padStart(2,"0")].join("-");
+}
+function isoZuDe(iso){
+  if(!iso || !/^\d{4}-\d{2}-\d{2}$/.test(iso)) return iso || "";
+  const [j,m,t] = iso.split("-");
+  return `${t}.${m}.${j}`;
+}
+function tageAddieren(iso, tage){
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(iso)) return "";
+  const [j,m,t] = iso.split("-").map(Number);
+  const d = new Date(Date.UTC(j, m-1, t));
+  d.setUTCDate(d.getUTCDate() + (Number(tage)||0));
+  return [d.getUTCFullYear(), String(d.getUTCMonth()+1).padStart(2,"0"), String(d.getUTCDate()).padStart(2,"0")].join("-");
+}
+const nfEuro = new Intl.NumberFormat("de-DE",{ minimumFractionDigits:2, maximumFractionDigits:2 });
+const nfMenge = new Intl.NumberFormat("de-DE",{ minimumFractionDigits:0, maximumFractionDigits:3 });
+function euro(n){ return nfEuro.format(runde(n)) + " €"; }
+function runde(n){ return Math.round((Number(n)||0) * 100 + Number.EPSILON) / 100; }
+function esc(s){
+  return String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+}
+function zahl(v){
+  if(typeof v === "number") return v;
+  const s = String(v ?? "").trim().replace(/\s/g,"").replace(",",".");
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+let toastTimer;
+function toast(text){
+  const el = document.getElementById("toast");
+  el.textContent = text;
+  el.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove("show"), 2600);
+}
+
+/* Fortlaufende Nummer im Format PRAEFIX-JAHR-LFD */
+function naechsteNummer(typ){
+  const p = (TYP_LABEL[typ] || TYP_LABEL.rechnung).praefix;
+  const jahr = new Date().getFullYear();
+  const key = `rg.zaehler.${p}.${jahr}`;
+  const stand = Number(localStorage.getItem(key) || 0) + 1;
+  localStorage.setItem(key, String(stand));
+  return `${p}-${jahr}-${String(stand).padStart(3,"0")}`;
+}
+
+/* =========================================================
+   Berechnung
+   ========================================================= */
+function berechne(){
+  const kU = beleg.kleinunternehmer || beleg.reverse;   // kein USt-Ausweis
+  const rabattProzent = Math.min(Math.max(zahl(beleg.rabatt), 0), 100);
+  const faktor = 1 - rabattProzent/100;
+
+  const zeilen = beleg.positionen.map(p => {
+    const netto = runde(zahl(p.menge) * zahl(p.einzelpreis));
+    return { ...p, netto, nettoRabattiert: runde(netto * faktor) };
+  });
+
+  const zwischensumme = runde(zeilen.reduce((s,z) => s + z.netto, 0));
+  const rabattBetrag  = runde(zwischensumme * rabattProzent/100);
+  const netto         = runde(zwischensumme - rabattBetrag);
+
+  // Steuer je Satz gruppieren (Rundung pro Steuersatz, nicht pro Position)
+  const steuerGruppen = [];
+  if(!kU){
+    const map = new Map();
+    zeilen.forEach(z => {
+      const satz = zahl(z.ust);
+      map.set(satz, runde((map.get(satz) || 0) + z.nettoRabattiert));
+    });
+    [...map.entries()]
+      .filter(([satz]) => satz > 0)
+      .sort((a,b) => b[0]-a[0])
+      .forEach(([satz, basis]) => steuerGruppen.push({ satz, basis, betrag: runde(basis * satz/100) }));
+  }
+
+  const steuerSumme = runde(steuerGruppen.reduce((s,g) => s + g.betrag, 0));
+  const brutto      = runde(netto + steuerSumme);
+
+  return { zeilen, zwischensumme, rabattProzent, rabattBetrag, netto, steuerGruppen, steuerSumme, brutto, kU };
+}
+
+/* =========================================================
+   Formular-Bindung
+   ========================================================= */
+const BINDUNGEN = [
+  // [Element-ID, Pfad im Zustand, Typ]
+  ["f-typ","beleg.typ","text"],
+  ["f-nummer","beleg.nummer","text"],
+  ["f-datum","beleg.datum","text"],
+  ["f-leistung","beleg.leistung","text"],
+  ["f-zahlungsziel","beleg.zahlungsziel","zahl"],
+  ["f-betreff","beleg.betreff","text"],
+  ["f-intro","beleg.intro","text"],
+  ["f-outro","beleg.outro","text"],
+  ["f-hinweis","beleg.hinweis","text"],
+  ["f-kleinunternehmer","beleg.kleinunternehmer","bool"],
+  ["f-reverse","beleg.reverse","bool"],
+  ["f-rabatt","beleg.rabatt","zahl"],
+  ["f-rabatt-text","beleg.rabattText","text"],
+  ["f-e-firma","beleg.empfaenger.firma","text"],
+  ["f-e-name","beleg.empfaenger.name","text"],
+  ["f-e-strasse","beleg.empfaenger.strasse","text"],
+  ["f-e-plz","beleg.empfaenger.plz","text"],
+  ["f-e-ort","beleg.empfaenger.ort","text"],
+  ["f-e-land","beleg.empfaenger.land","text"],
+  ["f-e-kdnr","beleg.empfaenger.kdnr","text"],
+  ["f-a-firma","stamm.firma","text"],
+  ["f-a-name","stamm.name","text"],
+  ["f-a-strasse","stamm.strasse","text"],
+  ["f-a-plz","stamm.plz","text"],
+  ["f-a-ort","stamm.ort","text"],
+  ["f-a-telefon","stamm.telefon","text"],
+  ["f-a-email","stamm.email","text"],
+  ["f-a-web","stamm.web","text"],
+  ["f-a-steuernummer","stamm.steuernummer","text"],
+  ["f-a-ustid","stamm.ustid","text"],
+  ["f-a-bank","stamm.bank","text"],
+  ["f-a-iban","stamm.iban","text"],
+  ["f-a-bic","stamm.bic","text"],
+  ["f-a-fusszeile","stamm.fusszeile","text"]
+];
+
+function wurzel(pfad){ return pfad.startsWith("stamm") ? stamm : beleg; }
+function setzeWert(pfad, wert){
+  const teile = pfad.split(".").slice(1);
+  let ziel = wurzel(pfad);
+  while(teile.length > 1) ziel = ziel[teile.shift()];
+  ziel[teile[0]] = wert;
+}
+function holeWert(pfad){
+  const teile = pfad.split(".").slice(1);
+  let ziel = wurzel(pfad);
+  for(const t of teile) ziel = (ziel || {})[t];
+  return ziel;
+}
+
+function formularBefuellen(){
+  BINDUNGEN.forEach(([id, pfad, typ]) => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    const wert = holeWert(pfad);
+    if(typ === "bool") el.checked = !!wert;
+    else el.value = wert ?? "";
+  });
+  logoVorschau();
+  positionenZeichnen();
+  kundenlisteZeichnen();
+}
+
+function formularBinden(){
+  BINDUNGEN.forEach(([id, pfad, typ]) => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    const ereignis = (el.type === "checkbox" || el.tagName === "SELECT") ? "change" : "input";
+    el.addEventListener(ereignis, () => {
+      let wert = el.value;
+      if(typ === "bool") wert = el.checked;
+      else if(typ === "zahl") wert = zahl(el.value);
+      setzeWert(pfad, wert);
+      if(id === "f-typ" || id === "f-kleinunternehmer") aktualisiereFormularLogik();
+      rendern();
+    });
+  });
+}
+
+/* Beschriftungen abhängig von der Belegart, USt-Spalte ausblenden */
+function aktualisiereFormularLogik(){
+  const istAngebot = beleg.typ === "angebot";
+  document.getElementById("lbl-leistung").firstChild.textContent =
+    istAngebot ? "Leistungszeitraum (geplant)" : "Leistungsdatum / -zeitraum";
+  document.getElementById("lbl-frist").firstChild.textContent =
+    istAngebot ? "Angebot gültig für (Tage)" : "Zahlungsziel (Tage)";
+
+  const versteckt = beleg.kleinunternehmer || beleg.reverse;
+  document.querySelectorAll(".ust-col, .ust-cell").forEach(el => { el.style.visibility = versteckt ? "hidden" : ""; });
+}
+
+/* =========================================================
+   Positionen
+   ========================================================= */
+function positionenZeichnen(){
+  const body = document.getElementById("pos-body");
+  const anzahl = beleg.positionen.length;
+  body.innerHTML = beleg.positionen.map((p,i) => `
+    <tr class="pos-row">
+      <td><input data-i="${i}" data-f="beschreibung" value="${esc(p.beschreibung)}" placeholder="Leistung"></td>
+      <td><input data-i="${i}" data-f="menge" class="num" inputmode="decimal" value="${esc(p.menge)}"></td>
+      <td><input data-i="${i}" data-f="einheit" value="${esc(p.einheit)}" list="einheiten"></td>
+      <td><input data-i="${i}" data-f="einzelpreis" class="num" inputmode="decimal" value="${esc(p.einzelpreis)}"></td>
+      <td class="ust-cell">
+        <select data-i="${i}" data-f="ust">
+          ${USt_SAETZE.map(s => `<option value="${s.wert}"${zahl(p.ust)===s.wert?" selected":""}>${s.label}</option>`).join("")}
+        </select>
+      </td>
+      <td class="pos-actions">
+        <button class="icon-btn" data-hoch="${i}" title="Nach oben" ${i===0?"disabled":""}>↑</button>
+        <button class="icon-btn" data-runter="${i}" title="Nach unten" ${i===anzahl-1?"disabled":""}>↓</button>
+        <button class="icon-btn" data-weg="${i}" title="Entfernen" ${anzahl===1?"disabled":""}>✕</button>
+      </td>
+    </tr>
+    <tr class="pos-row-sum">
+      <td colspan="6" class="pos-sum" style="padding:0 0 6px; text-align:right">
+        Positionssumme: <strong>${euro(zahl(p.menge)*zahl(p.einzelpreis))}</strong>
+      </td>
+    </tr>
+  `).join("");
+  aktualisiereFormularLogik();
+}
+
+document.getElementById("pos-body").addEventListener("input", e => {
+  const el = e.target;
+  const i = el.dataset.i, f = el.dataset.f;
+  if(i === undefined || !f) return;
+  const pos = beleg.positionen[Number(i)];
+  pos[f] = (f === "menge" || f === "einzelpreis" || f === "ust") ? zahl(el.value) : el.value;
+  // Positionssumme direkt aktualisieren, ohne Fokus zu verlieren
+  const summeZelle = el.closest("tr").nextElementSibling?.querySelector("strong");
+  if(summeZelle) summeZelle.textContent = euro(zahl(pos.menge) * zahl(pos.einzelpreis));
+  rendern();
+});
+document.getElementById("pos-body").addEventListener("change", e => {
+  if(e.target.dataset.f === "ust"){
+    beleg.positionen[Number(e.target.dataset.i)].ust = zahl(e.target.value);
+    rendern();
+  }
+});
+document.getElementById("pos-body").addEventListener("click", e => {
+  const b = e.target.closest("button");
+  if(!b) return;
+  const { hoch, runter, weg } = b.dataset;
+  if(hoch !== undefined){ const i = Number(hoch); [beleg.positionen[i-1], beleg.positionen[i]] = [beleg.positionen[i], beleg.positionen[i-1]]; }
+  else if(runter !== undefined){ const i = Number(runter); [beleg.positionen[i+1], beleg.positionen[i]] = [beleg.positionen[i], beleg.positionen[i+1]]; }
+  else if(weg !== undefined){ beleg.positionen.splice(Number(weg), 1); }
+  else return;
+  positionenZeichnen();
+  rendern();
+});
+document.getElementById("btn-pos-add").addEventListener("click", () => {
+  const letzte = beleg.positionen[beleg.positionen.length-1];
+  const neu = leerPosition();
+  if(letzte){ neu.einheit = letzte.einheit; neu.ust = letzte.ust; }
+  beleg.positionen.push(neu);
+  positionenZeichnen();
+  rendern();
+  const felder = document.querySelectorAll('#pos-body input[data-f="beschreibung"]');
+  felder[felder.length-1]?.focus();
+});
+
+/* =========================================================
+   Kundenverwaltung
+   ========================================================= */
+function kundenlisteZeichnen(){
+  const sel = document.getElementById("f-kunde-select");
+  const bezeichnung = k => k.firma || k.name || "(ohne Namen)";
+  sel.innerHTML = '<option value="">– gespeicherte Kunden –</option>' +
+    kunden.map((k,i) => `<option value="${i}">${esc(bezeichnung(k))}</option>`).join("");
+}
+document.getElementById("f-kunde-select").addEventListener("change", e => {
+  const i = e.target.value;
+  if(i === "") return;
+  beleg.empfaenger = { ...leerBeleg().empfaenger, ...kunden[Number(i)] };
+  formularBefuellen();
+  rendern();
+});
+document.getElementById("btn-kunde-save").addEventListener("click", () => {
+  const e = beleg.empfaenger;
+  if(!e.firma && !e.name){ toast("Bitte zuerst Firma oder Name ausfüllen."); return; }
+  const schluessel = k => `${k.firma}|${k.name}`.toLowerCase();
+  const vorhanden = kunden.findIndex(k => schluessel(k) === schluessel(e));
+  if(vorhanden >= 0) kunden[vorhanden] = { ...e };
+  else kunden.push({ ...e });
+  speichereJSON(LS.kunden, kunden);
+  kundenlisteZeichnen();
+  toast(vorhanden >= 0 ? "Kunde aktualisiert." : "Kunde gespeichert.");
+});
+document.getElementById("btn-kunde-del").addEventListener("click", () => {
+  const sel = document.getElementById("f-kunde-select");
+  if(sel.value === ""){ toast("Bitte zuerst einen gespeicherten Kunden auswählen."); return; }
+  kunden.splice(Number(sel.value), 1);
+  speichereJSON(LS.kunden, kunden);
+  kundenlisteZeichnen();
+  toast("Kunde gelöscht.");
+});
+
+/* =========================================================
+   Logo
+   ========================================================= */
+document.getElementById("btn-logo").addEventListener("click", () => document.getElementById("file-logo").click());
+document.getElementById("file-logo").addEventListener("change", e => {
+  const datei = e.target.files[0];
+  if(!datei) return;
+  if(datei.size > 800*1024){ toast("Logo zu groß (max. 800 kB)."); e.target.value = ""; return; }
+  const leser = new FileReader();
+  leser.onload = () => {
+    stamm.logo = leser.result;
+    logoVorschau();
+    rendern();
+    toast("Logo übernommen.");
+  };
+  leser.readAsDataURL(datei);
+  e.target.value = "";
+});
+document.getElementById("btn-logo-del").addEventListener("click", () => {
+  stamm.logo = "";
+  logoVorschau();
+  rendern();
+});
+function logoVorschau(){
+  const img = document.getElementById("logo-preview");
+  if(stamm.logo){ img.src = stamm.logo; img.hidden = false; }
+  else { img.removeAttribute("src"); img.hidden = true; }
+}
+
+/* =========================================================
+   Vorschau rendern
+   ========================================================= */
+function rendern(){
+  const r = berechne();
+  const t = TYP_LABEL[beleg.typ] || TYP_LABEL.rechnung;
+  const istAngebot = beleg.typ === "angebot";
+  const e = beleg.empfaenger;
+
+  /* --- Absenderblock --- */
+  const absenderZeilen = [
+    stamm.firma ? `<strong>${esc(stamm.firma)}</strong>` : "",
+    ...[
+      stamm.name,
+      stamm.strasse,
+      [stamm.plz, stamm.ort].filter(Boolean).join(" "),
+      stamm.telefon && `Tel. ${stamm.telefon}`,
+      stamm.email,
+      stamm.web
+    ].filter(Boolean).map(esc)
+  ].filter(Boolean).join("<br>");
+
+  /* --- Empfängerblock --- */
+  const empfaengerZeilen = [e.firma, e.name, e.strasse,
+    [e.plz, e.ort].filter(Boolean).join(" "), e.land]
+    .filter(Boolean).map(esc).join("<br>");
+
+  const absenderEinzeiler = [stamm.firma || stamm.name, stamm.strasse,
+    [stamm.plz, stamm.ort].filter(Boolean).join(" ")].filter(Boolean).join(" · ");
+
+  /* --- Metadaten --- */
+  const meta = [];
+  meta.push([t.nrLabel, beleg.nummer]);
+  meta.push([istAngebot ? "Angebotsdatum" : "Belegdatum", isoZuDe(beleg.datum)]);
+  if(beleg.leistung) meta.push([istAngebot ? "Leistungszeitraum" : "Leistungsdatum", beleg.leistung]);
+  if(e.kdnr) meta.push(["Kundennummer", e.kdnr]);
+  if(stamm.steuernummer && !stamm.ustid) meta.push(["Steuernummer", stamm.steuernummer]);
+  if(stamm.ustid) meta.push(["USt-IdNr.", stamm.ustid]);
+
+  const metaHtml = meta.filter(([,w]) => w).map(([k,w]) =>
+    `<dt>${esc(k)}</dt><dd>${esc(w)}</dd>`).join("");
+
+  /* --- Positionstabelle --- */
+  const zeilenHtml = r.zeilen.map((z,i) => `
+    <tr>
+      <td class="pos-nr num">${i+1}</td>
+      <td class="desc">${esc(z.beschreibung) || "&nbsp;"}</td>
+      <td class="r num">${nfMenge.format(zahl(z.menge))}</td>
+      <td>${esc(z.einheit)}</td>
+      <td class="r num">${euro(z.einzelpreis)}</td>
+      ${r.kU ? "" : `<td class="r num">${nfMenge.format(zahl(z.ust))} %</td>`}
+      <td class="r num">${euro(z.netto)}</td>
+    </tr>`).join("");
+
+  /* --- Summenblock --- */
+  const summen = [];
+  if(r.rabattProzent > 0){
+    summen.push(`<div class="t-row sub"><span>Zwischensumme</span><span class="num">${euro(r.zwischensumme)}</span></div>`);
+    summen.push(`<div class="t-row sub"><span>${esc(beleg.rabattText || "Rabatt")} ${nfMenge.format(r.rabattProzent)} %</span><span class="num">− ${euro(r.rabattBetrag)}</span></div>`);
+  }
+  if(r.kU){
+    summen.push(`<div class="t-row grand"><span>${istAngebot ? "Angebotssumme" : "Rechnungsbetrag"}</span><span class="num">${euro(r.netto)}</span></div>`);
+  } else {
+    summen.push(`<div class="t-row sub"><span>Summe netto</span><span class="num">${euro(r.netto)}</span></div>`);
+    r.steuerGruppen.forEach(g => {
+      summen.push(`<div class="t-row sub"><span>zzgl. ${nfMenge.format(g.satz)} % USt auf ${euro(g.basis)}</span><span class="num">${euro(g.betrag)}</span></div>`);
+    });
+    summen.push(`<div class="t-row grand"><span>${istAngebot ? "Angebotssumme" : "Gesamtbetrag"}</span><span class="num">${euro(r.brutto)}</span></div>`);
+  }
+
+  /* --- Hinweise --- */
+  const hinweise = [];
+  if(beleg.kleinunternehmer)
+    hinweise.push("Gemäß § 19 UStG wird keine Umsatzsteuer berechnet (Kleinunternehmerregelung).");
+  if(beleg.reverse)
+    hinweise.push("Steuerschuldnerschaft des Leistungsempfängers (Reverse-Charge, § 13b UStG). Die Umsatzsteuer ist vom Leistungsempfänger zu erklären und abzuführen.");
+  if(beleg.typ === "gutschrift")
+    hinweise.push("Dieser Beleg storniert die zugehörige Rechnung. Bereits gezahlte Beträge werden erstattet.");
+  if(beleg.hinweis) hinweise.push(beleg.hinweis);
+
+  /* --- Zahlungsbox --- */
+  const faellig = isoZuDe(tageAddieren(beleg.datum, beleg.zahlungsziel));
+  let zahlungsBox = "";
+  if(istAngebot){
+    zahlungsBox = faellig
+      ? `<div class="pay-box"><strong>Gültigkeit</strong>Dieses Angebot ist gültig bis zum ${esc(faellig)}.</div>`
+      : "";
+  } else if(beleg.typ === "rechnung"){
+    const felder = [];
+    if(faellig) felder.push(["Zahlbar bis", `${faellig} (${nfMenge.format(zahl(beleg.zahlungsziel))} Tage netto)`]);
+    if(stamm.bank)  felder.push(["Bank", stamm.bank]);
+    if(stamm.iban)  felder.push(["IBAN", stamm.iban]);
+    if(stamm.bic)   felder.push(["BIC", stamm.bic]);
+    if(beleg.nummer) felder.push(["Verwendungszweck", beleg.nummer]);
+    if(felder.length){
+      zahlungsBox = `<div class="pay-box"><strong>Zahlungshinweise</strong><div class="pay-grid">` +
+        felder.map(([k,v]) => `<span>${esc(k)}</span><span>${esc(v)}</span>`).join("") +
+        `</div></div>`;
+    }
+  }
+
+  /* --- Fußzeile --- */
+  const fussSpalte1 = [stamm.firma, stamm.name, stamm.strasse,
+    [stamm.plz, stamm.ort].filter(Boolean).join(" ")].filter(Boolean).join("\n");
+  const fussSpalte2 = [
+    stamm.telefon && `Tel. ${stamm.telefon}`,
+    stamm.email, stamm.web, stamm.fusszeile
+  ].filter(Boolean).join("\n");
+  const fussSpalte3 = [
+    stamm.steuernummer && `Steuernummer: ${stamm.steuernummer}`,
+    stamm.ustid && `USt-IdNr.: ${stamm.ustid}`,
+    stamm.bank && `Bank: ${stamm.bank}`,
+    stamm.iban && `IBAN: ${stamm.iban}`,
+    stamm.bic && `BIC: ${stamm.bic}`
+  ].filter(Boolean).join("\n");
+
+  /* --- Zusammenbau --- */
+  document.getElementById("page").innerHTML = `
+    <div class="doc-head">
+      <div>${stamm.logo ? `<img class="doc-logo" src="${esc(stamm.logo)}" alt="">` : ""}</div>
+      <div class="sender-block">${absenderZeilen}</div>
+    </div>
+
+    <div>
+      <div class="addr-line">${esc(absenderEinzeiler)}</div>
+      <div class="recipient">${empfaengerZeilen || "&nbsp;"}</div>
+    </div>
+
+    <div class="doc-meta">
+      <div>
+        <h1 class="doc-title">${esc(t.titel)}</h1>
+      </div>
+      <dl>${metaHtml}</dl>
+    </div>
+
+    ${beleg.betreff ? `<p class="doc-subject">${esc(beleg.betreff)}</p>` : ""}
+    ${beleg.intro ? `<p class="intro">${esc(beleg.intro)}</p>` : ""}
+
+    <table class="items">
+      <thead>
+        <tr>
+          <th></th><th>Beschreibung</th><th class="r">Menge</th><th>Einheit</th>
+          <th class="r">Einzelpreis</th>${r.kU ? "" : '<th class="r">USt</th>'}<th class="r">Betrag</th>
+        </tr>
+      </thead>
+      <tbody>${zeilenHtml}</tbody>
+    </table>
+
+    <div class="totals">${summen.join("")}</div>
+
+    ${hinweise.length ? `<div class="note">${hinweise.map(esc).join("\n")}</div>` : ""}
+    ${zahlungsBox}
+    ${beleg.outro ? `<p class="outro">${esc(beleg.outro)}${stamm.name ? "\n\n" + esc(stamm.name) : ""}</p>` : ""}
+
+    <div class="doc-footer">
+      <div>${esc(fussSpalte1)}</div>
+      <div>${esc(fussSpalte2)}</div>
+      <div>${esc(fussSpalte3)}</div>
+    </div>
+  `;
+
+  /* --- Mini-Summen im Editor --- */
+  const mini = [];
+  if(r.rabattProzent > 0){
+    mini.push(`<div><span>Zwischensumme</span><span>${euro(r.zwischensumme)}</span></div>`);
+    mini.push(`<div><span>${esc(beleg.rabattText || "Rabatt")}</span><span>− ${euro(r.rabattBetrag)}</span></div>`);
+  }
+  mini.push(`<div><span>Netto</span><span>${euro(r.netto)}</span></div>`);
+  r.steuerGruppen.forEach(g => mini.push(`<div><span>USt ${nfMenge.format(g.satz)} %</span><span>${euro(g.betrag)}</span></div>`));
+  mini.push(`<div class="big"><span>Gesamt</span><span>${euro(r.kU ? r.netto : r.brutto)}</span></div>`);
+  document.getElementById("totals-mini").innerHTML = mini.join("");
+
+  pflichtangabenPruefen();
+  zoomAnwenden();   // Höhe des Vorschau-Containers an den gewachsenen Inhalt anpassen
+  sichern();
+}
+
+/* Hinweis auf fehlende Pflichtangaben (§ 14 UStG) */
+function pflichtangabenPruefen(){
+  const fehlt = [];
+  if(!stamm.firma && !stamm.name) fehlt.push("Absendername");
+  if(!stamm.strasse || !stamm.ort) fehlt.push("Absenderanschrift");
+  if(!stamm.steuernummer && !stamm.ustid) fehlt.push("Steuernummer oder USt-IdNr.");
+  if(!beleg.nummer) fehlt.push("Belegnummer");
+  if(!beleg.datum) fehlt.push("Belegdatum");
+  if(!beleg.empfaenger.firma && !beleg.empfaenger.name) fehlt.push("Empfängername");
+  if(beleg.reverse && !stamm.ustid) fehlt.push("eigene USt-IdNr. (bei Reverse-Charge zwingend)");
+
+  let box = document.getElementById("pflicht-hinweis");
+  if(!box){
+    box = document.createElement("p");
+    box.id = "pflicht-hinweis";
+    box.className = "hint warn";
+    document.querySelector(".editor").insertBefore(box, document.querySelector(".editor").lastElementChild);
+  }
+  box.textContent = (fehlt.length && beleg.typ !== "angebot")
+    ? "Noch offen für eine vollständige Rechnung nach § 14 UStG: " + fehlt.join(", ") + "."
+    : "";
+}
+
+/* =========================================================
+   Speichern / Laden / Export
+   ========================================================= */
+let sicherTimer;
+function sichern(){
+  clearTimeout(sicherTimer);
+  sicherTimer = setTimeout(() => {
+    speichereJSON(LS.stamm, stamm);
+    speichereJSON(LS.beleg, beleg);
+  }, 300);
+}
+
+document.getElementById("btn-print").addEventListener("click", () => window.print());
+
+document.getElementById("btn-new").addEventListener("click", () => {
+  if(!confirm("Neuen Beleg anlegen? Der aktuelle Beleg wird aus der Ansicht entfernt (Stammdaten und Kunden bleiben erhalten).")) return;
+  const typ = beleg.typ;
+  beleg = leerBeleg();
+  beleg.typ = typ;
+  beleg.nummer = naechsteNummer(typ);
+  formularBefuellen();
+  aktualisiereFormularLogik();
+  rendern();
+  toast("Neuer Beleg: " + beleg.nummer);
+});
+
+document.getElementById("btn-export").addEventListener("click", () => {
+  const daten = { version:1, exportiertAm:new Date().toISOString(), stamm, beleg, kunden };
+  const blob = new Blob([JSON.stringify(daten, null, 2)], { type:"application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${(beleg.nummer || "beleg").replace(/[^\w.-]+/g,"_")}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+});
+
+document.getElementById("btn-import-trigger").addEventListener("click", () => document.getElementById("file-import").click());
+document.getElementById("file-import").addEventListener("change", e => {
+  const datei = e.target.files[0];
+  if(!datei) return;
+  const leser = new FileReader();
+  leser.onload = () => {
+    try{
+      const d = JSON.parse(leser.result);
+      if(d.stamm)  stamm  = { ...leerStammdaten(), ...d.stamm };
+      if(d.beleg)  beleg  = { ...leerBeleg(), ...d.beleg,
+                              empfaenger:{ ...leerBeleg().empfaenger, ...(d.beleg.empfaenger||{}) },
+                              positionen:(d.beleg.positionen?.length ? d.beleg.positionen : [leerPosition()]) };
+      if(Array.isArray(d.kunden)){ kunden = d.kunden; speichereJSON(LS.kunden, kunden); }
+      formularBefuellen();
+      aktualisiereFormularLogik();
+      rendern();
+      toast("Datei geladen.");
+    } catch(err){
+      toast("Datei konnte nicht gelesen werden.");
+    }
+  };
+  leser.readAsText(datei);
+  e.target.value = "";
+});
+
+/* =========================================================
+   Zoom & Karten
+   ========================================================= */
+function zoomAnwenden(){
+  zoom = Math.min(Math.max(zoom, 40), 130);
+  const seite = document.getElementById("page");
+  const scaler = document.getElementById("scaler");
+  const f = zoom/100;
+  seite.style.transform = `scale(${f})`;
+  scaler.style.height = seite.offsetHeight ? (seite.offsetHeight * f) + "px" : "auto";
+  document.getElementById("zoom-label").textContent = zoom + " %";
+  localStorage.setItem(LS.zoom, String(zoom));
+}
+function zoomManuell(delta){
+  zoom += delta;
+  localStorage.setItem(LS.zoomManuell, "1");
+  zoomAnwenden();
+}
+document.getElementById("zoom-in").addEventListener("click",  () => zoomManuell(10));
+document.getElementById("zoom-out").addEventListener("click", () => zoomManuell(-10));
+
+/* Automatisch einpassen, solange der Zoom nicht von Hand gesetzt wurde */
+function autoZoom(){
+  if(localStorage.getItem(LS.zoomManuell)) { zoomAnwenden(); return; }
+  const breite = document.getElementById("scaler").clientWidth;
+  const seiteBreite = document.getElementById("page").offsetWidth || 794;
+  zoom = breite ? Math.min(100, Math.floor(breite / seiteBreite * 100)) : 100;
+  zoomAnwenden();
+}
+
+document.querySelectorAll("[data-card] > h2").forEach(h => {
+  h.addEventListener("click", () => h.parentElement.classList.toggle("collapsed"));
+});
+
+/* Einheiten-Vorschläge */
+const dl = document.createElement("datalist");
+dl.id = "einheiten";
+["Std.","Tag","Stück","Pauschale","km","Monat","Wort","Seite"].forEach(x => {
+  const o = document.createElement("option"); o.value = x; dl.appendChild(o);
+});
+document.body.appendChild(dl);
+
+/* =========================================================
+   Start
+   ========================================================= */
+formularBinden();
+formularBefuellen();
+aktualisiereFormularLogik();
+rendern();
+autoZoom();
+
+/* Beim ersten Start sind die Stammdaten der wichtigste Schritt – Karte offen lassen.
+   Sobald sie ausgefüllt sind, startet sie eingeklappt. */
+if(stamm.firma || stamm.name) document.getElementById("card-absender").classList.add("collapsed");
+window.addEventListener("resize", autoZoom);
+</script>
+</body>
+</html>

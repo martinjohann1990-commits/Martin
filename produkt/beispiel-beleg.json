@@ -1,0 +1,86 @@
+{
+  "version": 1,
+  "exportiertAm": "2026-03-30T09:00:00.000Z",
+  "stamm": {
+    "firma": "Studio Nordlicht",
+    "name": "Martin Johann",
+    "strasse": "Lindenallee 42",
+    "plz": "20144",
+    "ort": "Hamburg",
+    "telefon": "+49 40 123456",
+    "email": "hallo@studio-nordlicht.de",
+    "web": "studio-nordlicht.de",
+    "steuernummer": "42/123/45678",
+    "ustid": "",
+    "bank": "Hamburger Sparkasse",
+    "iban": "DE02 2005 0550 1234 5678 90",
+    "bic": "HASPDEHHXXX",
+    "fusszeile": "Inhaber: Martin Johann",
+    "logo": ""
+  },
+  "beleg": {
+    "typ": "rechnung",
+    "nummer": "RE-2026-001",
+    "datum": "2026-03-30",
+    "leistung": "02.03.2026 – 27.03.2026",
+    "zahlungsziel": 14,
+    "betreff": "Relaunch Unternehmenswebsite – Abschlussrechnung",
+    "intro": "vielen Dank für Ihren Auftrag. Vereinbarungsgemäß berechne ich Ihnen die folgenden Leistungen:",
+    "outro": "Mit freundlichen Grüßen",
+    "hinweis": "",
+    "kleinunternehmer": false,
+    "reverse": false,
+    "rabatt": 0,
+    "rabattText": "Rabatt",
+    "empfaenger": {
+      "firma": "Nordwind Handels GmbH",
+      "name": "z. Hd. Frau Erika Muster",
+      "strasse": "Hafenstraße 17",
+      "plz": "28195",
+      "ort": "Bremen",
+      "land": "",
+      "kdnr": "K-2026-118"
+    },
+    "positionen": [
+      {
+        "beschreibung": "Konzeption, Informationsarchitektur und Beratung",
+        "menge": 8,
+        "einheit": "Std.",
+        "einzelpreis": 95,
+        "ust": 19
+      },
+      {
+        "beschreibung": "Screendesign Startseite und drei Unterseiten",
+        "menge": 22,
+        "einheit": "Std.",
+        "einzelpreis": 95,
+        "ust": 19
+      },
+      {
+        "beschreibung": "Technische Umsetzung inkl. Redaktionssystem",
+        "menge": 1,
+        "einheit": "Pauschale",
+        "einzelpreis": 2400,
+        "ust": 19
+      },
+      {
+        "beschreibung": "Fotolizenzen (Weitergabe an Auftraggeber)",
+        "menge": 6,
+        "einheit": "Stück",
+        "einzelpreis": 39.5,
+        "ust": 7
+      }
+    ]
+  },
+  "kunden": [
+    {
+      "firma": "Nordwind Handels GmbH",
+      "name": "z. Hd. Frau Erika Muster",
+      "strasse": "Hafenstraße 17",
+      "plz": "28195",
+      "ort": "Bremen",
+      "land": "",
+      "kdnr": "K-2026-118"
+    }
+  ]
+}
