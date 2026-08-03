@@ -1,0 +1,2119 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Belegpaket — Mahnung, Auftragsbestätigung, Lieferschein, Stundenzettel</title>
+<style>
+  :root{
+    /* Der Beleg bildet Papier ab und bleibt deshalb bewusst hell –
+       das erzwingt helle Kalender-, Auswahl- und Scrollleisten-Darstellung,
+       auch wenn das Betriebssystem im dunklen Modus läuft. */
+    color-scheme:light;
+    --bg:#f4f5f7; --panel:#fff; --ink:#1c1f24; --muted:#6b7280;
+    --line:#e2e5ea; --accent:#2f6feb; --accent-soft:#eaf1fe;
+    --ok:#0f7b4f; --warn:#a35b00; --radius:10px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+    background:var(--bg); color:var(--ink); font-size:15px; line-height:1.45;
+  }
+  /* ---------- Layout ---------- */
+  .app{display:grid; grid-template-columns:minmax(380px,1fr) minmax(0,1.15fr); gap:24px; padding:24px; align-items:start; max-width:1600px; margin:0 auto}
+  @media (max-width:1100px){ .app{grid-template-columns:1fr} }
+  .editor{display:flex; flex-direction:column; gap:16px; min-width:0}
+  .preview-wrap{position:sticky; top:24px; min-width:0}
+  @media (max-width:1100px){ .preview-wrap{position:static} }
+
+  /* ---------- Toolbar ---------- */
+  .toolbar{
+    display:flex; flex-wrap:wrap; gap:8px; align-items:center;
+    background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+    padding:12px; position:sticky; top:0; z-index:20;
+  }
+  .toolbar .brand{font-weight:700; margin-right:auto; letter-spacing:-.2px}
+  .toolbar .brand small{display:block; font-weight:400; color:var(--muted); font-size:12px}
+
+  button{
+    font:inherit; font-size:14px; padding:8px 13px; border-radius:8px; cursor:pointer;
+    border:1px solid var(--line); background:#fff; color:var(--ink);
+  }
+  button:hover{background:#f7f8fa}
+  button.primary{background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600}
+  button.primary:hover{background:#255ed4}
+  button.ghost{background:transparent}
+  button.danger{color:#a11; border-color:#f0d0d0}
+  button.tiny{padding:4px 9px; font-size:13px}
+
+  /* ---------- Karten ---------- */
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden}
+  .card[hidden]{display:none}
+  .card > h2{
+    margin:0; font-size:14px; letter-spacing:.02em; text-transform:uppercase; color:var(--muted);
+    padding:12px 16px; border-bottom:1px solid var(--line); background:#fafbfc;
+    display:flex; align-items:center; gap:8px; cursor:pointer; user-select:none;
+  }
+  .card > h2::before{content:"▾"; font-size:11px; color:var(--muted); transition:transform .15s}
+  .card.collapsed > h2::before{transform:rotate(-90deg)}
+  .card.collapsed > .card-body{display:none}
+  .card-body{padding:16px; display:flex; flex-direction:column; gap:14px}
+
+  .grid{display:grid; gap:12px}
+  .g2{grid-template-columns:1fr 1fr}
+  .g3{grid-template-columns:1fr 1fr 1fr}
+  .g-plz{grid-template-columns:90px 1fr}
+  @media (max-width:560px){ .g2,.g3,.g-plz{grid-template-columns:1fr} }
+
+  label{display:flex; flex-direction:column; gap:4px; font-size:13px; color:var(--muted); min-width:0}
+  label[hidden]{display:none}
+  input,textarea,select{
+    font:inherit; font-size:14px; color:var(--ink); background:#fff;
+    border:1px solid var(--line); border-radius:7px; padding:8px 10px; width:100%;
+  }
+  input:focus,textarea:focus,select:focus{outline:2px solid var(--accent-soft); border-color:var(--accent)}
+  input:disabled{background:#f6f7f9; color:var(--muted)}
+  textarea{resize:vertical; min-height:70px}
+  .check{flex-direction:row; align-items:flex-start; gap:9px; color:var(--ink); font-size:14px}
+  .check input{width:auto; margin-top:3px; flex:0 0 auto}
+  .check span small{display:block; color:var(--muted); font-size:12px; line-height:1.35}
+  .hint{font-size:12px; color:var(--muted); margin:0}
+  .hint.warn{color:var(--warn)}
+  .hint:empty{display:none}
+
+  /* ---------- Zeilen (Positionen und Stunden) ---------- */
+  .tabelle-rollen{overflow-x:auto}
+  .zeilen{width:100%; border-collapse:collapse; min-width:520px}
+  .zeilen th{
+    font-size:11px; text-transform:uppercase; letter-spacing:.03em; color:var(--muted);
+    text-align:left; font-weight:600; padding:0 6px 6px;
+  }
+  .zeilen th.r,.zeilen td.r{text-align:right}
+  .zeilen td{padding:3px 6px 3px 0; vertical-align:top}
+  .zeilen input,.zeilen select{padding:7px 8px; font-size:14px}
+  .zeilen input.num{text-align:right}
+  .zeile + .zeile td{padding-top:8px}
+  .zeilen-summe{font-variant-numeric:tabular-nums; font-size:13px; color:var(--muted); white-space:nowrap; padding-top:14px}
+  .zeilen-aktionen{display:flex; gap:6px; align-items:center; padding-top:9px}
+  .icon-btn{border:none; background:transparent; color:var(--muted); font-size:15px; padding:3px 5px; line-height:1; border-radius:5px}
+  .icon-btn:hover{background:#f0f1f4; color:var(--ink)}
+  .icon-btn:disabled{opacity:.25; cursor:default; background:none}
+  /* Der Lieferschein führt keine Preise – die Spalten verschwinden ganz */
+  .zeilen.ohne-preise .preis-col,.zeilen.ohne-preise .preis-zelle{display:none}
+  .zeilen.ohne-ust .ust-col,.zeilen.ohne-ust .ust-zelle{visibility:hidden}
+
+  .totals-mini{
+    margin-top:4px; padding-top:12px; border-top:1px solid var(--line);
+    display:flex; flex-direction:column; gap:5px; font-variant-numeric:tabular-nums;
+  }
+  .totals-mini div{display:flex; justify-content:space-between; font-size:14px; color:var(--muted)}
+  .totals-mini div.big{font-size:16px; font-weight:700; color:var(--ink); padding-top:5px}
+
+  /* ---------- Kunden / Logo ---------- */
+  .row-inline{display:flex; gap:8px; flex-wrap:wrap; align-items:center}
+  .logo-preview{max-height:52px; max-width:180px; border:1px solid var(--line); border-radius:6px; padding:4px; background:#fff}
+
+  /* ---------- Vorschau (A4) ---------- */
+  .page{
+    background:#fff; width:210mm; min-height:297mm; padding:18mm 20mm 16mm;
+    box-shadow:0 2px 18px rgba(20,25,40,.14); border-radius:2px;
+    font-size:10.5pt; line-height:1.5; color:#15181d;
+    display:flex; flex-direction:column;
+    transform-origin:top left;
+  }
+  .page-scaler{overflow:hidden}
+  .doc-head{display:flex; justify-content:space-between; align-items:flex-start; gap:16mm; margin-bottom:12mm}
+  .doc-logo{max-height:22mm; max-width:60mm}
+  .sender-block{font-size:9pt; line-height:1.45; text-align:right; color:#3a3f47; white-space:pre-line}
+  .sender-block strong{color:#15181d; font-size:10pt}
+  .addr-line{font-size:7pt; color:#7a8089; border-bottom:.4pt solid #c9ced6; padding-bottom:1mm; margin-bottom:2mm}
+  .recipient{white-space:pre-line; min-height:24mm}
+  .doc-meta{display:flex; justify-content:space-between; gap:10mm; align-items:flex-start; margin:8mm 0 5mm}
+  .doc-meta dl{margin:0; display:grid; grid-template-columns:auto auto; gap:1mm 6mm; font-size:9.5pt}
+  .doc-meta dt{color:#5c626b}
+  .doc-meta dd{margin:0; text-align:right}
+  h1.doc-title{font-size:16pt; margin:0 0 1mm; letter-spacing:-.3px}
+  .doc-subject{font-weight:600; margin:0 0 4mm}
+  .intro,.outro{white-space:pre-line; margin:0}
+  .intro{margin-bottom:5mm}
+  .outro{margin-top:6mm}
+
+  table.items{width:100%; border-collapse:collapse; font-size:9.5pt; margin-bottom:4mm}
+  table.items th{
+    text-align:left; font-size:8pt; text-transform:uppercase; letter-spacing:.04em; color:#5c626b;
+    border-bottom:.8pt solid #15181d; padding:0 2mm 1.5mm 0; font-weight:600;
+  }
+  table.items td{padding:2mm 2mm 2mm 0; border-bottom:.4pt solid #e3e6ea; vertical-align:top}
+  table.items .r{text-align:right; white-space:nowrap}
+  table.items .pos-nr{color:#8a9099; width:8mm}
+  table.items .desc{white-space:pre-line}
+  table.items tr.woche td{
+    border-bottom:none; padding-top:1mm; padding-bottom:.5mm;
+    font-size:8.5pt; color:#5c626b; font-weight:600;
+  }
+  table.items tr.woche-summe td{font-size:9pt; color:#3a3f47; border-bottom:.8pt solid #c9ced6}
+
+  .totals{margin-left:auto; width:88mm; font-size:10pt}
+  .totals .t-row{display:flex; justify-content:space-between; gap:6mm; padding:1.2mm 0}
+  .totals .t-row.sub{color:#5c626b; font-size:9.5pt}
+  .totals .t-row.grand{
+    border-top:.8pt solid #15181d; margin-top:1.5mm; padding-top:2mm;
+    font-weight:700; font-size:11.5pt;
+  }
+  .note{margin-top:5mm; font-size:9pt; color:#3a3f47; white-space:pre-line}
+  .pay-box{
+    margin-top:6mm; border:.4pt solid #c9ced6; border-radius:1.5mm; padding:3mm 4mm;
+    font-size:9pt; background:#fafbfc;
+  }
+  .pay-box strong{display:block; margin-bottom:1mm; font-size:9.5pt}
+  .pay-grid{display:grid; grid-template-columns:auto 1fr; gap:.6mm 5mm; color:#3a3f47}
+  .pay-grid span:nth-child(odd){color:#5c626b}
+  .frist{
+    margin-top:5mm; border-left:1mm solid #15181d; padding:1mm 0 1mm 4mm;
+    font-size:10pt; font-weight:600;
+  }
+  /* Lieferschein und Stundenzettel werden gegengezeichnet */
+  .unterschrift{margin-top:12mm; display:grid; grid-template-columns:1fr 1fr; gap:12mm; font-size:8.5pt; color:#5c626b}
+  .unterschrift div{border-top:.4pt solid #15181d; padding-top:1.5mm}
+  .doc-footer{
+    margin-top:auto; padding-top:5mm; border-top:.4pt solid #c9ced6;
+    font-size:7.6pt; color:#6b717a; display:grid; grid-template-columns:repeat(3,1fr); gap:5mm;
+    white-space:pre-line;
+  }
+  .num{font-variant-numeric:tabular-nums}
+
+  .zoom-bar{display:flex; gap:8px; align-items:center; justify-content:flex-end; margin-bottom:10px; font-size:13px; color:var(--muted)}
+
+  /* ---------- Toast ---------- */
+  #toast{
+    position:fixed; bottom:22px; left:50%; transform:translateX(-50%) translateY(20px);
+    background:#1c1f24; color:#fff; padding:10px 18px; border-radius:8px; font-size:14px;
+    opacity:0; pointer-events:none; transition:opacity .2s, transform .2s; z-index:100;
+  }
+  #toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+
+  /* ---------- Druck ---------- */
+  @page{ size:A4; margin:0 }
+  @media print{
+    body{background:#fff}
+    .app{display:block; padding:0; max-width:none}
+    .editor,.zoom-bar,.toolbar,#toast{display:none !important}
+    .preview-wrap{position:static}
+    .page-scaler{overflow:visible}
+    .page{
+      width:210mm; min-height:auto; box-shadow:none; border-radius:0; margin:0;
+      transform:none !important; padding:16mm 20mm;
+    }
+    table.items{page-break-inside:auto}
+    table.items tr{page-break-inside:avoid}
+    .totals,.pay-box,.frist,.unterschrift{page-break-inside:avoid}
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+  <!-- ============ EDITOR ============ -->
+  <div class="editor">
+
+    <div class="toolbar">
+      <div class="brand">Belegpaket
+        <small>Läuft offline · Daten bleiben im Browser</small>
+      </div>
+      <button class="primary" id="btn-print">PDF / Drucken</button>
+      <button id="btn-new">Neuer Beleg</button>
+      <button id="btn-rechnung-trigger">Rechnung übernehmen</button>
+      <button id="btn-export">Sichern (.json)</button>
+      <button id="btn-import-trigger">Laden</button>
+      <input type="file" id="file-import" accept="application/json,.json" hidden>
+      <input type="file" id="file-rechnung" accept="application/json,.json" hidden>
+    </div>
+
+    <!-- Belegdaten -->
+    <section class="card" data-card>
+      <h2>Beleg</h2>
+      <div class="card-body">
+        <label>Belegart
+          <select id="f-typ">
+            <optgroup label="Mahnwesen">
+              <option value="erinnerung">Zahlungserinnerung</option>
+              <option value="mahnung1">1. Mahnung</option>
+              <option value="mahnung2">2. Mahnung</option>
+            </optgroup>
+            <optgroup label="Auftrag &amp; Lieferung">
+              <option value="auftrag">Auftragsbestätigung</option>
+              <option value="lieferschein">Lieferschein</option>
+            </optgroup>
+            <optgroup label="Nachweis">
+              <option value="stundenzettel">Stundenzettel</option>
+            </optgroup>
+          </select>
+        </label>
+        <div class="grid g2">
+          <label id="lbl-nummer">Nummer
+            <input id="f-nummer" placeholder="MA-2026-001">
+          </label>
+          <label>Datum
+            <input type="date" id="f-datum">
+          </label>
+        </div>
+        <label>Betreff
+          <input id="f-betreff" placeholder="Zahlungserinnerung zu Rechnung RE-2026-001">
+        </label>
+      </div>
+    </section>
+
+    <!-- Empfänger -->
+    <section class="card" data-card>
+      <h2>Empfänger</h2>
+      <div class="card-body">
+        <div class="row-inline">
+          <select id="f-kunde-select" style="flex:1 1 200px">
+            <option value="">– gespeicherte Kunden –</option>
+          </select>
+          <button class="tiny" id="btn-kunde-save">Kunde merken</button>
+          <button class="tiny danger" id="btn-kunde-del">Löschen</button>
+        </div>
+        <div class="grid g2">
+          <label>Firma
+            <input id="f-e-firma" placeholder="Muster GmbH">
+          </label>
+          <label>Ansprechpartner / Name
+            <input id="f-e-name" placeholder="Frau Erika Muster">
+          </label>
+        </div>
+        <label>Straße &amp; Nr.
+          <input id="f-e-strasse">
+        </label>
+        <div class="grid g-plz">
+          <label>PLZ<input id="f-e-plz"></label>
+          <label>Ort<input id="f-e-ort"></label>
+        </div>
+        <div class="grid g2">
+          <label>Land <span class="hint">leer lassen bei Inland</span>
+            <input id="f-e-land" placeholder="Österreich">
+          </label>
+          <label>Kundennummer
+            <input id="f-e-kdnr">
+          </label>
+        </div>
+        <label>Anrede
+          <input id="f-anrede" placeholder="wird aus dem Namen gebildet">
+        </label>
+      </div>
+    </section>
+
+    <!-- Offene Rechnung (Mahnwesen) -->
+    <section class="card" id="karte-rechnung" data-card>
+      <h2>Offene Rechnung</h2>
+      <div class="card-body">
+        <div class="grid g3">
+          <label>Rechnungsnummer
+            <input id="f-r-nummer" placeholder="RE-2026-001">
+          </label>
+          <label>Rechnungsdatum
+            <input type="date" id="f-r-datum">
+          </label>
+          <label>Fällig am
+            <input type="date" id="f-r-faellig">
+          </label>
+        </div>
+        <div class="grid g3">
+          <label>Rechnungsbetrag (brutto)
+            <input id="f-r-betrag" class="num" inputmode="decimal" placeholder="1.820,70">
+          </label>
+          <label>Bereits gezahlt
+            <input id="f-r-gezahlt" class="num" inputmode="decimal">
+          </label>
+          <label>Neue Zahlungsfrist (Tage)
+            <input type="number" id="f-r-frist" min="0" step="1" class="num">
+          </label>
+        </div>
+        <p class="hint">Über <strong>Rechnung übernehmen</strong> in der Kopfzeile lässt sich die
+          JSON-Sicherung des Rechnungsgenerators einlesen — Nummer, Datum, Fälligkeit, Betrag und
+          Empfänger stehen dann von selbst hier.</p>
+      </div>
+    </section>
+
+    <!-- Verzugszinsen & Kosten -->
+    <section class="card" id="karte-verzug" data-card>
+      <h2>Verzugszinsen &amp; Kosten</h2>
+      <div class="card-body">
+        <label class="check">
+          <input type="checkbox" id="f-z-aktiv">
+          <span>Verzugszinsen berechnen (§ 288 BGB)
+            <small>Wird taggenau vom Verzugsbeginn bis zum Belegdatum gerechnet, mit 365 Tagen im Jahr.</small>
+          </span>
+        </label>
+        <div class="grid g2">
+          <label>Schuldner
+            <select id="f-z-schuldner">
+              <option value="unternehmen">Unternehmen (kein Verbraucher)</option>
+              <option value="verbraucher">Verbraucher</option>
+              <option value="eigen">eigener Zinssatz</option>
+            </select>
+          </label>
+          <label>Verzug seit
+            <input type="date" id="f-z-ab">
+          </label>
+        </div>
+        <div class="grid g3">
+          <label>Basiszinssatz (%)
+            <input id="f-z-basis" class="num" inputmode="decimal">
+          </label>
+          <label>Zuschlag (Prozentpunkte)
+            <input id="f-z-zuschlag" class="num" inputmode="decimal">
+          </label>
+          <label>Zinssatz gesamt
+            <input id="f-z-gesamt" class="num" disabled>
+          </label>
+        </div>
+        <p class="hint">Der Basiszinssatz nach § 247 BGB wird von der Deutschen Bundesbank zum
+          1. Januar und zum 1. Juli bekannt gegeben. Voreingestellt ist <strong>1,52 %</strong>
+          (Stand 1. Juli 2026) — bitte vor dem Versand den aktuellen Wert prüfen.
+          Der Zuschlag beträgt 5 Prozentpunkte gegenüber Verbrauchern und 9 Prozentpunkte
+          bei Entgeltforderungen ohne Verbraucherbeteiligung.</p>
+        <div class="grid g2">
+          <label>Mahngebühr (€)
+            <input id="f-z-gebuehr" class="num" inputmode="decimal">
+          </label>
+          <label class="check" id="lbl-pauschale">
+            <input type="checkbox" id="f-z-pauschale">
+            <span>Verzugspauschale 40 € (§ 288 Abs. 5 BGB)
+              <small>Nur gegenüber Schuldnern, die keine Verbraucher sind. Sie wird auf spätere Rechtsverfolgungskosten angerechnet.</small>
+            </span>
+          </label>
+        </div>
+      </div>
+    </section>
+
+    <!-- Auftrag & Lieferung -->
+    <section class="card" id="karte-vorgang" data-card>
+      <h2>Auftrag &amp; Lieferung</h2>
+      <div class="card-body">
+        <div class="grid g2">
+          <label>Bestellnummer des Kunden
+            <input id="f-v-bestellnr">
+          </label>
+          <label>Bestelldatum
+            <input type="date" id="f-v-bestelldatum">
+          </label>
+        </div>
+        <div class="grid g2">
+          <label id="lbl-termin">Ausführungszeitraum
+            <input id="f-v-termin" placeholder="z. B. KW 24–26 2026">
+          </label>
+          <label id="lbl-versand" hidden>Versandart
+            <input id="f-v-versand" placeholder="z. B. Spedition, Selbstabholung">
+          </label>
+        </div>
+        <label id="lbl-lieferadresse" hidden>Abweichende Lieferanschrift
+          <textarea id="f-v-lieferadresse" placeholder="Nur ausfüllen, wenn die Ware nicht an die Empfängeranschrift geht"></textarea>
+        </label>
+      </div>
+    </section>
+
+    <!-- Positionen -->
+    <section class="card" id="karte-positionen" data-card>
+      <h2>Positionen</h2>
+      <div class="card-body">
+        <div class="tabelle-rollen">
+          <table class="zeilen" id="pos-tabelle">
+            <thead>
+              <tr>
+                <th style="width:34%">Beschreibung</th>
+                <th style="width:12%" class="r">Menge</th>
+                <th style="width:17%">Einheit</th>
+                <th style="width:16%" class="r preis-col">Einzelpreis</th>
+                <th style="width:14%" class="r preis-col ust-col">USt</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="pos-body"></tbody>
+          </table>
+        </div>
+        <div class="row-inline">
+          <button class="tiny" id="btn-pos-add">+ Position</button>
+        </div>
+        <div class="grid g2" id="rabatt-felder">
+          <label>Rabatt auf Nettosumme (%)
+            <input type="number" id="f-rabatt" min="0" max="100" step="0.01" class="num">
+          </label>
+          <label>Bezeichnung des Rabatts
+            <input id="f-rabatt-text" placeholder="Projektrabatt">
+          </label>
+        </div>
+        <label class="check" id="lbl-kleinunternehmer">
+          <input type="checkbox" id="f-kleinunternehmer">
+          <span>Kleinunternehmerregelung (§ 19 UStG)
+            <small>Keine Umsatzsteuer ausweisen. Der Hinweistext erscheint automatisch auf dem Beleg.</small>
+          </span>
+        </label>
+        <label class="check" id="lbl-reverse">
+          <input type="checkbox" id="f-reverse">
+          <span>Reverse-Charge (EU-B2B, § 13b UStG)
+            <small>Steuerschuldnerschaft des Leistungsempfängers. USt-IdNr. beider Seiten muss angegeben sein.</small>
+          </span>
+        </label>
+        <div class="totals-mini" id="totals-mini"></div>
+      </div>
+    </section>
+
+    <!-- Stundenzettel -->
+    <section class="card" id="karte-stunden" data-card>
+      <h2>Stunden</h2>
+      <div class="card-body">
+        <div class="grid g2">
+          <label>Zeitraum
+            <input id="f-s-zeitraum" placeholder="z. B. März 2026">
+          </label>
+          <label>Projekt / Einsatzort
+            <input id="f-s-projekt" placeholder="z. B. Baustelle Hafencity">
+          </label>
+        </div>
+        <div class="tabelle-rollen">
+          <table class="zeilen" id="std-tabelle">
+            <thead>
+              <tr>
+                <th style="width:17%">Datum</th>
+                <th style="width:31%">Tätigkeit</th>
+                <th style="width:12%">von</th>
+                <th style="width:12%">bis</th>
+                <th style="width:11%" class="r">Pause (min)</th>
+                <th style="width:12%" class="r">Stunden</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="std-body"></tbody>
+          </table>
+        </div>
+        <div class="row-inline">
+          <button class="tiny" id="btn-std-add">+ Tag</button>
+          <span class="hint">Sind „von“ und „bis“ ausgefüllt, werden die Stunden abzüglich Pause berechnet. Der Wert lässt sich überschreiben.</span>
+        </div>
+        <label class="check">
+          <input type="checkbox" id="f-s-abrechnen">
+          <span>Stunden abrechnen
+            <small>Mit Stundensatz, Summe und Umsatzsteuer. Ohne Häkchen ist der Zettel ein reiner Nachweis.</small>
+          </span>
+        </label>
+        <div class="grid g3" id="std-abrechnung">
+          <label>Stundensatz (€)
+            <input id="f-s-satz" class="num" inputmode="decimal">
+          </label>
+          <label>USt-Satz (%)
+            <select id="f-s-ust">
+              <option value="19">19 %</option>
+              <option value="7">7 %</option>
+              <option value="0">0 %</option>
+            </select>
+          </label>
+          <label class="check" style="align-self:end">
+            <input type="checkbox" id="f-s-klein">
+            <span>§ 19 UStG</span>
+          </label>
+        </div>
+        <div class="totals-mini" id="std-mini"></div>
+      </div>
+    </section>
+
+    <!-- Texte -->
+    <section class="card" data-card>
+      <h2>Texte</h2>
+      <div class="card-body">
+        <label>Einleitungstext
+          <textarea id="f-intro"></textarea>
+        </label>
+        <label>Schlusstext
+          <textarea id="f-outro"></textarea>
+        </label>
+        <label>Zusätzlicher Hinweis (optional)
+          <textarea id="f-hinweis" placeholder="z. B. Hinweis auf einen bereits vereinbarten Ratenplan"></textarea>
+        </label>
+        <div class="row-inline">
+          <button class="tiny" id="btn-texte-zuruecksetzen">Standardtexte für diese Belegart einsetzen</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Absender -->
+    <section class="card" id="card-absender" data-card>
+      <h2>Absender &amp; Stammdaten</h2>
+      <div class="card-body">
+        <p class="hint">Diese Angaben werden dauerhaft gespeichert und für jeden neuen Beleg übernommen.</p>
+        <div class="grid g2">
+          <label>Firma / Bezeichnung<input id="f-a-firma"></label>
+          <label>Inhaber / Name<input id="f-a-name"></label>
+        </div>
+        <label>Straße &amp; Nr.<input id="f-a-strasse"></label>
+        <div class="grid g-plz">
+          <label>PLZ<input id="f-a-plz"></label>
+          <label>Ort<input id="f-a-ort"></label>
+        </div>
+        <div class="grid g3">
+          <label>Telefon<input id="f-a-telefon"></label>
+          <label>E-Mail<input id="f-a-email"></label>
+          <label>Website<input id="f-a-web"></label>
+        </div>
+        <div class="grid g2">
+          <label>Steuernummer<input id="f-a-steuernummer"></label>
+          <label>USt-IdNr.<input id="f-a-ustid" placeholder="DE123456789"></label>
+        </div>
+        <div class="grid g3">
+          <label>Bank<input id="f-a-bank"></label>
+          <label>IBAN<input id="f-a-iban"></label>
+          <label>BIC<input id="f-a-bic"></label>
+        </div>
+        <label>Zusatz für die Fußzeile
+          <textarea id="f-a-fusszeile" placeholder="z. B. Handelsregister, Geschäftsführung"></textarea>
+        </label>
+        <div class="row-inline">
+          <button class="tiny" id="btn-logo">Logo wählen</button>
+          <button class="tiny ghost" id="btn-logo-del">Logo entfernen</button>
+          <input type="file" id="file-logo" accept="image/*" hidden>
+          <img id="logo-preview" class="logo-preview" alt="" hidden>
+        </div>
+        <p class="hint">Empfehlung: PNG/JPG unter 300 kB, Höhe ca. 200 px.</p>
+      </div>
+    </section>
+
+    <p class="hint">
+      Alle Daten liegen ausschließlich in diesem Browser (localStorage). Es findet keine Übertragung
+      ins Internet statt. Für ein Backup die Funktion „Sichern (.json)“ nutzen.
+    </p>
+  </div>
+
+  <!-- ============ VORSCHAU ============ -->
+  <div class="preview-wrap">
+    <div class="zoom-bar">
+      <span>Vorschau</span>
+      <button class="tiny" id="zoom-out">−</button>
+      <span id="zoom-label" class="num">100 %</span>
+      <button class="tiny" id="zoom-in">+</button>
+    </div>
+    <div class="page-scaler" id="scaler">
+      <div class="page" id="page"></div>
+    </div>
+  </div>
+</div>
+
+<div id="toast" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+
+/* =========================================================
+   Belegpaket – eigenständig, ohne externe Abhängigkeiten
+
+   Sechs Belegarten in einer Datei: Zahlungserinnerung, 1. und 2. Mahnung,
+   Auftragsbestätigung, Lieferschein und Stundenzettel.
+   ========================================================= */
+
+const LS = { stamm:"bp.stammdaten.v1", beleg:"bp.beleg.v1", kunden:"bp.kunden.v1",
+             einheiten:"bp.einheiten.v1", zoom:"bp.zoom.v1", zoomManuell:"bp.zoom.manuell.v1" };
+
+/* ---------------------------------------------------------------
+   Zugriff auf den lokalen Speicher kapseln.
+
+   In privaten Fenstern, bei blockierten Website-Daten und in
+   eingebetteten Rahmen wirft bereits der Zugriff auf localStorage eine
+   Ausnahme. Ohne diese Kapselung würde das den Seitenaufbau abbrechen
+   und das Werkzeug bliebe leer.
+
+   Ist kein dauerhafter Speicher verfügbar, wird auf den Arbeitsspeicher
+   ausgewichen: Das Werkzeug funktioniert vollständig, nur über das
+   Neuladen hinaus wird nichts behalten. Darauf wird sichtbar hingewiesen.
+   --------------------------------------------------------------- */
+const Speicher = (() => {
+  let echt = null;
+  try{
+    const probe = "bp.probe";
+    window.localStorage.setItem(probe, "1");
+    window.localStorage.removeItem(probe);
+    echt = window.localStorage;
+  } catch(e){
+    echt = null;
+  }
+  const ersatz = new Map();
+  return {
+    dauerhaft: echt !== null,
+    lesen(schluessel){
+      try{
+        if(echt) return echt.getItem(schluessel);
+      } catch(e){ /* Zugriff nachträglich entzogen */ }
+      return ersatz.has(schluessel) ? ersatz.get(schluessel) : null;
+    },
+    schreiben(schluessel, wert){
+      ersatz.set(schluessel, String(wert));
+      try{
+        if(echt){ echt.setItem(schluessel, String(wert)); return true; }
+      } catch(e){ /* Speicher voll oder gesperrt */ }
+      return false;
+    }
+  };
+})();
+
+/* Gebräuchliche Mengeneinheiten. Die Liste wächst mit: Trägt jemand eine
+   eigene Einheit ein, steht sie ab dann dauerhaft zur Auswahl. */
+const STANDARD_EINHEITEN = ["Std.","Tag","Stück","Pauschale","km","Monat","Karton","Palette"];
+const EINHEIT_NEU = "__andere__";   // Kennung für „Andere …“
+
+const USt_SAETZE = [
+  { wert:19, label:"19 %" },
+  { wert:7,  label:"7 %"  },
+  { wert:0,  label:"0 %"  }
+];
+
+/* Der Basiszinssatz nach § 247 BGB ändert sich zum 1. Januar und 1. Juli.
+   Er steht deshalb als Eingabefeld im Werkzeug und nicht fest im Rechenweg.
+   Voreinstellung: Bekanntgabe der Deutschen Bundesbank zum 1. Juli 2026. */
+const BASISZINS_VOREINSTELLUNG = 1.52;
+const BASISZINS_STAND = "1. Juli 2026";
+/* § 288 Abs. 1 BGB: 5 Prozentpunkte; § 288 Abs. 2 BGB: 9 Prozentpunkte bei
+   Entgeltforderungen, an denen kein Verbraucher beteiligt ist. */
+const ZUSCHLAG = { verbraucher:5, unternehmen:9 };
+const VERZUGSPAUSCHALE = 40;        // § 288 Abs. 5 BGB
+const GEBUEHR_OBERGRENZE = 7.5;     // von Gerichten üblicherweise noch anerkannt
+
+const TYPEN = {
+  erinnerung:   { titel:"Zahlungserinnerung",  nrLabel:"Vorgangsnummer",      praefix:"ZE", gruppe:"mahnung" },
+  mahnung1:     { titel:"1. Mahnung",          nrLabel:"Mahnungsnummer",      praefix:"MA", gruppe:"mahnung" },
+  mahnung2:     { titel:"2. Mahnung",          nrLabel:"Mahnungsnummer",      praefix:"MA", gruppe:"mahnung" },
+  auftrag:      { titel:"Auftragsbestätigung", nrLabel:"Auftragsnummer",      praefix:"AB", gruppe:"positionen" },
+  lieferschein: { titel:"Lieferschein",        nrLabel:"Lieferscheinnummer",  praefix:"LS", gruppe:"positionen" },
+  stundenzettel:{ titel:"Stundenzettel",       nrLabel:"Nachweisnummer",      praefix:"SZ", gruppe:"stunden" }
+};
+
+/* Standardtexte je Belegart. Beim Wechsel der Belegart werden sie nur dann
+   ersetzt, wenn der vorhandene Text selbst ein Standardtext ist – von Hand
+   geschriebene Texte bleiben erhalten. */
+const TEXTE = {
+  erinnerung: {
+    intro:"sicher ist es Ihrer Aufmerksamkeit entgangen: Die unten aufgeführte Rechnung konnten wir bisher nicht als bezahlt verbuchen. Wir möchten Sie freundlich daran erinnern.",
+    outro:"Sollten Sie die Zahlung bereits veranlasst haben, betrachten Sie dieses Schreiben bitte als gegenstandslos.\n\nMit freundlichen Grüßen"
+  },
+  mahnung1: {
+    intro:"trotz unserer Zahlungserinnerung ist der unten aufgeführte Betrag bis heute nicht bei uns eingegangen. Wir bitten Sie, den offenen Betrag bis zu dem genannten Termin auszugleichen.",
+    outro:"Sollten Sie die Zahlung zwischenzeitlich veranlasst haben, betrachten Sie dieses Schreiben bitte als gegenstandslos.\n\nMit freundlichen Grüßen"
+  },
+  mahnung2: {
+    intro:"auch nach unserer ersten Mahnung ist der offene Betrag nicht bei uns eingegangen. Wir fordern Sie hiermit letztmalig auf, die Forderung einschließlich der angefallenen Verzugskosten bis zu dem genannten Termin zu begleichen.",
+    outro:"Nach Ablauf dieser Frist behalten wir uns weitere Schritte vor, insbesondere die Abgabe der Forderung an ein Inkassounternehmen oder die Einleitung des gerichtlichen Mahnverfahrens. Die dadurch entstehenden Kosten hätten Sie zu tragen.\n\nMit freundlichen Grüßen"
+  },
+  auftrag: {
+    intro:"vielen Dank für Ihren Auftrag. Hiermit bestätigen wir die Ausführung der folgenden Leistungen zu den genannten Konditionen:",
+    outro:"Bitte prüfen Sie diese Bestätigung auf Richtigkeit. Wir freuen uns auf die Zusammenarbeit.\n\nMit freundlichen Grüßen"
+  },
+  lieferschein: {
+    intro:"mit diesem Lieferschein übergeben wir Ihnen die folgenden Positionen:",
+    outro:"Bitte prüfen Sie die Lieferung auf Vollständigkeit und melden Sie Beanstandungen innerhalb von sieben Tagen.\n\nMit freundlichen Grüßen"
+  },
+  stundenzettel: {
+    intro:"nachstehend erhalten Sie den Nachweis der geleisteten Stunden:",
+    outro:"Mit freundlichen Grüßen"
+  }
+};
+const ALLE_STANDARDTEXTE = Object.values(TEXTE)
+  .flatMap(t => [t.intro, t.outro]);
+
+/* ---------- Standardwerte ---------- */
+function leerStammdaten(){
+  return { firma:"", name:"", strasse:"", plz:"", ort:"", telefon:"", email:"", web:"",
+           steuernummer:"", ustid:"", bank:"", iban:"", bic:"", fusszeile:"", logo:"" };
+}
+function leerPosition(){
+  return { beschreibung:"", menge:1, einheit:"Stück", einzelpreis:0, ust:19 };
+}
+function leerStunde(){
+  return { datum:heuteISO(), taetigkeit:"", von:"", bis:"", pause:0, stunden:0 };
+}
+function leerBeleg(){
+  return {
+    typ:"erinnerung", nummer:"", datum:heuteISO(), betreff:"", betreffAuto:true,
+    anrede:"", intro:TEXTE.erinnerung.intro, outro:TEXTE.erinnerung.outro, hinweis:"",
+    empfaenger:{ firma:"", name:"", strasse:"", plz:"", ort:"", land:"", kdnr:"" },
+    /* Mahnwesen */
+    rechnung:{ nummer:"", datum:"", faellig:"", betrag:0, gezahlt:0, frist:10 },
+    verzug:{ aktiv:false, schuldner:"unternehmen", basis:BASISZINS_VOREINSTELLUNG,
+             zuschlag:ZUSCHLAG.unternehmen, ab:"", gebuehr:0, pauschale:false },
+    /* Auftrag und Lieferung */
+    vorgang:{ bestellnr:"", bestelldatum:"", termin:"", versand:"", lieferadresse:"" },
+    positionen:[ leerPosition() ],
+    rabatt:0, rabattText:"Rabatt", kleinunternehmer:false, reverse:false,
+    /* Stundenzettel */
+    stundenzettel:{ zeitraum:"", projekt:"", abrechnen:false, satz:0, ust:19, kleinunternehmer:false },
+    stunden:[ leerStunde() ]
+  };
+}
+
+/* ---------- Zustand ---------- */
+let stamm  = ladeJSON(LS.stamm)  || leerStammdaten();
+let beleg  = zusammenfuehren(ladeJSON(LS.beleg)) || beispielBeleg();
+let kunden = ladeJSON(LS.kunden) || [];
+let einheiten = ladeJSON(LS.einheiten) || STANDARD_EINHEITEN.slice();
+let zoom   = Number(Speicher.lesen(LS.zoom)) || 100;
+
+/* Gespeicherte oder importierte Belege können aus einer älteren Fassung stammen
+   und einzelne Zweige nicht enthalten. Fehlende Felder werden ergänzt, damit
+   kein Zugriff ins Leere läuft. */
+function zusammenfuehren(roh){
+  if(!roh || typeof roh !== "object") return null;
+  const leer = leerBeleg();
+  const b = { ...leer, ...roh };
+  ["empfaenger","rechnung","verzug","vorgang","stundenzettel"].forEach(zweig => {
+    b[zweig] = { ...leer[zweig], ...(roh[zweig] || {}) };
+  });
+  b.positionen = Array.isArray(roh.positionen) && roh.positionen.length ? roh.positionen : [leerPosition()];
+  b.stunden    = Array.isArray(roh.stunden)    && roh.stunden.length    ? roh.stunden    : [leerStunde()];
+  if(!TYPEN[b.typ]) b.typ = "erinnerung";
+  return b;
+}
+
+function beispielBeleg(){
+  const b = leerBeleg();
+  b.typ = "mahnung1";
+  b.intro = TEXTE.mahnung1.intro;
+  b.outro = TEXTE.mahnung1.outro;
+  b.nummer = naechsteNummer("mahnung1");
+  // Der Beispielfall liegt immer gleich weit zurück, egal wann jemand die Datei öffnet
+  const jahr = new Date().getFullYear();
+  b.rechnung = { nummer:`RE-${jahr}-001`,
+                 datum: tageAddieren(b.datum, -45),
+                 faellig: tageAddieren(b.datum, -31),
+                 betrag:1820.70, gezahlt:0, frist:10 };
+  b.verzug = { ...b.verzug, aktiv:true, ab: tageAddieren(b.datum, -30) };
+  b.betreff = betreffVorschlag(b);
+  return b;
+}
+
+/* =========================================================
+   Hilfsfunktionen
+   ========================================================= */
+function ladeJSON(key){
+  try{ const r = Speicher.lesen(key); return r ? JSON.parse(r) : null; }
+  catch(e){ return null; }
+}
+let speicherWarnungGezeigt = false;
+function speichereJSON(key,wert){
+  const erfolg = Speicher.schreiben(key, JSON.stringify(wert));
+  // Nur einmal warnen – gespeichert wird bei jeder Eingabe
+  if(!erfolg && Speicher.dauerhaft && !speicherWarnungGezeigt){
+    speicherWarnungGezeigt = true;
+    toast("Speicher voll – bitte über „Sichern (.json)“ sichern.");
+  }
+}
+function heuteISO(){
+  const d = new Date();
+  return [d.getFullYear(), String(d.getMonth()+1).padStart(2,"0"), String(d.getDate()).padStart(2,"0")].join("-");
+}
+function istISO(s){ return /^\d{4}-\d{2}-\d{2}$/.test(s || ""); }
+function isoZuDe(iso){
+  if(!istISO(iso)) return iso || "";
+  const [j,m,t] = iso.split("-");
+  return `${t}.${m}.${j}`;
+}
+function tageAddieren(iso, tage){
+  if(!istISO(iso)) return "";
+  const [j,m,t] = iso.split("-").map(Number);
+  const d = new Date(Date.UTC(j, m-1, t));
+  d.setUTCDate(d.getUTCDate() + (Number(tage)||0));
+  return [d.getUTCFullYear(), String(d.getUTCMonth()+1).padStart(2,"0"), String(d.getUTCDate()).padStart(2,"0")].join("-");
+}
+function alsZeit(iso){
+  const [j,m,t] = iso.split("-").map(Number);
+  return Date.UTC(j, m-1, t);
+}
+function tageZwischen(vonISO, bisISO){
+  if(!istISO(vonISO) || !istISO(bisISO)) return 0;
+  return Math.round((alsZeit(bisISO) - alsZeit(vonISO)) / 86400000);
+}
+/* Kalenderwoche nach ISO 8601 – der Donnerstag entscheidet über das Jahr. */
+function isoWoche(iso){
+  if(!istISO(iso)) return null;
+  const [j,m,t] = iso.split("-").map(Number);
+  const d = new Date(Date.UTC(j, m-1, t));
+  d.setUTCDate(d.getUTCDate() - ((d.getUTCDay()+6) % 7) + 3);
+  const ersteWoche = new Date(Date.UTC(d.getUTCFullYear(), 0, 4));
+  ersteWoche.setUTCDate(ersteWoche.getUTCDate() - ((ersteWoche.getUTCDay()+6) % 7) + 3);
+  return { jahr:d.getUTCFullYear(), woche:1 + Math.round((d - ersteWoche) / (7*86400000)) };
+}
+const nfEuro  = new Intl.NumberFormat("de-DE",{ minimumFractionDigits:2, maximumFractionDigits:2 });
+const nfMenge = new Intl.NumberFormat("de-DE",{ minimumFractionDigits:0, maximumFractionDigits:3 });
+const nfStd   = new Intl.NumberFormat("de-DE",{ minimumFractionDigits:2, maximumFractionDigits:2 });
+function euro(n){ return nfEuro.format(runde(n)) + " €"; }
+function runde(n){ return Math.round((Number(n)||0) * 100 + Number.EPSILON) / 100; }
+function esc(s){
+  return String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+}
+function zahl(v){
+  if(typeof v === "number") return v;
+  const s = String(v ?? "").trim().replace(/\s/g,"").replace(",",".");
+  const n = parseFloat(s);
+  return isNaN(n) ? 0 : n;
+}
+/* "08:30" → 510 Minuten; alles andere → null */
+function minuten(zeit){
+  const m = /^(\d{1,2}):?(\d{2})$/.exec(String(zeit || "").trim());
+  if(!m) return null;
+  const h = Number(m[1]), min = Number(m[2]);
+  if(h > 23 || min > 59) return null;
+  return h*60 + min;
+}
+let toastTimer;
+function toast(text){
+  const el = document.getElementById("toast");
+  el.textContent = text;
+  el.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove("show"), 2600);
+}
+
+/* Fortlaufende Nummer im Format PRAEFIX-JAHR-LFD */
+function naechsteNummer(typ){
+  const p = (TYPEN[typ] || TYPEN.erinnerung).praefix;
+  const jahr = new Date().getFullYear();
+  const key = `bp.zaehler.${p}.${jahr}`;
+  const stand = Number(Speicher.lesen(key) || 0) + 1;
+  Speicher.schreiben(key, String(stand));
+  return `${p}-${jahr}-${String(stand).padStart(3,"0")}`;
+}
+
+function gruppe(){ return (TYPEN[beleg.typ] || TYPEN.erinnerung).gruppe; }
+
+/* Vorschlag für die Betreffzeile – solange der Betreff nicht von Hand
+   geändert wurde, wird er mitgeführt. */
+function betreffVorschlag(b = beleg){
+  const t = TYPEN[b.typ] || TYPEN.erinnerung;
+  if(t.gruppe === "mahnung")
+    return b.rechnung.nummer ? `${t.titel} zu Rechnung ${b.rechnung.nummer}` : t.titel;
+  if(b.typ === "stundenzettel")
+    return b.stundenzettel.zeitraum ? `Stundennachweis ${b.stundenzettel.zeitraum}` : "Stundennachweis";
+  if(b.vorgang.bestellnr) return `${t.titel} zu Ihrer Bestellung ${b.vorgang.bestellnr}`;
+  return t.titel;
+}
+function betreffPflegen(){
+  if(beleg.betreffAuto){
+    beleg.betreff = betreffVorschlag();
+    const el = document.getElementById("f-betreff");
+    if(el && document.activeElement !== el) el.value = beleg.betreff;
+  }
+}
+
+/* =========================================================
+   Berechnung
+   ========================================================= */
+function zinssatz(){
+  const v = beleg.verzug;
+  return runde(zahl(v.basis) + zahl(v.zuschlag));
+}
+
+function berechneMahnung(){
+  const r = beleg.rechnung, v = beleg.verzug;
+  const betrag  = runde(zahl(r.betrag));
+  const gezahlt = runde(zahl(r.gezahlt));
+  const offen   = Math.max(0, runde(betrag - gezahlt));
+
+  const satz = zinssatz();
+  const tage = Math.max(0, tageZwischen(v.ab, beleg.datum));
+  const zinsen = (v.aktiv && beleg.typ !== "erinnerung")
+    ? runde(offen * satz/100 * tage/365) : 0;
+
+  const gebuehr   = (beleg.typ === "erinnerung") ? 0 : Math.max(0, runde(zahl(v.gebuehr)));
+  const pauschale = (v.pauschale && beleg.typ !== "erinnerung") ? VERZUGSPAUSCHALE : 0;
+  const gesamt    = runde(offen + zinsen + gebuehr + pauschale);
+
+  return { betrag, gezahlt, offen, satz, tage, zinsen, gebuehr, pauschale, gesamt,
+           faelligNeu: tageAddieren(beleg.datum, r.frist) };
+}
+
+function berechnePositionen(){
+  const ohneUSt = beleg.kleinunternehmer || beleg.reverse;
+  const rabattProzent = Math.min(Math.max(zahl(beleg.rabatt), 0), 100);
+  const faktor = 1 - rabattProzent/100;
+
+  const zeilen = beleg.positionen.map(p => {
+    const netto = runde(zahl(p.menge) * zahl(p.einzelpreis));
+    return { ...p, netto, nettoRabattiert: runde(netto * faktor) };
+  });
+
+  const zwischensumme = runde(zeilen.reduce((s,z) => s + z.netto, 0));
+  const rabattBetrag  = runde(zwischensumme * rabattProzent/100);
+  const netto         = runde(zwischensumme - rabattBetrag);
+
+  // Steuer je Satz gruppieren (Rundung pro Steuersatz, nicht pro Position)
+  const steuerGruppen = [];
+  if(!ohneUSt){
+    const map = new Map();
+    zeilen.forEach(z => {
+      const satz = zahl(z.ust);
+      map.set(satz, runde((map.get(satz) || 0) + z.nettoRabattiert));
+    });
+    [...map.entries()]
+      .filter(([satz]) => satz > 0)
+      .sort((a,b) => b[0]-a[0])
+      .forEach(([satz, basis]) => steuerGruppen.push({ satz, basis, betrag: runde(basis * satz/100) }));
+  }
+
+  const steuerSumme = runde(steuerGruppen.reduce((s,g) => s + g.betrag, 0));
+  const brutto      = runde(netto + steuerSumme);
+
+  return { zeilen, zwischensumme, rabattProzent, rabattBetrag, netto,
+           steuerGruppen, steuerSumme, brutto, ohneUSt };
+}
+
+function berechneStunden(){
+  const s = beleg.stundenzettel;
+  const zeilen = beleg.stunden.map(z => {
+    const woche = isoWoche(z.datum);
+    return { ...z, dauer: runde(zahl(z.stunden)), woche };
+  });
+  const summe = runde(zeilen.reduce((n,z) => n + z.dauer, 0));
+
+  // Wochenblöcke nur bilden, wenn sich der Zettel über mehrere Wochen zieht
+  const bloecke = [];
+  zeilen.forEach(z => {
+    const kennung = z.woche ? `${z.woche.jahr}-${z.woche.woche}` : "ohne";
+    const letzter = bloecke[bloecke.length-1];
+    if(letzter && letzter.kennung === kennung) letzter.zeilen.push(z);
+    else bloecke.push({ kennung, woche:z.woche, zeilen:[z] });
+  });
+  bloecke.forEach(b => { b.summe = runde(b.zeilen.reduce((n,z) => n + z.dauer, 0)); });
+
+  const satz  = zahl(s.satz);
+  const netto = s.abrechnen ? runde(summe * satz) : 0;
+  const ustSatz = s.kleinunternehmer ? 0 : zahl(s.ust);
+  const ust   = s.abrechnen ? runde(netto * ustSatz/100) : 0;
+  const brutto= runde(netto + ust);
+
+  return { zeilen, bloecke, summe, satz, netto, ustSatz, ust, brutto,
+           mehrereWochen: bloecke.length > 1 };
+}
+
+function berechne(){
+  const g = gruppe();
+  if(g === "mahnung")  return { g, ...berechneMahnung() };
+  if(g === "stunden")  return { g, ...berechneStunden() };
+  return { g, ...berechnePositionen() };
+}
+
+/* =========================================================
+   Formular-Bindung
+   ========================================================= */
+const BINDUNGEN = [
+  // [Element-ID, Pfad im Zustand, Typ]
+  ["f-typ","beleg.typ","text"],
+  ["f-nummer","beleg.nummer","text"],
+  ["f-datum","beleg.datum","text"],
+  ["f-betreff","beleg.betreff","text"],
+  ["f-intro","beleg.intro","text"],
+  ["f-outro","beleg.outro","text"],
+  ["f-hinweis","beleg.hinweis","text"],
+  ["f-e-firma","beleg.empfaenger.firma","text"],
+  ["f-e-name","beleg.empfaenger.name","text"],
+  ["f-e-strasse","beleg.empfaenger.strasse","text"],
+  ["f-e-plz","beleg.empfaenger.plz","text"],
+  ["f-e-ort","beleg.empfaenger.ort","text"],
+  ["f-e-land","beleg.empfaenger.land","text"],
+  ["f-e-kdnr","beleg.empfaenger.kdnr","text"],
+  ["f-anrede","beleg.anrede","text"],
+  ["f-r-nummer","beleg.rechnung.nummer","text"],
+  ["f-r-datum","beleg.rechnung.datum","text"],
+  ["f-r-faellig","beleg.rechnung.faellig","text"],
+  ["f-r-betrag","beleg.rechnung.betrag","zahl"],
+  ["f-r-gezahlt","beleg.rechnung.gezahlt","zahl"],
+  ["f-r-frist","beleg.rechnung.frist","zahl"],
+  ["f-z-aktiv","beleg.verzug.aktiv","bool"],
+  ["f-z-schuldner","beleg.verzug.schuldner","text"],
+  ["f-z-basis","beleg.verzug.basis","zahl"],
+  ["f-z-zuschlag","beleg.verzug.zuschlag","zahl"],
+  ["f-z-ab","beleg.verzug.ab","text"],
+  ["f-z-gebuehr","beleg.verzug.gebuehr","zahl"],
+  ["f-z-pauschale","beleg.verzug.pauschale","bool"],
+  ["f-v-bestellnr","beleg.vorgang.bestellnr","text"],
+  ["f-v-bestelldatum","beleg.vorgang.bestelldatum","text"],
+  ["f-v-termin","beleg.vorgang.termin","text"],
+  ["f-v-versand","beleg.vorgang.versand","text"],
+  ["f-v-lieferadresse","beleg.vorgang.lieferadresse","text"],
+  ["f-rabatt","beleg.rabatt","zahl"],
+  ["f-rabatt-text","beleg.rabattText","text"],
+  ["f-kleinunternehmer","beleg.kleinunternehmer","bool"],
+  ["f-reverse","beleg.reverse","bool"],
+  ["f-s-zeitraum","beleg.stundenzettel.zeitraum","text"],
+  ["f-s-projekt","beleg.stundenzettel.projekt","text"],
+  ["f-s-abrechnen","beleg.stundenzettel.abrechnen","bool"],
+  ["f-s-satz","beleg.stundenzettel.satz","zahl"],
+  ["f-s-ust","beleg.stundenzettel.ust","zahl"],
+  ["f-s-klein","beleg.stundenzettel.kleinunternehmer","bool"],
+  ["f-a-firma","stamm.firma","text"],
+  ["f-a-name","stamm.name","text"],
+  ["f-a-strasse","stamm.strasse","text"],
+  ["f-a-plz","stamm.plz","text"],
+  ["f-a-ort","stamm.ort","text"],
+  ["f-a-telefon","stamm.telefon","text"],
+  ["f-a-email","stamm.email","text"],
+  ["f-a-web","stamm.web","text"],
+  ["f-a-steuernummer","stamm.steuernummer","text"],
+  ["f-a-ustid","stamm.ustid","text"],
+  ["f-a-bank","stamm.bank","text"],
+  ["f-a-iban","stamm.iban","text"],
+  ["f-a-bic","stamm.bic","text"],
+  ["f-a-fusszeile","stamm.fusszeile","text"]
+];
+
+function wurzel(pfad){ return pfad.startsWith("stamm") ? stamm : beleg; }
+function setzeWert(pfad, wert){
+  const teile = pfad.split(".").slice(1);
+  let ziel = wurzel(pfad);
+  while(teile.length > 1) ziel = ziel[teile.shift()];
+  ziel[teile[0]] = wert;
+}
+function holeWert(pfad){
+  const teile = pfad.split(".").slice(1);
+  let ziel = wurzel(pfad);
+  for(const t of teile) ziel = (ziel || {})[t];
+  return ziel;
+}
+
+function formularBefuellen(){
+  BINDUNGEN.forEach(([id, pfad, typ]) => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    const wert = holeWert(pfad);
+    if(typ === "bool") el.checked = !!wert;
+    else el.value = wert ?? "";
+  });
+  logoVorschau();
+  positionenZeichnen();
+  stundenZeichnen();
+  kundenlisteZeichnen();
+}
+
+function formularBinden(){
+  BINDUNGEN.forEach(([id, pfad, typ]) => {
+    const el = document.getElementById(id);
+    if(!el) return;
+    const ereignis = (el.type === "checkbox" || el.tagName === "SELECT") ? "change" : "input";
+    el.addEventListener(ereignis, () => {
+      let wert = el.value;
+      if(typ === "bool") wert = el.checked;
+      else if(typ === "zahl") wert = zahl(el.value);
+      setzeWert(pfad, wert);
+
+      if(id === "f-betreff") beleg.betreffAuto = false;
+      if(id === "f-typ")           belegartGewechselt();
+      if(id === "f-z-schuldner")   schuldnerartGewechselt();
+      if(id === "f-r-faellig")     verzugsbeginnVorschlagen();
+      if(id === "f-r-nummer" || id === "f-s-zeitraum" || id === "f-v-bestellnr") betreffPflegen();
+      if(id === "f-kleinunternehmer" || id === "f-reverse") aktualisiereFormularLogik();
+      rendern();
+    });
+  });
+}
+
+/* Beim Wechsel der Belegart: Standardtexte übernehmen, sofern der bisherige
+   Text nicht von Hand geschrieben wurde, und eine passende Nummer vergeben. */
+function belegartGewechselt(){
+  const t = TEXTE[beleg.typ];
+  if(t){
+    if(ALLE_STANDARDTEXTE.includes(beleg.intro)) beleg.intro = t.intro;
+    if(ALLE_STANDARDTEXTE.includes(beleg.outro)) beleg.outro = t.outro;
+    document.getElementById("f-intro").value = beleg.intro;
+    document.getElementById("f-outro").value = beleg.outro;
+  }
+  // Die zweite Mahnung ist der Beleg, der üblicherweise Zinsen und Gebühr trägt
+  if(beleg.typ === "mahnung2"){
+    if(!beleg.verzug.aktiv){
+      beleg.verzug.aktiv = true;
+      document.getElementById("f-z-aktiv").checked = true;
+    }
+    if(!zahl(beleg.verzug.gebuehr)){
+      beleg.verzug.gebuehr = 5;
+      document.getElementById("f-z-gebuehr").value = beleg.verzug.gebuehr;
+    }
+  }
+  nummerAnpassen();
+  verzugsbeginnVorschlagen();
+  betreffPflegen();
+  aktualisiereFormularLogik();
+}
+
+/* Eine vom Werkzeug vergebene Nummer trägt das Kürzel der Belegart. Wechselt
+   die Belegart, wird sie neu vergeben – eine selbst eingetippte Nummer bleibt
+   dagegen unangetastet. */
+function nummerAnpassen(){
+  const praefix = (TYPEN[beleg.typ] || TYPEN.erinnerung).praefix;
+  const eigen = !/^[A-Z]{2}-\d{4}-\d{3}$/.test(beleg.nummer || "");
+  if(eigen || beleg.nummer.startsWith(praefix + "-")) return;
+  beleg.nummer = naechsteNummer(beleg.typ);
+  document.getElementById("f-nummer").value = beleg.nummer;
+}
+
+function schuldnerartGewechselt(){
+  const art = beleg.verzug.schuldner;
+  if(art !== "eigen"){
+    beleg.verzug.zuschlag = ZUSCHLAG[art];
+    document.getElementById("f-z-zuschlag").value = beleg.verzug.zuschlag;
+  }
+  if(art === "verbraucher") beleg.verzug.pauschale = false;
+  document.getElementById("f-z-pauschale").checked = beleg.verzug.pauschale;
+  aktualisiereFormularLogik();
+}
+
+/* Verzug beginnt frühestens am Tag nach der Fälligkeit. */
+function verzugsbeginnVorschlagen(){
+  if(gruppe() !== "mahnung" || beleg.verzug.ab) return;
+  const vorschlag = tageAddieren(beleg.rechnung.faellig, 1);
+  if(vorschlag){
+    beleg.verzug.ab = vorschlag;
+    document.getElementById("f-z-ab").value = vorschlag;
+  }
+}
+
+/* Sichtbarkeit der Karten und Beschriftungen an die Belegart anpassen */
+const KARTEN = {
+  mahnung:    ["karte-rechnung","karte-verzug"],
+  positionen: ["karte-vorgang","karte-positionen"],
+  stunden:    ["karte-stunden"]
+};
+function aktualisiereFormularLogik(){
+  const g = gruppe();
+  const t = TYPEN[beleg.typ] || TYPEN.erinnerung;
+  const sichtbar = KARTEN[g] || [];
+  Object.values(KARTEN).flat().forEach(id => {
+    document.getElementById(id).hidden = !sichtbar.includes(id);
+  });
+  // Die Zahlungserinnerung bleibt bewusst kostenfrei
+  document.getElementById("karte-verzug").hidden = (g !== "mahnung" || beleg.typ === "erinnerung");
+
+  document.getElementById("lbl-nummer").firstChild.textContent = t.nrLabel;
+  document.getElementById("f-anrede").placeholder = anredeVorschlag();
+
+  const istLiefer = beleg.typ === "lieferschein";
+  document.getElementById("lbl-termin").firstChild.textContent =
+    istLiefer ? "Lieferdatum / Lieferzeitraum" : "Ausführungszeitraum";
+  document.getElementById("lbl-versand").hidden = !istLiefer;
+  document.getElementById("lbl-lieferadresse").hidden = !istLiefer;
+  document.getElementById("rabatt-felder").style.display = istLiefer ? "none" : "";
+  document.getElementById("lbl-kleinunternehmer").hidden = istLiefer;
+  document.getElementById("lbl-reverse").hidden = istLiefer;
+  document.getElementById("totals-mini").style.display = istLiefer ? "none" : "";
+
+  const tabelle = document.getElementById("pos-tabelle");
+  tabelle.classList.toggle("ohne-preise", istLiefer);
+  tabelle.classList.toggle("ohne-ust", beleg.kleinunternehmer || beleg.reverse);
+
+  document.getElementById("f-z-zuschlag").disabled = beleg.verzug.schuldner !== "eigen";
+  document.getElementById("f-z-gesamt").value = nfMenge.format(zinssatz()) + " % p. a.";
+  document.getElementById("lbl-pauschale").hidden = beleg.verzug.schuldner === "verbraucher";
+  document.getElementById("std-abrechnung").style.display = beleg.stundenzettel.abrechnen ? "" : "none";
+  document.getElementById("f-s-ust").disabled = beleg.stundenzettel.kleinunternehmer;
+}
+
+/* =========================================================
+   Positionen
+   ========================================================= */
+/* Auswahlliste für die Einheit einer Position.
+   Eine bereits gesetzte Einheit, die nicht in der Liste steht, wird
+   vorangestellt – sonst ginge sie beim Zeichnen verloren. */
+function einheitOptionen(aktuell){
+  const liste = einheiten.slice();
+  if(aktuell && !liste.includes(aktuell)) liste.unshift(aktuell);
+  return liste.map(e =>
+      `<option value="${esc(e)}"${e === aktuell ? " selected" : ""}>${esc(e)}</option>`).join("")
+    + `<option value="${EINHEIT_NEU}">Andere …</option>`;
+}
+
+/* „Andere …“ tauscht die Auswahl gegen ein Eingabefeld.
+   Bestätigte Einheiten wandern dauerhaft in die Liste. */
+function eigeneEinheitErfassen(index, auswahl){
+  const zelle = auswahl.parentElement;
+  const vorher = beleg.positionen[index].einheit;
+
+  const eingabe = document.createElement("input");
+  eingabe.placeholder = "z. B. m²";
+  eingabe.setAttribute("aria-label", "Eigene Einheit eingeben");
+  zelle.replaceChildren(eingabe);
+  eingabe.focus();
+
+  let beendet = false;
+  const beenden = uebernehmen => {
+    if(beendet) return;
+    beendet = true;
+    const wert = eingabe.value.trim();
+    if(uebernehmen && wert){
+      beleg.positionen[index].einheit = wert;
+      if(!einheiten.includes(wert)){
+        einheiten.push(wert);
+        speichereJSON(LS.einheiten, einheiten);
+      }
+    } else {
+      beleg.positionen[index].einheit = vorher;   // Abbruch: alten Wert behalten
+    }
+    positionenZeichnen();
+    rendern();
+  };
+
+  eingabe.addEventListener("keydown", ev => {
+    if(ev.key === "Enter"){ ev.preventDefault(); beenden(true); }
+    else if(ev.key === "Escape"){ ev.preventDefault(); beenden(false); }
+  });
+  eingabe.addEventListener("blur", () => beenden(true));
+}
+
+function positionenZeichnen(){
+  const body = document.getElementById("pos-body");
+  const anzahl = beleg.positionen.length;
+  body.innerHTML = beleg.positionen.map((p,i) => `
+    <tr class="zeile">
+      <td><input data-i="${i}" data-f="beschreibung" value="${esc(p.beschreibung)}" placeholder="Leistung oder Artikel"></td>
+      <td><input data-i="${i}" data-f="menge" class="num" inputmode="decimal" value="${esc(p.menge)}"></td>
+      <td><select data-i="${i}" data-f="einheit">${einheitOptionen(p.einheit)}</select></td>
+      <td class="preis-zelle"><input data-i="${i}" data-f="einzelpreis" class="num" inputmode="decimal" value="${esc(p.einzelpreis)}"></td>
+      <td class="preis-zelle ust-zelle">
+        <select data-i="${i}" data-f="ust">
+          ${USt_SAETZE.map(s => `<option value="${s.wert}"${zahl(p.ust)===s.wert?" selected":""}>${s.label}</option>`).join("")}
+        </select>
+      </td>
+      <td class="zeilen-aktionen">
+        <button class="icon-btn" data-hoch="${i}" title="Nach oben" ${i===0?"disabled":""}>↑</button>
+        <button class="icon-btn" data-runter="${i}" title="Nach unten" ${i===anzahl-1?"disabled":""}>↓</button>
+        <button class="icon-btn" data-weg="${i}" title="Entfernen" ${anzahl===1?"disabled":""}>✕</button>
+      </td>
+    </tr>
+    <tr class="zeile-summe preis-zelle">
+      <td colspan="6" class="zeilen-summe" style="padding:0 0 6px; text-align:right">
+        Positionssumme: <strong>${euro(zahl(p.menge)*zahl(p.einzelpreis))}</strong>
+      </td>
+    </tr>
+  `).join("");
+  aktualisiereFormularLogik();
+}
+
+document.getElementById("pos-body").addEventListener("input", e => {
+  const el = e.target;
+  if(el.tagName === "SELECT") return;   // Auswahlfelder laufen über "change"
+  const i = el.dataset.i, f = el.dataset.f;
+  if(i === undefined || !f) return;
+  const pos = beleg.positionen[Number(i)];
+  pos[f] = (f === "menge" || f === "einzelpreis" || f === "ust") ? zahl(el.value) : el.value;
+  // Positionssumme direkt aktualisieren, ohne Fokus zu verlieren
+  const summeZelle = el.closest("tr").nextElementSibling?.querySelector("strong");
+  if(summeZelle) summeZelle.textContent = euro(zahl(pos.menge) * zahl(pos.einzelpreis));
+  rendern();
+});
+document.getElementById("pos-body").addEventListener("change", e => {
+  const el = e.target;
+  if(el.tagName !== "SELECT") return;
+  const i = Number(el.dataset.i), f = el.dataset.f;
+  if(!beleg.positionen[i]) return;
+
+  if(f === "ust"){
+    beleg.positionen[i].ust = zahl(el.value);
+    rendern();
+  } else if(f === "einheit"){
+    if(el.value === EINHEIT_NEU){ eigeneEinheitErfassen(i, el); return; }
+    beleg.positionen[i].einheit = el.value;
+    rendern();
+  }
+});
+document.getElementById("pos-body").addEventListener("click", e => {
+  const b = e.target.closest("button");
+  if(!b) return;
+  const { hoch, runter, weg } = b.dataset;
+  if(hoch !== undefined){ const i = Number(hoch); [beleg.positionen[i-1], beleg.positionen[i]] = [beleg.positionen[i], beleg.positionen[i-1]]; }
+  else if(runter !== undefined){ const i = Number(runter); [beleg.positionen[i+1], beleg.positionen[i]] = [beleg.positionen[i], beleg.positionen[i+1]]; }
+  else if(weg !== undefined){ beleg.positionen.splice(Number(weg), 1); }
+  else return;
+  positionenZeichnen();
+  rendern();
+});
+document.getElementById("btn-pos-add").addEventListener("click", () => {
+  const letzte = beleg.positionen[beleg.positionen.length-1];
+  const neu = leerPosition();
+  if(letzte){ neu.einheit = letzte.einheit; neu.ust = letzte.ust; }
+  beleg.positionen.push(neu);
+  positionenZeichnen();
+  rendern();
+  const felder = document.querySelectorAll('#pos-body input[data-f="beschreibung"]');
+  felder[felder.length-1]?.focus();
+});
+
+/* =========================================================
+   Stundenzettel
+   ========================================================= */
+function stundenZeichnen(){
+  const body = document.getElementById("std-body");
+  const anzahl = beleg.stunden.length;
+  body.innerHTML = beleg.stunden.map((z,i) => `
+    <tr class="zeile">
+      <td><input type="date" data-i="${i}" data-f="datum" value="${esc(z.datum)}"></td>
+      <td><input data-i="${i}" data-f="taetigkeit" value="${esc(z.taetigkeit)}" placeholder="Tätigkeit"></td>
+      <td><input data-i="${i}" data-f="von" value="${esc(z.von)}" placeholder="08:00"></td>
+      <td><input data-i="${i}" data-f="bis" value="${esc(z.bis)}" placeholder="16:30"></td>
+      <td><input data-i="${i}" data-f="pause" class="num" inputmode="numeric" value="${esc(z.pause)}"></td>
+      <td><input data-i="${i}" data-f="stunden" class="num" inputmode="decimal" value="${esc(z.stunden)}"></td>
+      <td class="zeilen-aktionen">
+        <button class="icon-btn" data-hoch="${i}" title="Nach oben" ${i===0?"disabled":""}>↑</button>
+        <button class="icon-btn" data-runter="${i}" title="Nach unten" ${i===anzahl-1?"disabled":""}>↓</button>
+        <button class="icon-btn" data-weg="${i}" title="Entfernen" ${anzahl===1?"disabled":""}>✕</button>
+      </td>
+    </tr>
+  `).join("");
+}
+
+/* Aus „von“, „bis“ und Pause die Stunden ermitteln. Über Mitternacht
+   hinweg wird ein Tageswechsel angenommen. */
+function stundenAusZeiten(z){
+  const von = minuten(z.von), bis = minuten(z.bis);
+  if(von === null || bis === null) return null;
+  let dauer = bis - von;
+  if(dauer < 0) dauer += 24*60;
+  dauer -= Math.max(0, zahl(z.pause));
+  return Math.max(0, Math.round(dauer/60 * 100) / 100);
+}
+
+document.getElementById("std-body").addEventListener("input", e => {
+  const el = e.target;
+  const i = el.dataset.i, f = el.dataset.f;
+  if(i === undefined || !f) return;
+  const zeile = beleg.stunden[Number(i)];
+  zeile[f] = (f === "pause" || f === "stunden") ? zahl(el.value) : el.value;
+
+  if(f === "von" || f === "bis" || f === "pause"){
+    const berechnet = stundenAusZeiten(zeile);
+    if(berechnet !== null){
+      zeile.stunden = berechnet;
+      const feld = el.closest("tr").querySelector('input[data-f="stunden"]');
+      if(feld) feld.value = berechnet;
+    }
+  }
+  rendern();
+});
+document.getElementById("std-body").addEventListener("click", e => {
+  const b = e.target.closest("button");
+  if(!b) return;
+  const { hoch, runter, weg } = b.dataset;
+  if(hoch !== undefined){ const i = Number(hoch); [beleg.stunden[i-1], beleg.stunden[i]] = [beleg.stunden[i], beleg.stunden[i-1]]; }
+  else if(runter !== undefined){ const i = Number(runter); [beleg.stunden[i+1], beleg.stunden[i]] = [beleg.stunden[i], beleg.stunden[i+1]]; }
+  else if(weg !== undefined){ beleg.stunden.splice(Number(weg), 1); }
+  else return;
+  stundenZeichnen();
+  rendern();
+});
+document.getElementById("btn-std-add").addEventListener("click", () => {
+  const letzte = beleg.stunden[beleg.stunden.length-1];
+  const neu = leerStunde();
+  if(letzte){
+    neu.datum = tageAddieren(letzte.datum, 1) || letzte.datum;
+    neu.von = letzte.von; neu.bis = letzte.bis; neu.pause = letzte.pause;
+    const berechnet = stundenAusZeiten(neu);
+    if(berechnet !== null) neu.stunden = berechnet;
+  }
+  beleg.stunden.push(neu);
+  stundenZeichnen();
+  rendern();
+  const felder = document.querySelectorAll('#std-body input[data-f="taetigkeit"]');
+  felder[felder.length-1]?.focus();
+});
+
+/* =========================================================
+   Kundenverwaltung
+   ========================================================= */
+function kundenlisteZeichnen(){
+  const sel = document.getElementById("f-kunde-select");
+  const bezeichnung = k => k.firma || k.name || "(ohne Namen)";
+  sel.innerHTML = '<option value="">– gespeicherte Kunden –</option>' +
+    kunden.map((k,i) => `<option value="${i}">${esc(bezeichnung(k))}</option>`).join("");
+}
+document.getElementById("f-kunde-select").addEventListener("change", e => {
+  const i = e.target.value;
+  if(i === "") return;
+  beleg.empfaenger = { ...leerBeleg().empfaenger, ...kunden[Number(i)] };
+  formularBefuellen();
+  rendern();
+});
+document.getElementById("btn-kunde-save").addEventListener("click", () => {
+  const e = beleg.empfaenger;
+  if(!e.firma && !e.name){ toast("Bitte zuerst Firma oder Name ausfüllen."); return; }
+  const schluessel = k => `${k.firma}|${k.name}`.toLowerCase();
+  const vorhanden = kunden.findIndex(k => schluessel(k) === schluessel(e));
+  if(vorhanden >= 0) kunden[vorhanden] = { ...e };
+  else kunden.push({ ...e });
+  speichereJSON(LS.kunden, kunden);
+  kundenlisteZeichnen();
+  toast(vorhanden >= 0 ? "Kunde aktualisiert." : "Kunde gespeichert.");
+});
+document.getElementById("btn-kunde-del").addEventListener("click", () => {
+  const sel = document.getElementById("f-kunde-select");
+  if(sel.value === ""){ toast("Bitte zuerst einen gespeicherten Kunden auswählen."); return; }
+  kunden.splice(Number(sel.value), 1);
+  speichereJSON(LS.kunden, kunden);
+  kundenlisteZeichnen();
+  toast("Kunde gelöscht.");
+});
+
+/* =========================================================
+   Logo
+   ========================================================= */
+document.getElementById("btn-logo").addEventListener("click", () => document.getElementById("file-logo").click());
+document.getElementById("file-logo").addEventListener("change", e => {
+  const datei = e.target.files[0];
+  if(!datei) return;
+  if(datei.size > 800*1024){ toast("Logo zu groß (max. 800 kB)."); e.target.value = ""; return; }
+  const leser = new FileReader();
+  leser.onload = () => {
+    stamm.logo = leser.result;
+    logoVorschau();
+    rendern();
+    toast("Logo übernommen.");
+  };
+  leser.readAsDataURL(datei);
+  e.target.value = "";
+});
+document.getElementById("btn-logo-del").addEventListener("click", () => {
+  stamm.logo = "";
+  logoVorschau();
+  rendern();
+});
+function logoVorschau(){
+  const img = document.getElementById("logo-preview");
+  if(stamm.logo){ img.src = stamm.logo; img.hidden = false; }
+  else { img.removeAttribute("src"); img.hidden = true; }
+}
+
+/* =========================================================
+   Vorschau rendern
+   ========================================================= */
+function absenderBlock(){
+  return [
+    stamm.firma ? `<strong>${esc(stamm.firma)}</strong>` : "",
+    ...[
+      stamm.name,
+      stamm.strasse,
+      [stamm.plz, stamm.ort].filter(Boolean).join(" "),
+      stamm.telefon && `Tel. ${stamm.telefon}`,
+      stamm.email,
+      stamm.web
+    ].filter(Boolean).map(esc)
+  ].filter(Boolean).join("<br>");
+}
+function fusszeile(){
+  const s1 = [stamm.firma, stamm.name, stamm.strasse,
+    [stamm.plz, stamm.ort].filter(Boolean).join(" ")].filter(Boolean).join("\n");
+  const s2 = [stamm.telefon && `Tel. ${stamm.telefon}`, stamm.email, stamm.web, stamm.fusszeile]
+    .filter(Boolean).join("\n");
+  const s3 = [
+    stamm.steuernummer && `Steuernummer: ${stamm.steuernummer}`,
+    stamm.ustid && `USt-IdNr.: ${stamm.ustid}`,
+    stamm.bank && `Bank: ${stamm.bank}`,
+    stamm.iban && `IBAN: ${stamm.iban}`,
+    stamm.bic && `BIC: ${stamm.bic}`
+  ].filter(Boolean).join("\n");
+  return `<div class="doc-footer"><div>${esc(s1)}</div><div>${esc(s2)}</div><div>${esc(s3)}</div></div>`;
+}
+function zahlungsHinweise(zusatz){
+  const felder = [];
+  if(zusatz) felder.push(...zusatz);
+  if(stamm.bank)  felder.push(["Bank", stamm.bank]);
+  if(stamm.iban)  felder.push(["IBAN", stamm.iban]);
+  if(stamm.bic)   felder.push(["BIC", stamm.bic]);
+  if(!felder.length) return "";
+  return `<div class="pay-box"><strong>Zahlungshinweise</strong><div class="pay-grid">` +
+    felder.map(([k,v]) => `<span>${esc(k)}</span><span>${esc(v)}</span>`).join("") +
+    `</div></div>`;
+}
+
+/* --- Mahnwesen --- */
+function koerperMahnung(r){
+  const rg = beleg.rechnung;
+  const kopf = `
+    <table class="items">
+      <thead>
+        <tr>
+          <th>Rechnung</th><th>Rechnungsdatum</th><th>Fällig am</th>
+          <th class="r">Betrag</th>${r.gezahlt > 0 ? '<th class="r">gezahlt</th>' : ""}<th class="r">offen</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>${esc(rg.nummer) || "&nbsp;"}</td>
+          <td>${esc(isoZuDe(rg.datum))}</td>
+          <td>${esc(isoZuDe(rg.faellig))}</td>
+          <td class="r num">${euro(r.betrag)}</td>
+          ${r.gezahlt > 0 ? `<td class="r num">− ${euro(r.gezahlt)}</td>` : ""}
+          <td class="r num">${euro(r.offen)}</td>
+        </tr>
+      </tbody>
+    </table>`;
+
+  const summen = [`<div class="t-row sub"><span>Offener Rechnungsbetrag</span><span class="num">${euro(r.offen)}</span></div>`];
+  if(r.zinsen > 0)
+    summen.push(`<div class="t-row sub"><span>Verzugszinsen ${nfMenge.format(r.satz)} % für ${r.tage} Tage</span><span class="num">${euro(r.zinsen)}</span></div>`);
+  if(r.gebuehr > 0)
+    summen.push(`<div class="t-row sub"><span>Mahngebühr</span><span class="num">${euro(r.gebuehr)}</span></div>`);
+  if(r.pauschale > 0)
+    summen.push(`<div class="t-row sub"><span>Verzugspauschale § 288 Abs. 5 BGB</span><span class="num">${euro(r.pauschale)}</span></div>`);
+  summen.push(`<div class="t-row grand"><span>Gesamtforderung</span><span class="num">${euro(r.gesamt)}</span></div>`);
+
+  const frist = r.faelligNeu
+    ? `<div class="frist">Bitte überweisen Sie den Gesamtbetrag von ${esc(euro(r.gesamt))} bis zum ${esc(isoZuDe(r.faelligNeu))}.</div>`
+    : "";
+
+  return kopf + `<div class="totals">${summen.join("")}</div>` + frist +
+    zahlungsHinweise(rg.nummer ? [["Verwendungszweck", rg.nummer]] : []);
+}
+
+/* --- Auftragsbestätigung und Lieferschein --- */
+function koerperPositionen(r){
+  const istLiefer = beleg.typ === "lieferschein";
+  const zeilen = r.zeilen.map((z,i) => `
+    <tr>
+      <td class="pos-nr num">${i+1}</td>
+      <td class="desc">${esc(z.beschreibung) || "&nbsp;"}</td>
+      <td class="r num">${nfMenge.format(zahl(z.menge))}</td>
+      <td>${esc(z.einheit)}</td>
+      ${istLiefer ? "" : `<td class="r num">${euro(z.einzelpreis)}</td>` }
+      ${istLiefer || r.ohneUSt ? "" : `<td class="r num">${nfMenge.format(zahl(z.ust))} %</td>`}
+      ${istLiefer ? "" : `<td class="r num">${euro(z.netto)}</td>`}
+    </tr>`).join("");
+
+  const kopf = `
+    <table class="items">
+      <thead>
+        <tr>
+          <th></th><th>Beschreibung</th><th class="r">Menge</th><th>Einheit</th>
+          ${istLiefer ? "" : '<th class="r">Einzelpreis</th>'}
+          ${istLiefer || r.ohneUSt ? "" : '<th class="r">USt</th>'}
+          ${istLiefer ? "" : '<th class="r">Betrag</th>'}
+        </tr>
+      </thead>
+      <tbody>${zeilen}</tbody>
+    </table>`;
+
+  if(istLiefer) return kopf;
+
+  const summen = [];
+  if(r.rabattProzent > 0){
+    summen.push(`<div class="t-row sub"><span>Zwischensumme</span><span class="num">${euro(r.zwischensumme)}</span></div>`);
+    summen.push(`<div class="t-row sub"><span>${esc(beleg.rabattText || "Rabatt")} ${nfMenge.format(r.rabattProzent)} %</span><span class="num">− ${euro(r.rabattBetrag)}</span></div>`);
+  }
+  if(r.ohneUSt){
+    summen.push(`<div class="t-row grand"><span>Auftragssumme</span><span class="num">${euro(r.netto)}</span></div>`);
+  } else {
+    summen.push(`<div class="t-row sub"><span>Summe netto</span><span class="num">${euro(r.netto)}</span></div>`);
+    r.steuerGruppen.forEach(g => {
+      summen.push(`<div class="t-row sub"><span>zzgl. ${nfMenge.format(g.satz)} % USt auf ${euro(g.basis)}</span><span class="num">${euro(g.betrag)}</span></div>`);
+    });
+    summen.push(`<div class="t-row grand"><span>Auftragssumme</span><span class="num">${euro(r.brutto)}</span></div>`);
+  }
+  return kopf + `<div class="totals">${summen.join("")}</div>`;
+}
+
+/* --- Stundenzettel --- */
+function koerperStunden(r){
+  const s = beleg.stundenzettel;
+  const zeileHtml = z => `
+    <tr>
+      <td class="num">${esc(isoZuDe(z.datum))}</td>
+      <td class="desc">${esc(z.taetigkeit) || "&nbsp;"}</td>
+      <td class="r num">${esc(z.von)}</td>
+      <td class="r num">${esc(z.bis)}</td>
+      <td class="r num">${zahl(z.pause) ? nfMenge.format(zahl(z.pause)) + " min" : ""}</td>
+      <td class="r num">${nfStd.format(z.dauer)}</td>
+    </tr>`;
+
+  let rumpf;
+  if(r.mehrereWochen){
+    rumpf = r.bloecke.map(b => {
+      const titel = b.woche ? `KW ${b.woche.woche} / ${b.woche.jahr}` : "Ohne Datum";
+      return `<tr class="woche"><td colspan="6">${esc(titel)}</td></tr>` +
+             b.zeilen.map(zeileHtml).join("") +
+             `<tr class="woche-summe"><td colspan="5" class="r">Summe ${esc(titel)}</td>` +
+             `<td class="r num">${nfStd.format(b.summe)} Std.</td></tr>`;
+    }).join("");
+  } else {
+    rumpf = r.zeilen.map(zeileHtml).join("");
+  }
+
+  const kopf = `
+    <table class="items">
+      <thead>
+        <tr>
+          <th>Datum</th><th>Tätigkeit</th><th class="r">von</th><th class="r">bis</th>
+          <th class="r">Pause</th><th class="r">Stunden</th>
+        </tr>
+      </thead>
+      <tbody>${rumpf}</tbody>
+    </table>`;
+
+  const summen = [`<div class="t-row grand"><span>Summe der Stunden</span><span class="num">${nfStd.format(r.summe)} Std.</span></div>`];
+  if(s.abrechnen){
+    summen.push(`<div class="t-row sub"><span>Stundensatz</span><span class="num">${euro(r.satz)}</span></div>`);
+    if(s.kleinunternehmer){
+      summen.push(`<div class="t-row grand"><span>Betrag</span><span class="num">${euro(r.netto)}</span></div>`);
+    } else {
+      summen.push(`<div class="t-row sub"><span>Summe netto</span><span class="num">${euro(r.netto)}</span></div>`);
+      if(r.ustSatz > 0)
+        summen.push(`<div class="t-row sub"><span>zzgl. ${nfMenge.format(r.ustSatz)} % USt</span><span class="num">${euro(r.ust)}</span></div>`);
+      summen.push(`<div class="t-row grand"><span>Gesamtbetrag</span><span class="num">${euro(r.brutto)}</span></div>`);
+    }
+  }
+
+  return kopf + `<div class="totals">${summen.join("")}</div>`;
+}
+
+/* Lieferschein und Stundenzettel werden gegengezeichnet – das Feld dafür
+   steht unter dem Gruß, wie in einem echten Geschäftsbrief. */
+function unterschriftBlock(){
+  if(beleg.typ === "lieferschein")
+    return `<div class="unterschrift"><div>Ort, Datum</div>
+      <div>Ware vollständig und unbeschädigt erhalten (Unterschrift)</div></div>`;
+  if(beleg.typ === "stundenzettel")
+    return `<div class="unterschrift"><div>Ort, Datum</div>
+      <div>Stunden sachlich richtig (Unterschrift Auftraggeber)</div></div>`;
+  return "";
+}
+
+/* --- Metadaten je Belegart --- */
+function metaZeilen(r){
+  const t = TYPEN[beleg.typ] || TYPEN.erinnerung;
+  const e = beleg.empfaenger;
+  const meta = [[t.nrLabel, beleg.nummer], ["Datum", isoZuDe(beleg.datum)]];
+
+  if(gruppe() === "mahnung"){
+    if(beleg.rechnung.nummer) meta.push(["Rechnungsnummer", beleg.rechnung.nummer]);
+    if(beleg.rechnung.faellig) meta.push(["Fällig seit", isoZuDe(beleg.rechnung.faellig)]);
+  } else if(gruppe() === "positionen"){
+    if(beleg.vorgang.bestellnr) meta.push(["Ihre Bestellung", beleg.vorgang.bestellnr]);
+    if(beleg.vorgang.bestelldatum) meta.push(["Bestelldatum", isoZuDe(beleg.vorgang.bestelldatum)]);
+    if(beleg.vorgang.termin)
+      meta.push([beleg.typ === "lieferschein" ? "Lieferdatum" : "Ausführung", beleg.vorgang.termin]);
+    if(beleg.typ === "lieferschein" && beleg.vorgang.versand) meta.push(["Versandart", beleg.vorgang.versand]);
+  } else {
+    if(beleg.stundenzettel.zeitraum) meta.push(["Zeitraum", beleg.stundenzettel.zeitraum]);
+    if(beleg.stundenzettel.projekt) meta.push(["Projekt", beleg.stundenzettel.projekt]);
+  }
+  if(e.kdnr) meta.push(["Kundennummer", e.kdnr]);
+  if(stamm.steuernummer && !stamm.ustid) meta.push(["Steuernummer", stamm.steuernummer]);
+  if(stamm.ustid) meta.push(["USt-IdNr.", stamm.ustid]);
+
+  return meta.filter(([,w]) => w).map(([k,w]) => `<dt>${esc(k)}</dt><dd>${esc(w)}</dd>`).join("");
+}
+
+/* --- Automatische Hinweistexte --- */
+function hinweisTexte(r){
+  const hinweise = [];
+  const g = gruppe();
+
+  if(g === "mahnung" && r.zinsen > 0){
+    hinweise.push(
+      `Verzugszinsen nach § 288 BGB: ${nfMenge.format(r.satz)} % p. a. ` +
+      `(Basiszinssatz ${nfMenge.format(zahl(beleg.verzug.basis))} % zzgl. ${nfMenge.format(zahl(beleg.verzug.zuschlag))} Prozentpunkte), ` +
+      `berechnet für ${r.tage} Tage seit dem ${isoZuDe(beleg.verzug.ab)}.`);
+  }
+  if(g === "mahnung" && r.pauschale > 0){
+    hinweise.push(
+      "Die Verzugspauschale nach § 288 Abs. 5 BGB wird auf später anfallende " +
+      "Kosten der Rechtsverfolgung angerechnet.");
+  }
+  if(beleg.typ === "lieferschein"){
+    hinweise.push("Dieser Lieferschein weist die Lieferung nach und ist keine Rechnung. Die Abrechnung erfolgt gesondert.");
+  }
+  if(g === "positionen" && beleg.typ !== "lieferschein"){
+    if(beleg.kleinunternehmer)
+      hinweise.push("Gemäß § 19 UStG wird keine Umsatzsteuer berechnet (Kleinunternehmerregelung).");
+    if(beleg.reverse)
+      hinweise.push("Steuerschuldnerschaft des Leistungsempfängers (Reverse-Charge, § 13b UStG). Die Umsatzsteuer ist vom Leistungsempfänger zu erklären und abzuführen.");
+  }
+  if(beleg.typ === "stundenzettel" && beleg.stundenzettel.abrechnen && beleg.stundenzettel.kleinunternehmer){
+    hinweise.push("Gemäß § 19 UStG wird keine Umsatzsteuer berechnet (Kleinunternehmerregelung).");
+  }
+  if(beleg.hinweis) hinweise.push(beleg.hinweis);
+  return hinweise;
+}
+
+function rendern(){
+  const r = berechne();
+  const t = TYPEN[beleg.typ] || TYPEN.erinnerung;
+  const e = beleg.empfaenger;
+
+  const empfaengerZeilen = [e.firma, e.name, e.strasse,
+    [e.plz, e.ort].filter(Boolean).join(" "), e.land]
+    .filter(Boolean).map(esc).join("<br>");
+
+  const absenderEinzeiler = [stamm.firma || stamm.name, stamm.strasse,
+    [stamm.plz, stamm.ort].filter(Boolean).join(" ")].filter(Boolean).join(" · ");
+
+  let koerper;
+  if(r.g === "mahnung")      koerper = koerperMahnung(r);
+  else if(r.g === "stunden") koerper = koerperStunden(r);
+  else                       koerper = koerperPositionen(r);
+
+  const lieferadresse = (beleg.typ === "lieferschein" && beleg.vorgang.lieferadresse)
+    ? `<div class="pay-box"><strong>Lieferanschrift</strong>${esc(beleg.vorgang.lieferadresse)}</div>` : "";
+
+  const hinweise = hinweisTexte(r);
+
+  document.getElementById("page").innerHTML = `
+    <div class="doc-head">
+      <div>${stamm.logo ? `<img class="doc-logo" src="${esc(stamm.logo)}" alt="">` : ""}</div>
+      <div class="sender-block">${absenderBlock()}</div>
+    </div>
+
+    <div>
+      <div class="addr-line">${esc(absenderEinzeiler)}</div>
+      <div class="recipient">${empfaengerZeilen || "&nbsp;"}</div>
+    </div>
+
+    <div class="doc-meta">
+      <div><h1 class="doc-title">${esc(t.titel)}</h1></div>
+      <dl>${metaZeilen(r)}</dl>
+    </div>
+
+    ${beleg.betreff ? `<p class="doc-subject">${esc(beleg.betreff)}</p>` : ""}
+    ${beleg.intro ? `<p class="intro">${esc(anredeZeile())}${esc(beleg.intro)}</p>` : ""}
+
+    ${koerper}
+
+    ${hinweise.length ? `<div class="note">${hinweise.map(esc).join("\n")}</div>` : ""}
+    ${lieferadresse}
+    ${beleg.outro ? `<p class="outro">${esc(beleg.outro)}${stamm.name ? "\n\n" + esc(stamm.name) : ""}</p>` : ""}
+    ${unterschriftBlock()}
+
+    ${fusszeile()}
+  `;
+
+  miniSummen(r);
+  pruefungen(r);
+  aktualisiereFormularLogik();
+  zoomAnwenden();   // Höhe des Vorschau-Containers an den gewachsenen Inhalt anpassen
+  sichern();
+}
+
+/* Die Anrede steht vor dem Einleitungstext, damit sie sich mit dem
+   Ansprechpartner ändert, ohne dass der Text neu geschrieben werden muss.
+   Aus „Frau Dr. Erika Muster“ wird „Sehr geehrte Frau Dr. Muster,“ –
+   der Vorname gehört nicht in die Anrede, akademische Titel schon. */
+function anredeVorschlag(){
+  const treffer = /^(Frau|Herr)\s+(.+)$/i.exec((beleg.empfaenger.name || "").trim());
+  if(!treffer) return "Sehr geehrte Damen und Herren,";
+  const teile    = treffer[2].split(/\s+/).filter(Boolean);
+  const titel    = teile.filter(t => /^(Dr\.|Prof\.|Dipl\.)/i.test(t));
+  const nachname = teile[teile.length-1];
+  const einstieg = /^frau$/i.test(treffer[1]) ? "Sehr geehrte Frau" : "Sehr geehrter Herr";
+  return `${einstieg} ${[...titel, nachname].join(" ")},`;
+}
+function anredeZeile(){
+  return ((beleg.anrede || "").trim() || anredeVorschlag()) + "\n\n";
+}
+
+function miniSummen(r){
+  const mini = [];
+  if(r.g === "mahnung"){
+    mini.push(`<div><span>Offen</span><span>${euro(r.offen)}</span></div>`);
+    if(r.zinsen > 0) mini.push(`<div><span>Zinsen (${r.tage} Tage)</span><span>${euro(r.zinsen)}</span></div>`);
+    if(r.gebuehr > 0) mini.push(`<div><span>Mahngebühr</span><span>${euro(r.gebuehr)}</span></div>`);
+    if(r.pauschale > 0) mini.push(`<div><span>Pauschale</span><span>${euro(r.pauschale)}</span></div>`);
+    mini.push(`<div class="big"><span>Gesamtforderung</span><span>${euro(r.gesamt)}</span></div>`);
+  } else if(r.g === "positionen"){
+    if(r.rabattProzent > 0){
+      mini.push(`<div><span>Zwischensumme</span><span>${euro(r.zwischensumme)}</span></div>`);
+      mini.push(`<div><span>${esc(beleg.rabattText || "Rabatt")}</span><span>− ${euro(r.rabattBetrag)}</span></div>`);
+    }
+    mini.push(`<div><span>Netto</span><span>${euro(r.netto)}</span></div>`);
+    r.steuerGruppen.forEach(g => mini.push(`<div><span>USt ${nfMenge.format(g.satz)} %</span><span>${euro(g.betrag)}</span></div>`));
+    mini.push(`<div class="big"><span>Gesamt</span><span>${euro(r.ohneUSt ? r.netto : r.brutto)}</span></div>`);
+  }
+  document.getElementById("totals-mini").innerHTML = mini.join("");
+
+  const std = [`<div class="big"><span>Summe</span><span>${nfStd.format(r.g === "stunden" ? r.summe : 0)} Std.</span></div>`];
+  if(r.g === "stunden" && beleg.stundenzettel.abrechnen)
+    std.unshift(`<div><span>Betrag netto</span><span>${euro(r.netto)}</span></div>`);
+  document.getElementById("std-mini").innerHTML = std.join("");
+}
+
+/* Hinweise auf das, was einen Beleg unbrauchbar oder angreifbar macht.
+   Die rechtlichen Grenzen stehen bewusst hier und nicht nur in der Anleitung. */
+function pruefungen(r){
+  const fehlt = [], warnung = [];
+
+  if(!stamm.firma && !stamm.name) fehlt.push("Absendername");
+  if(!stamm.strasse || !stamm.ort) fehlt.push("Absenderanschrift");
+  if(!beleg.nummer) fehlt.push("Belegnummer");
+  if(!beleg.empfaenger.firma && !beleg.empfaenger.name) fehlt.push("Empfängername");
+
+  if(gruppe() === "mahnung"){
+    if(!beleg.rechnung.nummer) fehlt.push("Rechnungsnummer");
+    if(!beleg.rechnung.datum)  fehlt.push("Rechnungsdatum");
+    if(!beleg.rechnung.faellig) fehlt.push("Fälligkeitsdatum der Rechnung");
+    if(r.offen <= 0) fehlt.push("offener Betrag");
+
+    if(beleg.rechnung.datum && beleg.rechnung.faellig &&
+       tageZwischen(beleg.rechnung.datum, beleg.rechnung.faellig) < 0)
+      warnung.push("Die Fälligkeit liegt vor dem Rechnungsdatum.");
+
+    if((r.gebuehr > 0 || r.zinsen > 0) && beleg.verzug.ab &&
+       tageZwischen(beleg.verzug.ab, beleg.datum) < 0)
+      warnung.push("Der Verzug beginnt erst nach dem Belegdatum — bis dahin sind weder Zinsen noch Mahnkosten fällig.");
+
+    if(r.gebuehr > GEBUEHR_OBERGRENZE)
+      warnung.push(`Mahngebühren decken nur die tatsächlichen Kosten für Porto und Material; Gerichte erkennen meist bis etwa ${nfEuro.format(GEBUEHR_OBERGRENZE)} € an. Eigene Arbeitszeit zählt nicht dazu.`);
+
+    if(beleg.verzug.pauschale && beleg.verzug.schuldner === "verbraucher")
+      warnung.push("Die Verzugspauschale von 40 € gilt nur gegenüber Schuldnern, die keine Verbraucher sind.");
+  }
+
+  if(gruppe() === "positionen" && beleg.reverse && !stamm.ustid)
+    fehlt.push("eigene USt-IdNr. (bei Reverse-Charge zwingend)");
+
+  if(beleg.typ === "stundenzettel" && r.summe <= 0) fehlt.push("Stunden");
+
+  let box = document.getElementById("pflicht-hinweis");
+  if(!box){
+    box = document.createElement("p");
+    box.id = "pflicht-hinweis";
+    box.className = "hint warn";
+    const editor = document.querySelector(".editor");
+    editor.insertBefore(box, editor.lastElementChild);
+  }
+  const teile = [];
+  if(fehlt.length) teile.push("Noch offen: " + fehlt.join(", ") + ".");
+  if(warnung.length) teile.push(warnung.join(" "));
+  box.textContent = teile.join(" ");
+}
+
+/* =========================================================
+   Speichern / Laden / Export
+   ========================================================= */
+let sicherTimer;
+function sichern(){
+  clearTimeout(sicherTimer);
+  sicherTimer = setTimeout(() => {
+    speichereJSON(LS.stamm, stamm);
+    speichereJSON(LS.beleg, beleg);
+  }, 300);
+}
+
+document.getElementById("btn-print").addEventListener("click", () => window.print());
+
+document.getElementById("btn-new").addEventListener("click", () => {
+  if(!confirm("Neuen Beleg anlegen? Der aktuelle Beleg wird aus der Ansicht entfernt (Stammdaten und Kunden bleiben erhalten).")) return;
+  const typ = beleg.typ;
+  beleg = leerBeleg();
+  beleg.typ = typ;
+  beleg.intro = (TEXTE[typ] || TEXTE.erinnerung).intro;
+  beleg.outro = (TEXTE[typ] || TEXTE.erinnerung).outro;
+  beleg.nummer = naechsteNummer(typ);
+  beleg.betreff = betreffVorschlag();
+  formularBefuellen();
+  aktualisiereFormularLogik();
+  rendern();
+  toast("Neuer Beleg: " + beleg.nummer);
+});
+
+document.getElementById("btn-export").addEventListener("click", () => {
+  const daten = { version:1, produkt:"belegpaket", exportiertAm:new Date().toISOString(), stamm, beleg, kunden };
+  const blob = new Blob([JSON.stringify(daten, null, 2)], { type:"application/json" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `${(beleg.nummer || "beleg").replace(/[^\w.-]+/g,"_")}.json`;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+});
+
+/* ---------------------------------------------------------------
+   Übernahme aus dem Rechnungsgenerator
+
+   Dessen Sicherungsdatei enthält Stammdaten, Kundenliste und einen Beleg mit
+   Positionen. Daraus lassen sich Empfänger, Rechnungsnummer, Fälligkeit und
+   der Bruttobetrag ableiten – niemand muss seine Daten zweimal eintragen.
+   Der Rechenweg ist derselbe wie dort: Rabatt auf die Nettosumme, Steuer je
+   Satz gruppiert, kein Ausweis bei § 19 oder Reverse-Charge.
+   --------------------------------------------------------------- */
+const RECHNUNGSARTEN = { rechnung:"Rechnung", angebot:"Angebot", gutschrift:"Stornorechnung" };
+
+function summeAusRechnung(rb){
+  const ohneUSt = rb.kleinunternehmer || rb.reverse;
+  const rabatt = Math.min(Math.max(zahl(rb.rabatt), 0), 100);
+  const faktor = 1 - rabatt/100;
+  const positionen = Array.isArray(rb.positionen) ? rb.positionen : [];
+
+  const zwischensumme = runde(positionen.reduce((s,p) => s + runde(zahl(p.menge) * zahl(p.einzelpreis)), 0));
+  const netto = runde(zwischensumme * faktor);
+  if(ohneUSt) return netto;
+
+  const map = new Map();
+  positionen.forEach(p => {
+    const satz = zahl(p.ust);
+    const anteil = runde(runde(zahl(p.menge) * zahl(p.einzelpreis)) * faktor);
+    map.set(satz, runde((map.get(satz) || 0) + anteil));
+  });
+  let steuer = 0;
+  map.forEach((basis, satz) => { if(satz > 0) steuer = runde(steuer + runde(basis * satz/100)); });
+  return runde(netto + steuer);
+}
+
+function rechnungUebernehmen(d){
+  const rb = d && d.beleg;
+  if(!rb || !RECHNUNGSARTEN[rb.typ]) return false;
+
+  if(d.stamm && !stamm.firma && !stamm.name) stamm = { ...leerStammdaten(), ...d.stamm };
+  if(Array.isArray(d.kunden) && !kunden.length){ kunden = d.kunden; speichereJSON(LS.kunden, kunden); }
+
+  if(rb.empfaenger) beleg.empfaenger = { ...leerBeleg().empfaenger, ...rb.empfaenger };
+
+  const faellig = tageAddieren(rb.datum, zahl(rb.zahlungsziel));
+  beleg.rechnung = {
+    nummer: rb.nummer || "",
+    datum: rb.datum || "",
+    faellig: faellig || "",
+    betrag: summeAusRechnung(rb),
+    gezahlt: 0,
+    frist: beleg.rechnung.frist || 10
+  };
+  beleg.verzug.ab = tageAddieren(faellig, 1) || "";
+
+  // Positionen sind für Auftragsbestätigung und Lieferschein nützlich
+  if(Array.isArray(rb.positionen) && rb.positionen.length){
+    beleg.positionen = rb.positionen.map(p => ({ ...leerPosition(), ...p }));
+  }
+  beleg.kleinunternehmer = !!rb.kleinunternehmer;
+  beleg.reverse = !!rb.reverse;
+
+  beleg.betreffAuto = true;
+  beleg.betreff = betreffVorschlag();
+  return true;
+}
+
+function dateiLesen(datei, weiter){
+  const leser = new FileReader();
+  leser.onload = () => {
+    try{ weiter(JSON.parse(leser.result)); }
+    catch(err){ toast("Datei konnte nicht gelesen werden."); }
+  };
+  leser.readAsText(datei);
+}
+
+document.getElementById("btn-rechnung-trigger").addEventListener("click", () => document.getElementById("file-rechnung").click());
+document.getElementById("file-rechnung").addEventListener("change", e => {
+  const datei = e.target.files[0];
+  if(!datei) return;
+  dateiLesen(datei, d => {
+    if(rechnungUebernehmen(d)){
+      formularBefuellen();
+      aktualisiereFormularLogik();
+      rendern();
+      toast("Rechnung übernommen: " + (beleg.rechnung.nummer || "ohne Nummer"));
+    } else {
+      toast("Das ist keine Sicherung des Rechnungsgenerators.");
+    }
+  });
+  e.target.value = "";
+});
+
+document.getElementById("btn-import-trigger").addEventListener("click", () => document.getElementById("file-import").click());
+document.getElementById("file-import").addEventListener("change", e => {
+  const datei = e.target.files[0];
+  if(!datei) return;
+  dateiLesen(datei, d => {
+    // Eine Sicherung des Rechnungsgenerators wird ebenfalls angenommen
+    if(d.beleg && RECHNUNGSARTEN[d.beleg.typ]){
+      if(rechnungUebernehmen(d)){
+        formularBefuellen();
+        aktualisiereFormularLogik();
+        rendern();
+        toast("Rechnung übernommen: " + (beleg.rechnung.nummer || "ohne Nummer"));
+      }
+      return;
+    }
+    if(d.stamm) stamm = { ...leerStammdaten(), ...d.stamm };
+    if(d.beleg) beleg = zusammenfuehren(d.beleg) || leerBeleg();
+    if(Array.isArray(d.kunden)){ kunden = d.kunden; speichereJSON(LS.kunden, kunden); }
+    formularBefuellen();
+    aktualisiereFormularLogik();
+    rendern();
+    toast("Datei geladen.");
+  });
+  e.target.value = "";
+});
+
+document.getElementById("btn-texte-zuruecksetzen").addEventListener("click", () => {
+  const t = TEXTE[beleg.typ] || TEXTE.erinnerung;
+  beleg.intro = t.intro;
+  beleg.outro = t.outro;
+  document.getElementById("f-intro").value = beleg.intro;
+  document.getElementById("f-outro").value = beleg.outro;
+  rendern();
+  toast("Standardtexte eingesetzt.");
+});
+
+/* =========================================================
+   Zoom & Karten
+   ========================================================= */
+function zoomAnwenden(){
+  zoom = Math.min(Math.max(zoom, 40), 130);
+  const seite = document.getElementById("page");
+  const scaler = document.getElementById("scaler");
+  const f = zoom/100;
+  seite.style.transform = `scale(${f})`;
+  scaler.style.height = seite.offsetHeight ? (seite.offsetHeight * f) + "px" : "auto";
+  document.getElementById("zoom-label").textContent = zoom + " %";
+  Speicher.schreiben(LS.zoom, String(zoom));
+}
+function zoomManuell(delta){
+  zoom += delta;
+  Speicher.schreiben(LS.zoomManuell, "1");
+  zoomAnwenden();
+}
+document.getElementById("zoom-in").addEventListener("click",  () => zoomManuell(10));
+document.getElementById("zoom-out").addEventListener("click", () => zoomManuell(-10));
+
+/* Automatisch einpassen, solange der Zoom nicht von Hand gesetzt wurde */
+function autoZoom(){
+  if(Speicher.lesen(LS.zoomManuell)) { zoomAnwenden(); return; }
+  const breite = document.getElementById("scaler").clientWidth;
+  const seiteBreite = document.getElementById("page").offsetWidth || 794;
+  zoom = breite ? Math.min(100, Math.floor(breite / seiteBreite * 100)) : 100;
+  zoomAnwenden();
+}
+
+document.querySelectorAll("[data-card] > h2").forEach(h => {
+  h.addEventListener("click", () => h.parentElement.classList.toggle("collapsed"));
+});
+
+/* =========================================================
+   Start
+   ========================================================= */
+formularBinden();
+formularBefuellen();
+aktualisiereFormularLogik();
+rendern();
+autoZoom();
+
+/* Beim ersten Start sind die Stammdaten der wichtigste Schritt – Karte offen lassen.
+   Sobald sie ausgefüllt sind, startet sie eingeklappt. */
+if(stamm.firma || stamm.name) document.getElementById("card-absender").classList.add("collapsed");
+
+/* Ohne dauerhaften Speicher offen darauf hinweisen, statt Eingaben still zu verlieren. */
+if(!Speicher.dauerhaft){
+  document.querySelector(".toolbar .brand small").textContent =
+    "Läuft offline · Speichern in diesem Browser nicht möglich";
+  const hinweis = document.createElement("p");
+  hinweis.className = "hint warn";
+  hinweis.textContent =
+    "Dieser Browser erlaubt kein dauerhaftes Speichern – etwa in einem privaten " +
+    "Fenster, bei blockierten Website-Daten oder in einer eingebetteten Ansicht. " +
+    "Das Werkzeug funktioniert vollständig, deine Eingaben gehen aber beim " +
+    "Neuladen verloren. Sichere den Beleg über „Sichern (.json)“ und lege das " +
+    "PDF gleich ab.";
+  const editor = document.querySelector(".editor");
+  editor.insertBefore(hinweis, editor.firstElementChild.nextElementSibling);
+}
+window.addEventListener("resize", autoZoom);
+</script>
+</body>
+</html>
