@@ -245,6 +245,53 @@ await page.fill('#pos-body input[data-f="menge"] >> nth=0', 'abc');
 await page.waitForTimeout(150);
 ok('ungültige Menge führt nicht zu NaN', !(await page.textContent('.totals')).includes('NaN'));
 
+console.log('\n== 20. Ohne dauerhaften Speicher (privates Fenster, blockierte Daten, iframe) ==');
+{
+  // Jeder Zugriff auf localStorage wirft – so verhalten sich sandboxed iframes
+  // und Browser mit blockierten Website-Daten.
+  const ctxOhne = await browser.newContext();
+  const pOhne = await ctxOhne.newPage();
+  const fehlerOhne = [];
+  pOhne.on('pageerror', e => fehlerOhne.push(String(e)));
+  await pOhne.addInitScript(() => {
+    Object.defineProperty(window, 'localStorage', {
+      get(){ throw new DOMException('The operation is insecure.', 'SecurityError'); },
+      configurable: true
+    });
+  });
+  await pOhne.goto(url);
+  await pOhne.waitForTimeout(400);
+
+  ok('kein Absturz beim Seitenaufbau', fehlerOhne.length === 0, fehlerOhne.join(' | '));
+  ok('Vorschau wird trotzdem gerendert', (await pOhne.textContent('.doc-title')) === 'Rechnung');
+  ok('Positionen bedienbar', (await pOhne.locator('#pos-body tr.pos-row').count()) === 2);
+
+  // Rechnen muss vollständig funktionieren:
+  // Position 1 auf 3 × 100 € setzen, Position 2 bleibt 12 × 85 € = 1.020 €
+  // -> netto 1.320,00 €, 19 % = 250,80 €, brutto 1.570,80 €
+  await pOhne.fill('#pos-body input[data-f="einzelpreis"] >> nth=0', '100');
+  await pOhne.fill('#pos-body input[data-f="menge"] >> nth=0', '3');
+  await pOhne.waitForTimeout(200);
+  const summenOhne = await pOhne.textContent('.totals');
+  ok('Berechnung funktioniert weiter', summenOhne.includes('1.320,00 €'), summenOhne);
+  ok('Umsatzsteuer wird weiter ausgewiesen', summenOhne.includes('250,80 €'), summenOhne);
+  ok('Gesamtbetrag korrekt', summenOhne.includes('1.570,80 €'), summenOhne);
+
+  // Der Nutzer muss erfahren, dass nichts behalten wird
+  const warnungen = await pOhne.locator('.hint.warn').allTextContents();
+  ok('sichtbarer Hinweis auf fehlenden Speicher',
+     warnungen.some(t => t.includes('kein dauerhaftes Speichern')), warnungen.join(' | '));
+  ok('Hinweis auch in der Kopfzeile',
+     (await pOhne.textContent('.toolbar .brand small')).includes('nicht möglich'));
+
+  // Sichern als JSON ist der Ausweg und muss verfügbar bleiben
+  const [ladung] = await Promise.all([ pOhne.waitForEvent('download'), pOhne.click('#btn-export') ]);
+  ok('Sichern als .json weiterhin möglich', !!(await ladung.path()));
+
+  ok('keine JS-Fehler ohne Speicher', fehlerOhne.length === 0, fehlerOhne.join(' | '));
+  await ctxOhne.close();
+}
+
 console.log('\n== Fehlerprotokoll ==');
 ok('insgesamt keine JS-Fehler', errors.length === 0, errors.join(' | '));
 

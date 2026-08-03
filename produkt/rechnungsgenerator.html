@@ -412,6 +412,47 @@
 const LS = { stamm:"rg.stammdaten.v1", beleg:"rg.beleg.v1", kunden:"rg.kunden.v1",
              zoom:"rg.zoom.v1", zoomManuell:"rg.zoom.manuell.v1" };
 
+/* ---------------------------------------------------------------
+   Zugriff auf den lokalen Speicher kapseln.
+
+   In privaten Fenstern, bei blockierten Website-Daten und in
+   eingebetteten Rahmen wirft bereits der Zugriff auf localStorage eine
+   Ausnahme. Ohne diese Kapselung würde das den Seitenaufbau abbrechen
+   und der Generator bliebe leer.
+
+   Ist kein dauerhafter Speicher verfügbar, wird auf den Arbeitsspeicher
+   ausgewichen: Der Generator funktioniert vollständig, nur über das
+   Neuladen hinaus wird nichts behalten. Darauf wird sichtbar hingewiesen.
+   --------------------------------------------------------------- */
+const Speicher = (() => {
+  let echt = null;
+  try{
+    const probe = "rg.probe";
+    window.localStorage.setItem(probe, "1");
+    window.localStorage.removeItem(probe);
+    echt = window.localStorage;
+  } catch(e){
+    echt = null;
+  }
+  const ersatz = new Map();
+  return {
+    dauerhaft: echt !== null,
+    lesen(schluessel){
+      try{
+        if(echt) return echt.getItem(schluessel);
+      } catch(e){ /* Zugriff nachträglich entzogen */ }
+      return ersatz.has(schluessel) ? ersatz.get(schluessel) : null;
+    },
+    schreiben(schluessel, wert){
+      ersatz.set(schluessel, String(wert));
+      try{
+        if(echt){ echt.setItem(schluessel, String(wert)); return true; }
+      } catch(e){ /* Speicher voll oder gesperrt */ }
+      return false;
+    }
+  };
+})();
+
 const USt_SAETZE = [
   { wert:19, label:"19 %" },
   { wert:7,  label:"7 %"  },
@@ -447,7 +488,7 @@ function leerPosition(){
 let stamm  = ladeJSON(LS.stamm)  || leerStammdaten();
 let beleg  = ladeJSON(LS.beleg)  || beispielBeleg();
 let kunden = ladeJSON(LS.kunden) || [];
-let zoom   = Number(localStorage.getItem(LS.zoom)) || 100;
+let zoom   = Number(Speicher.lesen(LS.zoom)) || 100;
 
 function beispielBeleg(){
   const b = leerBeleg();
@@ -464,12 +505,17 @@ function beispielBeleg(){
    Hilfsfunktionen
    ========================================================= */
 function ladeJSON(key){
-  try{ const r = localStorage.getItem(key); return r ? JSON.parse(r) : null; }
+  try{ const r = Speicher.lesen(key); return r ? JSON.parse(r) : null; }
   catch(e){ return null; }
 }
+let speicherWarnungGezeigt = false;
 function speichereJSON(key,wert){
-  try{ localStorage.setItem(key, JSON.stringify(wert)); }
-  catch(e){ toast("Speichern fehlgeschlagen – Speicher voll?"); }
+  const erfolg = Speicher.schreiben(key, JSON.stringify(wert));
+  // Nur einmal warnen – gespeichert wird bei jeder Eingabe
+  if(!erfolg && Speicher.dauerhaft && !speicherWarnungGezeigt){
+    speicherWarnungGezeigt = true;
+    toast("Speicher voll – bitte über „Sichern (.json)“ sichern.");
+  }
 }
 function heuteISO(){
   const d = new Date();
@@ -514,8 +560,8 @@ function naechsteNummer(typ){
   const p = (TYP_LABEL[typ] || TYP_LABEL.rechnung).praefix;
   const jahr = new Date().getFullYear();
   const key = `rg.zaehler.${p}.${jahr}`;
-  const stand = Number(localStorage.getItem(key) || 0) + 1;
-  localStorage.setItem(key, String(stand));
+  const stand = Number(Speicher.lesen(key) || 0) + 1;
+  Speicher.schreiben(key, String(stand));
   return `${p}-${jahr}-${String(stand).padStart(3,"0")}`;
 }
 
@@ -1063,11 +1109,11 @@ function zoomAnwenden(){
   seite.style.transform = `scale(${f})`;
   scaler.style.height = seite.offsetHeight ? (seite.offsetHeight * f) + "px" : "auto";
   document.getElementById("zoom-label").textContent = zoom + " %";
-  localStorage.setItem(LS.zoom, String(zoom));
+  Speicher.schreiben(LS.zoom, String(zoom));
 }
 function zoomManuell(delta){
   zoom += delta;
-  localStorage.setItem(LS.zoomManuell, "1");
+  Speicher.schreiben(LS.zoomManuell, "1");
   zoomAnwenden();
 }
 document.getElementById("zoom-in").addEventListener("click",  () => zoomManuell(10));
@@ -1075,7 +1121,7 @@ document.getElementById("zoom-out").addEventListener("click", () => zoomManuell(
 
 /* Automatisch einpassen, solange der Zoom nicht von Hand gesetzt wurde */
 function autoZoom(){
-  if(localStorage.getItem(LS.zoomManuell)) { zoomAnwenden(); return; }
+  if(Speicher.lesen(LS.zoomManuell)) { zoomAnwenden(); return; }
   const breite = document.getElementById("scaler").clientWidth;
   const seiteBreite = document.getElementById("page").offsetWidth || 794;
   zoom = breite ? Math.min(100, Math.floor(breite / seiteBreite * 100)) : 100;
@@ -1106,6 +1152,22 @@ autoZoom();
 /* Beim ersten Start sind die Stammdaten der wichtigste Schritt – Karte offen lassen.
    Sobald sie ausgefüllt sind, startet sie eingeklappt. */
 if(stamm.firma || stamm.name) document.getElementById("card-absender").classList.add("collapsed");
+
+/* Ohne dauerhaften Speicher offen darauf hinweisen, statt Eingaben still zu verlieren. */
+if(!Speicher.dauerhaft){
+  document.querySelector(".toolbar .brand small").textContent =
+    "Läuft offline · Speichern in diesem Browser nicht möglich";
+  const hinweis = document.createElement("p");
+  hinweis.className = "hint warn";
+  hinweis.textContent =
+    "Dieser Browser erlaubt kein dauerhaftes Speichern – etwa in einem privaten " +
+    "Fenster, bei blockierten Website-Daten oder in einer eingebetteten Ansicht. " +
+    "Der Generator funktioniert vollständig, deine Eingaben gehen aber beim " +
+    "Neuladen verloren. Sichere den Beleg über „Sichern (.json)“ und lege das " +
+    "PDF gleich ab.";
+  const editor = document.querySelector(".editor");
+  editor.insertBefore(hinweis, editor.firstElementChild.nextElementSibling);
+}
 window.addEventListener("resize", autoZoom);
 </script>
 </body>
