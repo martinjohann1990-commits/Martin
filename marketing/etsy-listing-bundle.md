@@ -228,6 +228,14 @@ Erzeugt mit `node marketing/listing-bilder.mjs` und
 absichtlich dieselben wie in den Einzel-Listings: Wer aus der Suche kommt,
 sieht dieselben Belege wieder und erkennt den Shop.
 
+### Video
+
+Etsy erlaubt ein Video je Listing. Nimm `assets/etsy/listing-video.mp4`
+(Rechnungsgenerator) — das Bundle wird über den Rechnungsbegriff gefunden, und
+das Video zeigt den Einstieg. Das Mahnvideo
+(`listing-video-belegpaket.mp4`) bleibt dem Belegpaket-Listing vorbehalten,
+damit die drei Angebote im Shop nicht identisch aussehen.
+
 ---
 
 ## Datei zum Hochladen

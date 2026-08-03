@@ -252,10 +252,20 @@ aber kaum Besuche zusammenkommen, tausche zuerst dieses Bild — nicht den Preis
 
 ### Video
 
-Für dieses Listing gibt es noch kein Video. `marketing/listing-video.mjs` nimmt
-bisher nur den Rechnungsgenerator auf. Lohnender Ausbau, sobald das Listing
-steht: Etsy bevorzugt Listings mit Video. Der Ablauf für die Aufnahme wäre
-Rechnung übernehmen → Zinsen erscheinen → fertige Mahnung.
+`assets/etsy/listing-video-belegpaket.mp4` — liegt fertig vor.
+
+11,5 Sekunden, 1080 × 1080, MP4/H.264, ohne Ton, 2,9 MB. Damit innerhalb von
+Etsys Grenzen (5–15 Sekunden, max. 100 MB).
+
+Der Ablauf in vier Einstellungen: offene Rechnung eintragen → der
+Verzugsrechner mit Basiszinssatz, Zuschlag und Verzugspauschale → Zinsen,
+Gebühr und Pauschale stehen in der Mahnung → der fertige Beleg. Zwischentitel
+führen durch, weil Etsy Videos **stumm** abspielt.
+
+Aufgezeichnet wird das echte Werkzeug, nichts ist nachgestellt. Neu erzeugen
+mit `node marketing/listing-video-belegpaket.mjs` (braucht ffmpeg mit x264).
+
+Etsy bevorzugt Listings mit Video in der Suche — hochladen lohnt sich.
 
 ---
 

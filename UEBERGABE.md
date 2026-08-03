@@ -95,11 +95,12 @@ sich einer eingeschlichen hat. Das Offline-Versprechen ist damit abgesichert.
 | `marketing/listing-bilder.mjs` | Bilder Produkt 1, Banner, Shop-Bild |
 | `marketing/listing-bilder-belegpaket.mjs` | Bilder Produkt 2 und Bundle |
 | `marketing/listing-video.mjs` | Listing-Video Produkt 1 |
+| `marketing/listing-video-belegpaket.mjs` | Listing-Video Produkt 2 |
 
 In `assets/etsy/` liegen alle Bilder (2000 × 2000): `01`–`06` für Produkt 1,
-`b1`–`b6` für Produkt 2, `bundle-1`/`bundle-2` fürs Set, dazu das Video
-(1080 × 1080, 10,5 s, MP4), Shop-Banner (3200 × 800) und Shop-Bild
-(1000 × 1000).
+`b1`–`b6` für Produkt 2, `bundle-1`/`bundle-2` fürs Set, dazu zwei Videos
+(je 1080 × 1080, MP4: 10,5 s für Produkt 1, 11,5 s für Produkt 2),
+Shop-Banner (3200 × 800) und Shop-Bild (1000 × 1000).
 
 ---
 
@@ -236,10 +237,6 @@ Publikum. Reihenfolge:
 * **Safari und Firefox sind ungetestet.** Im Container gibt es nur Chromium.
   Der PDF-Export beider Produkte sollte vor dem ersten Verkauf einmal in beiden
   Browsern geprüft werden.
-* **Kein Video für Produkt 2.** `listing-video.mjs` nimmt bisher nur den
-  Rechnungsgenerator auf. Etsy bevorzugt Listings mit Video — der lohnendste
-  kleine Ausbau. Ablauf für die Aufnahme: Rechnung übernehmen → Zinsen
-  erscheinen → fertige Mahnung.
 * **Basiszinssatz altert.** Zum 1. Januar und 1. Juli prüfen. Betroffen sind
   `produkt/belegpaket.html`, `produkt/ANLEITUNG-BELEGPAKET.md`,
   `produkt/LIZENZ-BELEGPAKET.txt`, die `START HIER.txt` in `bauen.sh`, das

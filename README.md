@@ -98,10 +98,11 @@ marketing/        Verkauf
   listing-bilder.mjs         Bilder Produkt 1, Banner und Shop-Bild
   listing-bilder-belegpaket.mjs  Bilder Produkt 2 und Bundle
   listing-video.mjs          Listing-Video Produkt 1 (braucht ffmpeg)
+  listing-video-belegpaket.mjs   Listing-Video Produkt 2 (braucht ffmpeg)
   gumroad-lemonsqueezy.md    Zweiter Kanal, später
 
 assets/           Screenshots fürs README
-  etsy/                      Listing-Bilder, Video, Banner und Shop-Bild
+  etsy/                      Listing-Bilder, Videos, Banner und Shop-Bild
 tests/            Abnahmetests im echten Browser
   abnahme.mjs                Produkt 1, 85 Punkte
   abnahme-belegpaket.mjs     Produkt 2, 155 Punkte
@@ -160,6 +161,15 @@ sollte der zugehörige Test grün durchlaufen.
 node marketing/listing-bilder.mjs             # Produkt 1, Banner, Shop-Bild
 node marketing/listing-bilder-belegpaket.mjs  # Produkt 2 und Bundle
 node marketing/listing-video.mjs              # Video Produkt 1, braucht ffmpeg
+node marketing/listing-video-belegpaket.mjs   # Video Produkt 2, braucht ffmpeg
+```
+
+Für die Videos braucht es ein vollständiges ffmpeg mit x264 — Playwrights
+mitgeliefertes kann nur VP8, und Etsy nimmt kein WebM:
+
+```bash
+npm install --no-save ffmpeg-static
+FFMPEG=$(node -p "require('ffmpeg-static')") node marketing/listing-video-belegpaket.mjs
 ```
 
 Die Belege in den Bildern werden nicht nachgebaut, sondern von den Werkzeugen
