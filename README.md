@@ -59,6 +59,7 @@ produkt/          Das, was der Käufer bekommt
 
 marketing/        Verkauf
   vermarktung.md            Marktplatzentscheidung, Preis, 30-Tage-Plan, Support
+  verkaufsstrategie.md      Woher Verkäufe kommen, Ads-Rechnung, Kennzahlen
   etsy-shop.md              Shop „Papierkramerei": Name, Profil, Richtlinien
   etsy-listing.md           Das Listing, Feld für Feld zum Einfügen
   listing-bilder.mjs        Erzeugt Listing-Bilder, Banner und Shop-Bild

@@ -80,8 +80,10 @@ Etsy ändert die Sätze**:
 | Zahlungsabwicklung (~4 % + 0,30 €) | −0,90 € |
 | **bleibt** | **≈ 12,80 €** |
 
-Kommt Offsite-Ads dazu (12–15 % auf den betreffenden Verkauf), sind es rund
-10,50 €. Für Shops unter 10.000 $ Jahresumsatz ist die Teilnahme freiwillig.
+Kommt ein Verkauf über Offsite Ads zustande, gehen 15 % zusätzlich ab — dann
+bleiben rund 10,60 €. Warum sich das trotzdem lohnt, steht in
+`verkaufsstrategie.md`. Für Shops unter 10.000 $ Jahresumsatz ist die Teilnahme
+freiwillig, darüber verpflichtend zu 12 %.
 
 ---
 
@@ -214,14 +216,21 @@ Bewertungen.
 
 ---
 
-## Etsy Ads — später, nicht jetzt
+## Werbung: Offsite an, Onsite aus
 
-**In den ersten vier Wochen: aus.** Werbung auf ein Listing ohne Bewertungen zu
-schalten heißt, für Klicks zu zahlen, die nicht kaufen.
+Etsy hat zwei Werbeprodukte, die ständig verwechselt werden:
 
-Ab etwa fünf Bewertungen: 1 € Tagesbudget, zwei Wochen laufen lassen. Danach
-vergleichen, was die Anzeigen gekostet und was sie eingebracht haben. Bringt
-1 € weniger als 1 € zurück, wieder ausschalten — ohne Wehmut.
+**Offsite Ads** (Google, Instagram, Pinterest) kosten **Provision nur bei
+Verkauf** — 15 % vom Preis, ohne Verkauf keine Kosten. **Anlassen.** Du zahlst
+aus dem Erlös eines Verkaufs, den es sonst nicht gegeben hätte.
+
+**Etsy Ads / Onsite** kosten **pro Klick**, auch ohne Verkauf. **In den ersten
+Wochen aus.** Ein Listing ohne Bewertungen konvertiert unter 1 %; bei
+realistischen Klickpreisen zahlst du dann 25–35 € für einen Verkauf, der
+12,84 € einbringt.
+
+Die vollständige Rechnung, die Bedingungen für einen späteren Onsite-Test und
+die Rangfolge aller Verkaufshebel stehen in `verkaufsstrategie.md`.
 
 ---
 
