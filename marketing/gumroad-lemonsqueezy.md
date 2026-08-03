@@ -1,4 +1,11 @@
-# Verkaufstexte: Gumroad & Lemon Squeezy
+# Verkaufstexte: Gumroad & Lemon Squeezy — der zweite Kanal
+
+> **Noch nicht dran.** Verkauft wird zuerst auf Etsy, weil dort der Suchverkehr
+> mit Kaufabsicht liegt. Die Begründung steht in `vermarktung.md`.
+>
+> Diese Texte kommen zum Einsatz, sobald du regelmäßig verkaufst und eigenen
+> Verkehr mitbringst — dann zahlt sich die bessere Marge aus. Vorher sind zwei
+> halb gepflegte Listings schlechter als eines, das sitzt.
 
 Beide Plattformen liefern das Produkt als ZIP-Download aus. Die Texte sind
 identisch verwendbar, nur die Feldnamen unterscheiden sich leicht.
@@ -150,7 +157,7 @@ Steuerberater.
 
 | Einstellung | Empfehlung |
 |---|---|
-| Preis | 19 € (siehe `preise-und-launch.md`) |
+| Preis | 19 € (siehe `vermarktung.md`) |
 | „Pay what you want" | Aus. Wirkt bei einem Werkzeug unentschlossen. |
 | Ratings | An — Bewertungen sind hier der wichtigste Vertrauensanker |
 | Call to Action | „Ich will's haben" |

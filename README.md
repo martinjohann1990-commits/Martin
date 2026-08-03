@@ -1,7 +1,7 @@
 # Rechnungsgenerator für Kleinunternehmer
 
-Ein verkaufsfertiges digitales Mikroprodukt für Gumroad, Lemon Squeezy, Etsy und
-Kleinanzeigen.
+Ein verkaufsfertiges digitales Mikroprodukt. Verkauft wird auf **Etsy** —
+Listing, Bilder und Vermarktungsplan liegen fertig in `marketing/`.
 
 **Das Produkt:** ein Rechnungs- und Angebotsgenerator für den deutschsprachigen
 Raum, der aus einer einzigen HTML-Datei besteht. Doppelklick, und er läuft im
@@ -57,12 +57,14 @@ produkt/          Das, was der Käufer bekommt
   LIZENZ.txt                Nutzungslizenz
   beispiel-beleg.json       Ausgefüllter Beispielbeleg
 
-marketing/        Fertige Verkaufstexte
-  gumroad-lemonsqueezy.md   Produktbeschreibung, Tags, Plattformeinstellungen
-  etsy-kleinanzeigen.md     Titel, 13 Etsy-Tags, Anzeigentext, Bildstrategie
-  preise-und-launch.md      Preisempfehlung, Gebührenvergleich, Launch-Plan
+marketing/        Verkauf
+  vermarktung.md            Marktplatzentscheidung, Preis, 30-Tage-Plan, Support
+  etsy-listing.md           Das Listing, Feld für Feld zum Einfügen
+  listing-bilder.mjs        Erzeugt die Listing-Bilder aus dem echten Produkt
+  gumroad-lemonsqueezy.md   Zweiter Kanal, später
 
-assets/           Screenshots für die Listings
+assets/           Screenshots fürs README
+  etsy/                     Die sechs Listing-Bilder, 2000 × 2000 px
 tests/            Abnahmetest im echten Browser
 bauen.sh          Erzeugt das auslieferbare ZIP
 ```
@@ -109,9 +111,10 @@ Voraussetzung ist Playwright (`npm install --save-dev playwright`, danach
 2. PDF-Export in Chrome, Firefox und Safari prüfen. Im Druckdialog müssen
    **Hintergrundgrafiken** aktiviert sein, sonst fehlt der Rahmen um die
    Zahlungshinweise. Dieser Hinweis steht auch in der Anleitung.
-3. Preise und Launch-Schritte in `marketing/preise-und-launch.md` durchgehen.
-   Empfehlung: 19 € auf Gumroad und Lemon Squeezy, Lemon Squeezy als
-   Hauptkanal, weil der Merchant of Record die Umsatzsteuer übernimmt.
+3. `marketing/vermarktung.md` durchgehen. Kurzfassung: verkauft wird auf
+   **Etsy**, weil dort der Suchverkehr mit Kaufabsicht liegt — Gumroad und
+   Lemon Squeezy sind Kassensysteme ohne eigene Besucher. Einführungspreis
+   9,90 €, danach 14,90 €.
 4. Impressum, Widerrufsbelehrung und die Checkbox zum Erlöschen des
    Widerrufsrechts beim Checkout einrichten.
 
@@ -131,8 +134,8 @@ Rückfragen und Erstattungen:
 * Arbeitshilfe, keine Steuerberatung.
 
 Der naheliegendste nächste Ausbauschritt ist ein GiroCode (QR-Code für
-Überweisungen) auf der Rechnung. Weitere Ideen mit Aufwandsschätzung stehen in
-`marketing/preise-und-launch.md`.
+Überweisungen) auf der Rechnung. Weitere Ideen in der Reihenfolge ihres
+Nutzens stehen am Ende von `marketing/vermarktung.md`.
 
 ---
 
