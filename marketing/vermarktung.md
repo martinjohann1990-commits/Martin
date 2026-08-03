@@ -125,10 +125,10 @@ Dann das Listing: Alle Felder aus `etsy-listing.md` übernehmen, sechs Bilder au
 `assets/etsy/` hochladen, ZIP anhängen, Einführungspreis 9,90 € setzen.
 Veröffentlichen.
 
-**Tag 2 – Video nachlegen.**
-15 Sekunden Bildschirmaufnahme: leeres Formular → Positionen eintippen →
-PDF erscheint. Ohne Ton, ohne Schnitt. Etsy bevorzugt Listings mit Video, und
-es beantwortet die Frage „ist das wirklich fertig?" in einem Blick.
+**Tag 1 – Video mit hochladen.**
+`assets/etsy/listing-video.mp4` liegt fertig vor: 10,5 Sekunden, quadratisch,
+ohne Ton. Etsy bevorzugt Listings mit Video in der Suche, und es beantwortet
+die Frage „ist das wirklich fertig?" in einem Blick.
 
 **Tag 3–7 – die ersten fünf Käufer selbst holen.**
 Das ist der wichtigste Schritt im ganzen Plan. Ein Listing ohne Bewertungen

@@ -62,10 +62,11 @@ marketing/        Verkauf
   etsy-shop.md              Shop „Papierkramerei": Name, Profil, Richtlinien
   etsy-listing.md           Das Listing, Feld für Feld zum Einfügen
   listing-bilder.mjs        Erzeugt Listing-Bilder, Banner und Shop-Bild
+  listing-video.mjs         Nimmt das Listing-Video auf (braucht ffmpeg)
   gumroad-lemonsqueezy.md   Zweiter Kanal, später
 
 assets/           Screenshots fürs README
-  etsy/                     Sechs Listing-Bilder, Banner und Shop-Bild
+  etsy/                     Listing-Bilder, Video, Banner und Shop-Bild
 tests/            Abnahmetest im echten Browser
 bauen.sh          Erzeugt das auslieferbare ZIP
 ```

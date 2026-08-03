@@ -228,8 +228,21 @@ sind echte Ausgaben des Werkzeugs, keine Nachbauten.
 Impressionen, aber kaum Besuche siehst, tausche zuerst dieses Bild — nicht den
 Preis.
 
-Ein Video von 15 Sekunden (Ausfüllen → fertiges PDF) hebt das Listing deutlich.
-Etsy bevorzugt Listings mit Video in der Suche.
+### Video
+
+`assets/etsy/listing-video.mp4` — liegt fertig vor.
+
+10,5 Sekunden, 1080 × 1080, MP4/H.264, ohne Ton, 1,6 MB. Damit innerhalb von
+Etsys Grenzen (5–15 Sekunden, max. 100 MB).
+
+Der Ablauf in vier Einstellungen: Leistungen eintippen → dieselben Zeilen
+stehen in der Rechnung → Umsatzsteuer und Summen rechnen sich selbst → der
+fertige Beleg. Zwischentitel führen durch, weil Etsy Videos **stumm** abspielt.
+
+Aufgezeichnet wird das echte Werkzeug, nichts ist nachgestellt. Neu erzeugen
+mit `node marketing/listing-video.mjs` (braucht ffmpeg mit x264).
+
+Etsy bevorzugt Listings mit Video in der Suche — hochladen lohnt sich.
 
 ---
 
