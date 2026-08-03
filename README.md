@@ -88,11 +88,13 @@ rund 20 kB — schnell heruntergeladen, sofort nutzbar.
 node tests/abnahme.mjs
 ```
 
-Der Test öffnet das Produkt in Chromium und prüft 62 Punkte: Rechenwege
+Der Test öffnet das Produkt in Chromium und prüft 85 Punkte: Rechenwege
 einschließlich Rundung bei gemischten Steuersätzen, § 19 und Reverse-Charge,
 Fälligkeitsberechnung über Monats- und Schaltjahresgrenzen, Belegartwechsel,
 Persistenz über einen Neuladevorgang, Import/Export, HTML-Escaping bei
-Sonderzeichen, A4-Maße im Druck und das Verhalten auf 390 px Breite.
+Sonderzeichen, A4-Maße im Druck, das Verhalten auf 390 px Breite, die Auswahl
+eigener Mengeneinheiten sowie den Betrieb ohne dauerhaften Speicher
+(privates Fenster, blockierte Website-Daten, eingebettete Ansicht).
 
 Voraussetzung ist Playwright (`npm install --save-dev playwright`, danach
 `npx playwright install chromium`). Nach jeder Änderung an

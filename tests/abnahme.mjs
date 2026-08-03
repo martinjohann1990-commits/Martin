@@ -245,7 +245,67 @@ await page.fill('#pos-body input[data-f="menge"] >> nth=0', 'abc');
 await page.waitForTimeout(150);
 ok('ungültige Menge führt nicht zu NaN', !(await page.textContent('.totals')).includes('NaN'));
 
-console.log('\n== 20. Ohne dauerhaften Speicher (privates Fenster, blockierte Daten, iframe) ==');
+console.log('\n== 20. Mengeneinheit: echtes Auswahlfeld ==');
+{
+  const einheit = page.locator('#pos-body select[data-f="einheit"]').first();
+  ok('Einheit ist ein Auswahlfeld', await einheit.evaluate(el => el.tagName) === 'SELECT');
+  ok('keine datalist mehr im DOM', (await page.locator('datalist').count()) === 0);
+  const optionen = await einheit.locator('option').allTextContents();
+  ok('Standardeinheiten vorhanden',
+     ['Std.','Tag','Stück','Pauschale'].every(e => optionen.includes(e)), optionen.join(', '));
+  ok('„Andere …“ als letzter Eintrag', optionen[optionen.length-1] === 'Andere …', optionen.join(', '));
+
+  // Auswahl wirkt sich auf den Beleg aus
+  await einheit.selectOption('Pauschale');
+  await page.waitForTimeout(200);
+  ok('Auswahl landet im Beleg',
+     (await page.textContent('table.items tbody tr:nth-child(1)')).includes('Pauschale'));
+
+  // Eigene Einheit erfassen
+  await einheit.selectOption('__andere__');
+  await page.waitForTimeout(200);
+  const frei = page.locator('#pos-body input[aria-label="Eigene Einheit eingeben"]');
+  ok('Eingabefeld erscheint', await frei.count() === 1);
+  await frei.fill('m²');
+  await frei.press('Enter');
+  await page.waitForTimeout(250);
+  ok('eigene Einheit übernommen',
+     (await page.textContent('table.items tbody tr:nth-child(1)')).includes('m²'));
+  const nachEigener = await page.locator('#pos-body select[data-f="einheit"]').first().locator('option').allTextContents();
+  ok('eigene Einheit steht künftig zur Auswahl', nachEigener.includes('m²'), nachEigener.join(', '));
+
+  // Abbruch mit Escape darf den Wert nicht zerstören
+  await page.locator('#pos-body select[data-f="einheit"]').first().selectOption('__andere__');
+  await page.waitForTimeout(200);
+  await page.locator('#pos-body input[aria-label="Eigene Einheit eingeben"]').press('Escape');
+  await page.waitForTimeout(250);
+  ok('Abbruch behält bisherige Einheit',
+     (await page.textContent('table.items tbody tr:nth-child(1)')).includes('m²'));
+
+  // Leere Eingabe darf die Einheit nicht löschen
+  await page.locator('#pos-body select[data-f="einheit"]').first().selectOption('__andere__');
+  await page.waitForTimeout(200);
+  await page.locator('#pos-body input[aria-label="Eigene Einheit eingeben"]').press('Enter');
+  await page.waitForTimeout(250);
+  ok('leere Eingabe behält bisherige Einheit',
+     (await page.textContent('table.items tbody tr:nth-child(1)')).includes('m²'));
+
+  // Eigene Einheiten überleben das Neuladen
+  await page.reload();
+  await page.waitForTimeout(400);
+  const nachReload = await page.locator('#pos-body select[data-f="einheit"]').first().locator('option').allTextContents();
+  ok('eigene Einheit überlebt Neuladen', nachReload.includes('m²'), nachReload.join(', '));
+
+  // Eine importierte, unbekannte Einheit darf nicht verlorengehen
+  await page.setInputFiles('#file-import', new URL('../produkt/beispiel-beleg.json', import.meta.url).pathname);
+  await page.waitForTimeout(400);
+  const vierte = page.locator('#pos-body select[data-f="einheit"]').nth(3);
+  ok('importierte Einheit bleibt ausgewählt', await vierte.inputValue() === 'Stück', await vierte.inputValue());
+  ok('importierter Beleg zeigt Pauschale',
+     (await page.textContent('table.items')).includes('Pauschale'));
+}
+
+console.log('\n== 21. Ohne dauerhaften Speicher (privates Fenster, blockierte Daten, iframe) ==');
 {
   // Jeder Zugriff auf localStorage wirft – so verhalten sich sandboxed iframes
   // und Browser mit blockierten Website-Daten.

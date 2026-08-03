@@ -289,11 +289,11 @@
         <table class="pos-table">
           <thead>
             <tr>
-              <th style="width:34%">Beschreibung</th>
-              <th style="width:13%" class="r">Menge</th>
-              <th style="width:15%">Einheit</th>
-              <th style="width:17%" class="r">Einzelpreis</th>
-              <th style="width:15%" class="r ust-col">USt</th>
+              <th style="width:32%">Beschreibung</th>
+              <th style="width:12%" class="r">Menge</th>
+              <th style="width:17%">Einheit</th>
+              <th style="width:16%" class="r">Einzelpreis</th>
+              <th style="width:14%" class="r ust-col">USt</th>
               <th></th>
             </tr>
           </thead>
@@ -410,7 +410,7 @@
    ========================================================= */
 
 const LS = { stamm:"rg.stammdaten.v1", beleg:"rg.beleg.v1", kunden:"rg.kunden.v1",
-             zoom:"rg.zoom.v1", zoomManuell:"rg.zoom.manuell.v1" };
+             einheiten:"rg.einheiten.v1", zoom:"rg.zoom.v1", zoomManuell:"rg.zoom.manuell.v1" };
 
 /* ---------------------------------------------------------------
    Zugriff auf den lokalen Speicher kapseln.
@@ -453,6 +453,11 @@ const Speicher = (() => {
   };
 })();
 
+/* Gebräuchliche Mengeneinheiten. Die Liste wächst mit: Trägt jemand eine
+   eigene Einheit ein, steht sie ab dann dauerhaft zur Auswahl. */
+const STANDARD_EINHEITEN = ["Std.","Tag","Stück","Pauschale","km","Monat","Wort","Seite"];
+const EINHEIT_NEU = "__andere__";   // Kennung für „Andere …“
+
 const USt_SAETZE = [
   { wert:19, label:"19 %" },
   { wert:7,  label:"7 %"  },
@@ -488,6 +493,7 @@ function leerPosition(){
 let stamm  = ladeJSON(LS.stamm)  || leerStammdaten();
 let beleg  = ladeJSON(LS.beleg)  || beispielBeleg();
 let kunden = ladeJSON(LS.kunden) || [];
+let einheiten = ladeJSON(LS.einheiten) || STANDARD_EINHEITEN.slice();
 let zoom   = Number(Speicher.lesen(LS.zoom)) || 100;
 
 function beispielBeleg(){
@@ -701,6 +707,54 @@ function aktualisiereFormularLogik(){
 /* =========================================================
    Positionen
    ========================================================= */
+/* Auswahlliste für die Einheit einer Position.
+   Eine bereits gesetzte Einheit, die nicht in der Liste steht, wird
+   vorangestellt – sonst ginge sie beim Zeichnen verloren. */
+function einheitOptionen(aktuell){
+  const liste = einheiten.slice();
+  if(aktuell && !liste.includes(aktuell)) liste.unshift(aktuell);
+  return liste.map(e =>
+      `<option value="${esc(e)}"${e === aktuell ? " selected" : ""}>${esc(e)}</option>`).join("")
+    + `<option value="${EINHEIT_NEU}">Andere …</option>`;
+}
+
+/* „Andere …“ tauscht die Auswahl gegen ein Eingabefeld.
+   Bestätigte Einheiten wandern dauerhaft in die Liste. */
+function eigeneEinheitErfassen(index, auswahl){
+  const zelle = auswahl.parentElement;
+  const vorher = beleg.positionen[index].einheit;
+
+  const eingabe = document.createElement("input");
+  eingabe.placeholder = "z. B. m²";
+  eingabe.setAttribute("aria-label", "Eigene Einheit eingeben");
+  zelle.replaceChildren(eingabe);
+  eingabe.focus();
+
+  let beendet = false;
+  const beenden = uebernehmen => {
+    if(beendet) return;
+    beendet = true;
+    const wert = eingabe.value.trim();
+    if(uebernehmen && wert){
+      beleg.positionen[index].einheit = wert;
+      if(!einheiten.includes(wert)){
+        einheiten.push(wert);
+        speichereJSON(LS.einheiten, einheiten);
+      }
+    } else {
+      beleg.positionen[index].einheit = vorher;   // Abbruch: alten Wert behalten
+    }
+    positionenZeichnen();
+    rendern();
+  };
+
+  eingabe.addEventListener("keydown", ev => {
+    if(ev.key === "Enter"){ ev.preventDefault(); beenden(true); }
+    else if(ev.key === "Escape"){ ev.preventDefault(); beenden(false); }
+  });
+  eingabe.addEventListener("blur", () => beenden(true));
+}
+
 function positionenZeichnen(){
   const body = document.getElementById("pos-body");
   const anzahl = beleg.positionen.length;
@@ -708,7 +762,7 @@ function positionenZeichnen(){
     <tr class="pos-row">
       <td><input data-i="${i}" data-f="beschreibung" value="${esc(p.beschreibung)}" placeholder="Leistung"></td>
       <td><input data-i="${i}" data-f="menge" class="num" inputmode="decimal" value="${esc(p.menge)}"></td>
-      <td><input data-i="${i}" data-f="einheit" value="${esc(p.einheit)}" list="einheiten"></td>
+      <td><select data-i="${i}" data-f="einheit">${einheitOptionen(p.einheit)}</select></td>
       <td><input data-i="${i}" data-f="einzelpreis" class="num" inputmode="decimal" value="${esc(p.einzelpreis)}"></td>
       <td class="ust-cell">
         <select data-i="${i}" data-f="ust">
@@ -732,6 +786,7 @@ function positionenZeichnen(){
 
 document.getElementById("pos-body").addEventListener("input", e => {
   const el = e.target;
+  if(el.tagName === "SELECT") return;   // Auswahlfelder laufen über "change"
   const i = el.dataset.i, f = el.dataset.f;
   if(i === undefined || !f) return;
   const pos = beleg.positionen[Number(i)];
@@ -742,8 +797,17 @@ document.getElementById("pos-body").addEventListener("input", e => {
   rendern();
 });
 document.getElementById("pos-body").addEventListener("change", e => {
-  if(e.target.dataset.f === "ust"){
-    beleg.positionen[Number(e.target.dataset.i)].ust = zahl(e.target.value);
+  const el = e.target;
+  if(el.tagName !== "SELECT") return;
+  const i = Number(el.dataset.i), f = el.dataset.f;
+  if(!beleg.positionen[i]) return;
+
+  if(f === "ust"){
+    beleg.positionen[i].ust = zahl(el.value);
+    rendern();
+  } else if(f === "einheit"){
+    if(el.value === EINHEIT_NEU){ eigeneEinheitErfassen(i, el); return; }
+    beleg.positionen[i].einheit = el.value;
     rendern();
   }
 });
@@ -1131,14 +1195,6 @@ function autoZoom(){
 document.querySelectorAll("[data-card] > h2").forEach(h => {
   h.addEventListener("click", () => h.parentElement.classList.toggle("collapsed"));
 });
-
-/* Einheiten-Vorschläge */
-const dl = document.createElement("datalist");
-dl.id = "einheiten";
-["Std.","Tag","Stück","Pauschale","km","Monat","Wort","Seite"].forEach(x => {
-  const o = document.createElement("option"); o.value = x; dl.appendChild(o);
-});
-document.body.appendChild(dl);
 
 /* =========================================================
    Start

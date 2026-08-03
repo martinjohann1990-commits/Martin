@@ -50,6 +50,11 @@ Die Vorschau rechts zeigt live, wie der fertige Beleg aussieht.
 **Positionen sortieren:** Mit den Pfeilen ↑ ↓ verschiebst du eine Zeile, mit ✕
 entfernst du sie.
 
+**Eigene Einheiten:** Die Einheit wählst du aus der Liste. Fehlt deine —
+etwa `m²`, `Flasche` oder `Zeile` — wählst du **„Andere …"**, tippst sie ein und
+bestätigst mit Enter. Sie steht dir ab dann dauerhaft zur Auswahl. Mit Escape
+brichst du ab, ohne die bisherige Einheit zu verlieren.
+
 ---
 
 ## 4. Als PDF speichern
