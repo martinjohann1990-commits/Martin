@@ -91,6 +91,16 @@ DAS KANN ES
 ✓ Sichern und Laden als Datei, für Backup und als Vorlage im Folgemonat
 
 
+WENN JEMAND NICHT ZAHLT
+
+Im Shop gibt es dazu das Belegpaket: Zahlungserinnerung, 1. und 2. Mahnung mit
+Verzugszinsen, Auftragsbestätigung, Lieferschein und Stundenzettel. Es liest
+die Sicherungsdatei dieses Rechnungsgenerators ein — Kunde, Rechnungsnummer,
+Fälligkeit und Betrag stehen dort sofort, ohne eine Zahl abzutippen.
+
+Beide Werkzeuge zusammen gibt es im Shop auch als Set.
+
+
 DAS BEKOMMST DU
 
 • rechnungsgenerator.html — das komplette Werkzeug, eine einzige Datei
@@ -131,7 +141,8 @@ WAS ES NICHT KANN
 
 Damit es keine Enttäuschung gibt, sage ich das lieber vorher:
 
-• Kein Mahnwesen, keine Zeiterfassung, kein DATEV-Export
+• Kein Mahnwesen und keine Zeiterfassung — dafür gibt es das Belegpaket im Shop
+• Kein DATEV-Export und keine Überwachung offener Posten
 • Keine E-Rechnung im XML-Format (XRechnung / ZUGFeRD) — es erzeugt PDF
 • Keine Synchronisierung zwischen mehreren Geräten
 • Es ist eine Arbeitshilfe, keine Steuerberatung
