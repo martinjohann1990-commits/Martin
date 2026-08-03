@@ -3,6 +3,9 @@
 Jedes Feld in der Reihenfolge, in der Etsy danach fragt. Alles zwischen den
 Code-Blöcken ist zum Kopieren gedacht.
 
+Der Shop heißt **Papierkramerei** — Name, Banner, Shop-Bild und die Texte für
+das Shop-Profil stehen in `etsy-shop.md`.
+
 ---
 
 ## Titel
@@ -276,4 +279,5 @@ Falls etwas nicht läuft oder du eine Frage hast, schreib mir einfach — ich
 antworte normalerweise am selben Tag.
 
 Viele Grüße
+Papierkramerei
 ```

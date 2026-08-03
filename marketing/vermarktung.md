@@ -103,6 +103,8 @@ gesperrte Auszahlungen.
 - [ ] **Widerrufshinweis** in den Shop-Richtlinien (Text steht in
       `etsy-listing.md`).
 - [ ] **Bankkonto** für Etsy Payments hinterlegt und verifiziert.
+- [ ] **Shopname `Papierkramerei` als frei bestätigt** — `etsy.com/shop/Papierkramerei`
+      aufrufen, eine Fehlerseite bedeutet frei.
 - [ ] **ZIP gebaut und getestet** — `./bauen.sh`, dann in einem frischen
       Browserprofil öffnen, so wie ein Käufer es tut.
 - [ ] **PDF-Export in Chrome, Firefox und Safari geprüft.**
@@ -113,9 +115,15 @@ gesperrte Auszahlungen.
 
 ### Woche 1 — online gehen
 
-**Tag 1 – Listing einstellen.**
-Alle Felder aus `etsy-listing.md` übernehmen, sechs Bilder aus `assets/etsy/`
-hochladen, ZIP anhängen, Einführungspreis 9,90 € setzen. Veröffentlichen.
+**Tag 1 – Shop anlegen und Listing einstellen.**
+Zuerst den Shop **Papierkramerei** einrichten: Name, Shop-Titel, Banner,
+Shop-Bild, Ankündigung, Shop-Story und Richtlinien stehen fertig in
+`etsy-shop.md`. Ein Shop ohne Profilbild und ohne Story kostet Vertrauen — das
+sind zwanzig Minuten, die sich unmittelbar auszahlen.
+
+Dann das Listing: Alle Felder aus `etsy-listing.md` übernehmen, sechs Bilder aus
+`assets/etsy/` hochladen, ZIP anhängen, Einführungspreis 9,90 € setzen.
+Veröffentlichen.
 
 **Tag 2 – Video nachlegen.**
 15 Sekunden Bildschirmaufnahme: leeres Formular → Positionen eintippen →

@@ -59,12 +59,13 @@ produkt/          Das, was der Käufer bekommt
 
 marketing/        Verkauf
   vermarktung.md            Marktplatzentscheidung, Preis, 30-Tage-Plan, Support
+  etsy-shop.md              Shop „Papierkramerei": Name, Profil, Richtlinien
   etsy-listing.md           Das Listing, Feld für Feld zum Einfügen
-  listing-bilder.mjs        Erzeugt die Listing-Bilder aus dem echten Produkt
+  listing-bilder.mjs        Erzeugt Listing-Bilder, Banner und Shop-Bild
   gumroad-lemonsqueezy.md   Zweiter Kanal, später
 
 assets/           Screenshots fürs README
-  etsy/                     Die sechs Listing-Bilder, 2000 × 2000 px
+  etsy/                     Sechs Listing-Bilder, Banner und Shop-Bild
 tests/            Abnahmetest im echten Browser
 bauen.sh          Erzeugt das auslieferbare ZIP
 ```

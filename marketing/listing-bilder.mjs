@@ -1,8 +1,10 @@
 /*
- * Erzeugt die Etsy-Listing-Bilder (2000 × 2000 px) aus dem echten Produkt.
+ * Erzeugt sämtliche Etsy-Bilder aus dem echten Produkt.
  *
  * Ausführen:  node marketing/listing-bilder.mjs
- * Ergebnis:   assets/etsy/01-hero.png … 06-lieferumfang.png
+ * Ergebnis:   assets/etsy/01-hero.png … 06-lieferumfang.png  (Listing, 2000 × 2000)
+ *             assets/etsy/shop-banner.png                    (1600 × 400)
+ *             assets/etsy/shop-icon.png                      (500 × 500)
  *
  * Die Belege in den Bildern werden nicht nachgebaut, sondern vom Werkzeug
  * selbst gerendert. Ändert sich das Produkt, ändern sich die Bilder mit.
@@ -62,6 +64,8 @@ const alsDatenURI = puffer => 'data:image/png;base64,' + puffer.toString('base64
 // Regelbesteuert
 const s1 = await belegSeite();
 const belegNormal = alsDatenURI(await s1.locator('.page').screenshot());
+// Summenblock einzeln – im Banner ist die ganze Seite zu klein zum Lesen
+const summenBlock = alsDatenURI(await s1.locator('.totals').screenshot());
 await s1.close();
 
 // Kleinunternehmer nach § 19 UStG – der entscheidende Unterschied für die Zielgruppe
@@ -284,6 +288,89 @@ await tafel('06-lieferumfang.png', `
     </div>
   </div>
   <div class="fuss"><span>Sofort-Download nach dem Kauf</span><span><b>Kein Abo, keine Folgekosten</b></span></div>
+`);
+
+/* ---------------------------------------------------------------
+   3. Shop-Banner und Shop-Bild für „Papierkramerei"
+   --------------------------------------------------------------- */
+async function shopTafel(datei, breite, hoehe, koerper, extra=''){
+  const seite = await browser.newPage({ viewport:{ width:breite, height:hoehe }, deviceScaleFactor:2 });
+  await seite.setContent(
+    `<!doctype html><html lang="de"><head><meta charset="utf-8"><style>${CSS}
+     body{width:${breite}px;height:${hoehe}px}${extra}</style></head><body>${koerper}</body></html>`,
+    { waitUntil:'load' });
+  await seite.waitForTimeout(300);
+  await seite.screenshot({ path: join(ziel, datei) });
+  await seite.close();
+  console.log('  ' + datei);
+}
+
+console.log('\nShop:');
+
+/* Banner 1600 × 400 (wird mit doppelter Auflösung gerendert).
+   Unten links bleibt frei — dort legt Etsy das Shop-Bild darüber. */
+await shopTafel('shop-banner.png', 1600, 400, `
+  <div class="banner">
+    <div class="banner-text">
+      <div class="wortmarke">Papierkramerei</div>
+      <div class="banner-zeile">Werkzeuge gegen den Papierkram — für Selbstständige und Kleinunternehmer</div>
+    </div>
+    <div class="banner-karte">
+      <img src="${summenBlock}" alt="">
+    </div>
+  </div>
+`, `
+  .banner{height:100%;display:flex;align-items:center;gap:70px;padding:0 80px;overflow:hidden}
+  .banner-text{flex:1;min-width:0}
+  .wortmarke{
+    font-family:"Bitstream Charter","DejaVu Serif",serif;font-size:76px;font-weight:700;
+    letter-spacing:-.015em;line-height:1;
+  }
+  .banner-zeile{
+    font-size:25px;color:var(--gedaempft);margin-top:20px;line-height:1.35;
+    padding-top:20px;border-top:3px solid var(--tinte);display:inline-block;
+  }
+  /* Lesbarer Ausschnitt statt verkleinerter Gesamtseite */
+  .banner-karte{
+    flex:0 0 auto;background:var(--papier);border:1px solid var(--linie);
+    box-shadow:0 20px 50px rgba(18,24,38,.18);padding:34px 40px;
+  }
+  .banner-karte img{width:400px;display:block}
+`);
+
+/* Shop-Bild 500 × 500 — muss auch als 40-px-Kreis noch lesbar sein.
+   Das P wird nicht nach Augenmaß ausgerichtet: Ein Skript misst im Browser die
+   tatsächliche Tintenbreite der Glyphe und gleicht deren Seitenräume aus. */
+await shopTafel('shop-icon.png', 500, 500, `
+  <div class="icon">
+    <div class="icon-p">P</div>
+    <div class="icon-strich"></div>
+  </div>
+  <script>
+    (function ausrichten(){
+      const el = document.querySelector('.icon-p');
+      const stil = getComputedStyle(el);
+      const mass = document.createElement('canvas').getContext('2d');
+      mass.font = stil.fontWeight + ' ' + stil.fontSize + ' ' + stil.fontFamily;
+      const m = mass.measureText('P');
+      // Versatz zwischen Mitte des Textkastens und Mitte der sichtbaren Glyphe
+      const tinteMitte = (m.actualBoundingBoxRight - m.actualBoundingBoxLeft) / 2 - m.actualBoundingBoxLeft;
+      el.style.transform = 'translateX(' + (m.width / 2 - tinteMitte).toFixed(2) + 'px)';
+    })();
+  <\/script>
+`, `
+  /* Etsy zeigt das Shop-Bild als kleinen Kreis. Heller Buchstabe auf dunklem
+     Grund bleibt dort am längsten lesbar und wirkt wie ein Stempel. */
+  body{background:var(--tinte)}
+  .icon{
+    height:100%;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:30px;
+  }
+  .icon-p{
+    font-family:"Bitstream Charter","DejaVu Serif",serif;font-size:270px;font-weight:700;
+    line-height:.78;color:var(--papier);
+  }
+  .icon-strich{width:132px;height:16px;background:var(--akzent)}
 `);
 
 await browser.close();
