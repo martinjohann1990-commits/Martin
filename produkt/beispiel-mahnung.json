@@ -1,0 +1,111 @@
+{
+  "version": 1,
+  "produkt": "belegpaket",
+  "exportiertAm": "2026-05-18T09:00:00.000Z",
+  "stamm": {
+    "firma": "Studio Nordlicht",
+    "name": "Martin Johann",
+    "strasse": "Lindenallee 42",
+    "plz": "20144",
+    "ort": "Hamburg",
+    "telefon": "+49 40 123456",
+    "email": "hallo@studio-nordlicht.de",
+    "web": "studio-nordlicht.de",
+    "steuernummer": "42/123/45678",
+    "ustid": "",
+    "bank": "Hamburger Sparkasse",
+    "iban": "DE02 2005 0550 1234 5678 90",
+    "bic": "HASPDEHHXXX",
+    "fusszeile": "Inhaber: Martin Johann",
+    "logo": ""
+  },
+  "beleg": {
+    "typ": "mahnung2",
+    "nummer": "MA-2026-002",
+    "datum": "2026-05-18",
+    "betreff": "2. Mahnung zu Rechnung RE-2026-001",
+    "betreffAuto": true,
+    "anrede": "",
+    "intro": "auch nach unserer ersten Mahnung ist der offene Betrag nicht bei uns eingegangen. Wir fordern Sie hiermit letztmalig auf, die Forderung einschließlich der angefallenen Verzugskosten bis zu dem genannten Termin zu begleichen.",
+    "outro": "Nach Ablauf dieser Frist behalten wir uns weitere Schritte vor, insbesondere die Abgabe der Forderung an ein Inkassounternehmen oder die Einleitung des gerichtlichen Mahnverfahrens. Die dadurch entstehenden Kosten hätten Sie zu tragen.\n\nMit freundlichen Grüßen",
+    "hinweis": "",
+    "empfaenger": {
+      "firma": "Nordwind Handels GmbH",
+      "name": "Frau Erika Muster",
+      "strasse": "Hafenstraße 17",
+      "plz": "28195",
+      "ort": "Bremen",
+      "land": "",
+      "kdnr": "K-2026-118"
+    },
+    "rechnung": {
+      "nummer": "RE-2026-001",
+      "datum": "2026-03-30",
+      "faellig": "2026-04-13",
+      "betrag": 6501.09,
+      "gezahlt": 0,
+      "frist": 10
+    },
+    "verzug": {
+      "aktiv": true,
+      "schuldner": "unternehmen",
+      "basis": 1.52,
+      "zuschlag": 9,
+      "ab": "2026-04-14",
+      "gebuehr": 5,
+      "pauschale": true
+    },
+    "vorgang": {
+      "bestellnr": "",
+      "bestelldatum": "",
+      "termin": "",
+      "versand": "",
+      "lieferadresse": ""
+    },
+    "positionen": [
+      {
+        "beschreibung": "Konzeption, Informationsarchitektur und Beratung",
+        "menge": 8,
+        "einheit": "Std.",
+        "einzelpreis": 95,
+        "ust": 19
+      },
+      {
+        "beschreibung": "Screendesign Startseite und drei Unterseiten",
+        "menge": 22,
+        "einheit": "Std.",
+        "einzelpreis": 95,
+        "ust": 19
+      }
+    ],
+    "rabatt": 0,
+    "rabattText": "Rabatt",
+    "kleinunternehmer": false,
+    "reverse": false,
+    "stundenzettel": {
+      "zeitraum": "März 2026",
+      "projekt": "Relaunch Unternehmenswebsite",
+      "abrechnen": false,
+      "satz": 95,
+      "ust": 19,
+      "kleinunternehmer": false
+    },
+    "stunden": [
+      { "datum": "2026-03-02", "taetigkeit": "Konzeptworkshop beim Kunden", "von": "09:00", "bis": "17:00", "pause": 60, "stunden": 7 },
+      { "datum": "2026-03-03", "taetigkeit": "Informationsarchitektur, Wireframes", "von": "08:30", "bis": "15:00", "pause": 30, "stunden": 6 },
+      { "datum": "2026-03-09", "taetigkeit": "Screendesign Startseite", "von": "09:00", "bis": "18:00", "pause": 45, "stunden": 8.25 },
+      { "datum": "2026-03-10", "taetigkeit": "Abstimmung mit dem Auftraggeber", "von": "10:00", "bis": "13:00", "pause": 0, "stunden": 3 }
+    ]
+  },
+  "kunden": [
+    {
+      "firma": "Nordwind Handels GmbH",
+      "name": "Frau Erika Muster",
+      "strasse": "Hafenstraße 17",
+      "plz": "28195",
+      "ort": "Bremen",
+      "land": "",
+      "kdnr": "K-2026-118"
+    }
+  ]
+}
