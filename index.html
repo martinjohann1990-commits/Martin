@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#0f1115">
+<title>Intervall Timer</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+
+  <header class="app-header">
+    <h1>Intervall Timer</h1>
+    <span id="wakeLockBadge" class="wake-badge" hidden>🔓 Bildschirm bleibt an</span>
+  </header>
+
+  <main>
+    <section id="setupScreen" class="screen setup-screen">
+      <div class="field">
+        <label for="workTime">Belastung (Sekunden)</label>
+        <input type="number" id="workTime" min="1" value="30">
+      </div>
+      <div class="field">
+        <label for="restTime">Pause (Sekunden)</label>
+        <input type="number" id="restTime" min="0" value="15">
+      </div>
+      <div class="field">
+        <label for="rounds">Runden</label>
+        <input type="number" id="rounds" min="1" value="8">
+      </div>
+      <div class="field">
+        <label for="prepTime">Vorbereitung (Sekunden)</label>
+        <input type="number" id="prepTime" min="0" value="10">
+      </div>
+      <button id="startBtn" class="btn btn-primary">Start</button>
+    </section>
+
+    <section id="timerScreen" class="screen timer-screen" hidden>
+      <div class="phase-label" id="phaseLabel">Bereit</div>
+      <div class="time-display" id="timeDisplay">00:00</div>
+      <div class="round-info" id="roundInfo">Runde 1 / 8</div>
+
+      <div class="progress-track">
+        <div class="progress-fill" id="progressFill"></div>
+      </div>
+
+      <div class="controls">
+        <button id="pauseBtn" class="btn btn-secondary">Pause</button>
+        <button id="resetBtn" class="btn btn-secondary">Zurücksetzen</button>
+      </div>
+    </section>
+  </main>
+
+  <footer class="app-footer">
+    <p id="statusMsg" class="status-msg"></p>
+  </footer>
+
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>

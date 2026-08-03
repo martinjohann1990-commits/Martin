@@ -1,0 +1,224 @@
+:root {
+  --bg: #0f1115;
+  --surface: #1a1d24;
+  --surface-2: #23272f;
+  --text: #f2f3f5;
+  --text-dim: #9aa0ab;
+  --accent-work: #ff5a5f;
+  --accent-rest: #3fb950;
+  --accent-prep: #d4a72c;
+  --accent-idle: #5b8cff;
+  --radius: 16px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  display: flex;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+}
+
+.app {
+  width: 100%;
+  max-width: 480px;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  padding: env(safe-area-inset-top) 20px env(safe-area-inset-bottom);
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 0 10px;
+}
+
+.app-header h1 {
+  font-size: 1.4rem;
+  margin: 0;
+  font-weight: 700;
+}
+
+.wake-badge {
+  font-size: 0.75rem;
+  color: var(--accent-rest);
+  background: rgba(63, 185, 80, 0.12);
+  border: 1px solid rgba(63, 185, 80, 0.35);
+  padding: 4px 10px;
+  border-radius: 999px;
+  white-space: nowrap;
+}
+
+main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.screen {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+/* Setup screen */
+.setup-screen {
+  background: var(--surface);
+  border-radius: var(--radius);
+  padding: 24px;
+}
+
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.field label {
+  font-size: 0.85rem;
+  color: var(--text-dim);
+}
+
+.field input {
+  background: var(--surface-2);
+  border: 1px solid #2f3440;
+  color: var(--text);
+  font-size: 1.2rem;
+  padding: 12px 14px;
+  border-radius: 10px;
+  width: 100%;
+  outline: none;
+}
+
+.field input:focus {
+  border-color: var(--accent-idle);
+}
+
+/* Timer screen */
+.timer-screen {
+  align-items: center;
+  text-align: center;
+  gap: 14px;
+}
+
+.phase-label {
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  padding: 6px 18px;
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--accent-idle);
+  transition: background-color 0.2s, color 0.2s;
+}
+
+.phase-label.phase-work {
+  color: var(--accent-work);
+}
+
+.phase-label.phase-rest {
+  color: var(--accent-rest);
+}
+
+.phase-label.phase-prep {
+  color: var(--accent-prep);
+}
+
+.time-display {
+  font-size: 5rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.round-info {
+  color: var(--text-dim);
+  font-size: 1rem;
+}
+
+.progress-track {
+  width: 100%;
+  height: 10px;
+  background: var(--surface);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--accent-idle);
+  transition: width 1s linear, background-color 0.2s;
+}
+
+.progress-fill.phase-work {
+  background: var(--accent-work);
+}
+
+.progress-fill.phase-rest {
+  background: var(--accent-rest);
+}
+
+.progress-fill.phase-prep {
+  background: var(--accent-prep);
+}
+
+.controls {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  margin-top: 12px;
+}
+
+.btn {
+  border: none;
+  border-radius: 12px;
+  padding: 16px;
+  font-size: 1.05rem;
+  font-weight: 700;
+  cursor: pointer;
+  width: 100%;
+  transition: transform 0.05s ease, opacity 0.2s;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn-primary {
+  background: var(--accent-idle);
+  color: #fff;
+}
+
+.btn-secondary {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid #2f3440;
+}
+
+.app-footer {
+  padding: 14px 0;
+  text-align: center;
+}
+
+.status-msg {
+  margin: 0;
+  font-size: 0.78rem;
+  color: var(--text-dim);
+  min-height: 1em;
+}
