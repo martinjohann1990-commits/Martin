@@ -62,6 +62,8 @@ marketing/        Verkauf
   verkaufsstrategie.md      Woher Verkäufe kommen, Ads-Rechnung, Kennzahlen
   etsy-shop.md              Shop „Papierkramerei": Name, Profil, Richtlinien
   etsy-listing.md           Das Listing, Feld für Feld zum Einfügen
+  etsy-anleitung.md         Klickstrecke: 30 Schritte vom Konto bis „Veröffentlichen"
+  etsy-anleitung.mjs        Erzeugt Klickstrecke als .md und als abhakbare Seite
   listing-bilder.mjs        Erzeugt Listing-Bilder, Banner und Shop-Bild
   listing-video.mjs         Nimmt das Listing-Video auf (braucht ffmpeg)
   gumroad-lemonsqueezy.md   Zweiter Kanal, später
