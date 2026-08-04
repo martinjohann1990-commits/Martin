@@ -2,7 +2,7 @@
 
 Stand: August 2026 · Branch `claude/niche-ai-recommendation-mvp-gdy1gd`
 
-Der Code steht, die Rechtsseiten stehen, und die Kategorie **Monitore** ist mit acht
+Der Code steht, die Rechtsseiten stehen, und die Kategorie **Monitore** ist mit neun
 echten Geräten gefüllt. Was jetzt fehlt, ist **kein Code**: deine Impressumsdaten, eine
 Domain, die Partner-IDs und Traffic. Diese Datei ist die Reihenfolge,
 in der du das abarbeitest — mit den konkreten Befehlen, Dateien und Abbruchkriterien.
@@ -127,15 +127,15 @@ ist und die Seite echte Produkte zeigt** — nicht vorher.
 
 ## Phase 1 — Echte Produktdaten
 
-### 1.1 Erledigt: Kategorie Monitore mit acht echten Geräten
+### 1.1 Erledigt: Kategorie Monitore mit neun echten Geräten
 
-`data/products.json` enthält keine Platzhalter mehr, sondern acht real erhältliche
+`data/products.json` enthält keine Platzhalter mehr, sondern neun real erhältliche
 Monitore. `data/taxonomy.json` ist auf die Kategorie **Monitore** und fünf Zielgruppen
 reduziert; daraus entstehen fünf Landingpages.
 
 Warum Monitore: objektiv vergleichbare Kennzahlen (Größe, Auflösung, Bildrate, Panel),
 eine Kaufentscheidung, die sich in einem Absatz begründen lässt, ein mittlerer bis hoher
-Warenkorb (170–705 €) und eine saubere Zuordnung zu Zielgruppen — Home-Office, Gaming und
+Warenkorb (145–705 €) und eine saubere Zuordnung zu Zielgruppen — Home-Office, Gaming und
 Kreativarbeit stellen völlig unterschiedliche Anforderungen an dasselbe Produkt.
 
 **Preise: Stand August 2026**, recherchiert über deutsche Preisvergleiche. Sie sind als
@@ -157,15 +157,16 @@ Zwei Dinge kann nur jemand mit Amazon-Zugang erledigen:
 
 Das Feld `rating` ist die **redaktionelle Note der Seite**, keine Kundenbewertung. Sie
 wird als `Review` mit dir als Autor ausgezeichnet und auf den Karten als
-„Redaktionswertung" beschriftet. Geh die acht Noten durch und passe sie an deine eigene
+„Redaktionswertung" beschriftet. Geh die neun Noten durch und passe sie an deine eigene
 Einschätzung an — es ist deine Empfehlung, die dort steht.
 
 ### 1.3 Auswahl erweitern
 
-Die Landingpage `/best-monitors-for-beginners` hat erst drei Produkte. Sinnvolle
-Ergänzungen: ein Büro-Monitor unter 200 €, ein 4K-Modell um 300 € und ein Ultrawide.
-Jedes weitere Produkt verteilt sich über `bestForTags` automatisch auf die passenden
-Seiten.
+Jede der fünf Landingpages zeigt mindestens vier Produkte — die Mindestschwelle für ein
+Ranking ist damit erreicht. Sinnvolle nächste Ergänzungen: ein Ultrawide (34 Zoll, ~500 €)
+für Home-Office und Kreative, ein 4K-Modell um 300 € und ein 24-Zöller für kleine
+Schreibtische. Jedes weitere Produkt verteilt sich über `bestForTags` automatisch auf die
+passenden Seiten.
 
 Feld-für-Feld-Vorlage:
 

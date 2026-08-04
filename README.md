@@ -6,7 +6,7 @@ plus automatisch generierte SEO-Landingpages nach dem Muster `/best-[category]-f
 **Tech-Stack:** Next.js 15 (App Router, Server Components) · TypeScript · Tailwind CSS ·
 shadcn-UI-Konventionen · Vercel Analytics · JSON-Datenquelle (kein Backend, keine Datenbank).
 
-**Aktueller Stand:** Kategorie Monitore mit acht echten Geräten, 5 statische
+**Aktueller Stand:** Kategorie Monitore mit neun echten Geräten, 5 statische
 Landingpages, ~102 kB First-Load-JS, alle Seiten werden zur Build-Zeit vorgerendert (SSG)
 und vom CDN ausgeliefert.
 

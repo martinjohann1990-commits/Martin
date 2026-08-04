@@ -168,6 +168,30 @@
     "accent": "from-emerald-500 to-teal-700"
   },
   {
+    "id": "mon-q27v5n",
+    "name": "AOC Q27V5N/BK",
+    "slug": "aoc-q27v5n",
+    "category": "monitors",
+    "brand": "AOC",
+    "price": 145,
+    "rating": 4.1,
+    "affiliateUrl": "https://www.amazon.de/s?k=AOC+Q27V5N",
+    "network": "amazon",
+    "summary": "27 Zoll QHD für unter 150 Euro – der günstigste Bildschirm, den man guten Gewissens empfehlen kann.",
+    "pros": [
+      "QHD-Auflösung auf 27 Zoll zum Preis vieler Full-HD-Modelle",
+      "Mattes Panel, flimmerfrei und mit Blaulichtfilter",
+      "Pivot und VESA-100-Aufnahme für einen Monitorarm"
+    ],
+    "cons": [
+      "Nur 75 Hz – Scrollen und Spielen wirken weniger flüssig",
+      "VA-Panel: Farben kippen beim seitlichen Blick stärker als bei IPS"
+    ],
+    "bestForTags": ["home-office", "beginners", "students"],
+    "highlight": "Günstigster Einstieg",
+    "accent": "from-slate-600 to-slate-900"
+  },
+  {
     "id": "mon-g55c",
     "name": "Samsung Odyssey G5 G55C (32 Zoll)",
     "slug": "samsung-odyssey-g5-g55c-32",
