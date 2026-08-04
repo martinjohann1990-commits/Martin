@@ -1,0 +1,84 @@
+{
+  "categories": [
+    {
+      "slug": "laptops",
+      "label": "Laptops",
+      "singular": "Laptop",
+      "icon": "💻",
+      "description": "Notebooks für Uni, Büro, Gaming und Kreativarbeit"
+    },
+    {
+      "slug": "headphones",
+      "label": "Kopfhörer",
+      "singular": "Kopfhörer",
+      "icon": "🎧",
+      "description": "Over-Ear, In-Ear und Noise-Cancelling für jeden Alltag"
+    },
+    {
+      "slug": "monitors",
+      "label": "Monitore",
+      "singular": "Monitor",
+      "icon": "🖥️",
+      "description": "Displays für Produktivität, Gaming und Farbgenauigkeit"
+    },
+    {
+      "slug": "keyboards",
+      "label": "Tastaturen",
+      "singular": "Tastatur",
+      "icon": "⌨️",
+      "description": "Mechanisch, leise oder kompakt – für Vielschreiber und Gamer"
+    },
+    {
+      "slug": "smartwatches",
+      "label": "Smartwatches",
+      "singular": "Smartwatch",
+      "icon": "⌚",
+      "description": "Fitness, Schlaftracking und Benachrichtigungen am Handgelenk"
+    },
+    {
+      "slug": "tablets",
+      "label": "Tablets",
+      "singular": "Tablet",
+      "icon": "📱",
+      "description": "Zum Lesen, Zeichnen, Streamen und für digitale Notizen"
+    }
+  ],
+  "targets": [
+    {
+      "slug": "students",
+      "label": "Studenten",
+      "description": "Leicht, lange Akkulaufzeit und ein Preis, der das Semesterbudget überlebt.",
+      "icon": "🎓"
+    },
+    {
+      "slug": "gamers",
+      "label": "Gamer",
+      "description": "Maximale Frames, niedrige Latenz und Hardware, die nicht limitiert.",
+      "icon": "🎮"
+    },
+    {
+      "slug": "home-office",
+      "label": "Home-Office",
+      "description": "Ergonomie, glasklare Calls und produktives Arbeiten den ganzen Tag.",
+      "icon": "🏠"
+    },
+    {
+      "slug": "creators",
+      "label": "Kreative",
+      "description": "Farbtreue, Rechenleistung und Tools für Foto, Video und Design.",
+      "icon": "🎨"
+    },
+    {
+      "slug": "travel",
+      "label": "Vielreisende",
+      "description": "Kompakt, robust und mit Akku, der auch den Langstreckenflug übersteht.",
+      "icon": "✈️"
+    },
+    {
+      "slug": "beginners",
+      "label": "Einsteiger",
+      "description": "Einfach einzurichten, ohne Fachchinesisch und mit fairem Preis.",
+      "icon": "🌱"
+    }
+  ]
+}
