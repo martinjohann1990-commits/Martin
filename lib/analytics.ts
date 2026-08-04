@@ -1,6 +1,7 @@
 "use client";
 
 import { track } from "@vercel/analytics";
+import type { ResolvedOffer } from "@/lib/offers";
 import type { Product } from "@/lib/types";
 
 /**
@@ -29,17 +30,26 @@ function sendEvent(name: string, payload: EventPayload): void {
   }
 }
 
-/** Klick auf einen Affiliate-Link – das umsatzrelevanteste Event der Seite. */
+/**
+ * Klick auf einen Affiliate-Link – das umsatzrelevanteste Event der Seite.
+ * `expected_payout` erlaubt es, im Analytics-Dashboard direkt den erwarteten
+ * Umsatz je Placement zu sehen, statt nur Klicks zu zählen.
+ */
 export function trackAffiliateClick(
   product: Product,
-  context: { placement: string; position?: number }
+  offer: ResolvedOffer,
+  context: { placement: string; position?: number; isPrimary?: boolean }
 ): void {
   sendEvent("affiliate_click", {
     product_id: product.id,
     product_name: product.name,
     category: product.category,
-    network: product.network,
-    price: product.price,
+    network: offer.network,
+    merchant: offer.merchant,
+    price: offer.price,
+    expected_payout: offer.payout,
+    commission_rate: offer.rate,
+    is_primary: context.isPrimary ?? false,
     placement: context.placement,
     position: context.position ?? 0,
   });

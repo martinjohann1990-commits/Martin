@@ -1,3 +1,4 @@
+import { getBestPrice } from "@/lib/offers";
 import type { BudgetBand, Product, Recommendation, Target } from "@/lib/types";
 
 /**
@@ -17,7 +18,9 @@ const WEIGHT_BUDGET = 25;
  * Tastaturen für 79 € oder Laptops für 2.199 €.
  */
 export function getBudgetBands(products: Product[]): BudgetBand[] {
-  const prices = products.map((p) => p.price).sort((a, b) => a - b);
+  // Immer der günstigste Händlerpreis – sonst filtert das Budget Produkte weg,
+  // die es woanders längst billiger gibt.
+  const prices = products.map(getBestPrice).sort((a, b) => a - b);
 
   if (prices.length === 0) {
     return [
@@ -88,7 +91,7 @@ export function rankProducts({
       if (b.product.rating !== a.product.rating) {
         return b.product.rating - a.product.rating;
       }
-      return a.product.price - b.product.price;
+      return getBestPrice(a.product) - getBestPrice(b.product);
     });
 }
 
@@ -127,12 +130,13 @@ function scoreProduct(
     score += WEIGHT_TARGET * 0.6;
   }
 
-  // 3) Budget-Passung
+  // 3) Budget-Passung – gemessen am günstigsten verfügbaren Angebot
   if (budget) {
-    if (product.price <= budget.max) {
+    const price = getBestPrice(product);
+    if (price <= budget.max) {
       score += WEIGHT_BUDGET;
       reasons.push("Liegt in deinem Budget");
-    } else if (product.price <= budget.max * 1.2) {
+    } else if (price <= budget.max * 1.2) {
       score += WEIGHT_BUDGET * 0.45;
       reasons.push("Knapp über Budget – dafür spürbar mehr Leistung");
     }

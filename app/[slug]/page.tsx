@@ -7,7 +7,7 @@ import { ProductCard } from "@/components/product-card";
 import { StarRating } from "@/components/star-rating";
 import { Badge } from "@/components/ui/badge";
 import { AffiliateLink } from "@/components/affiliate-link";
-import { getMerchantLabel } from "@/lib/affiliate";
+import { getOfferView } from "@/lib/offers";
 import {
   getBuyingCriteria,
   getLandingFaqs,
@@ -160,39 +160,49 @@ export default async function LandingPageRoute({
             Auf einen Blick
           </h2>
           <ul className="mt-3 divide-y">
-            {ranked.slice(0, 3).map((entry, index) => (
-              <li
-                key={entry.product.id}
-                className="flex flex-wrap items-center justify-between gap-3 py-3"
-              >
-                <div className="flex items-center gap-3">
-                  <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-                    {index + 1}
-                  </span>
-                  <div>
-                    <p className="font-semibold leading-tight">
-                      {entry.product.name}
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {entry.product.highlight ?? entry.product.summary}
-                    </p>
+            {ranked.slice(0, 3).map((entry, index) => {
+              // Bewusst der Preis des verlinkten Angebots: Was hier steht, muss
+              // der Nutzer nach dem Klick auch vorfinden.
+              const { primary } = getOfferView(entry.product);
+              return (
+                <li
+                  key={entry.product.id}
+                  className="flex flex-wrap items-center justify-between gap-3 py-3"
+                >
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-6 w-6 items-center justify-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                      {index + 1}
+                    </span>
+                    <div>
+                      <p className="font-semibold leading-tight">
+                        {entry.product.name}
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        {entry.product.highlight ?? entry.product.summary}
+                      </p>
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-4">
-                  <span className="text-sm font-semibold">
-                    {formatPrice(entry.product.price)}
-                  </span>
-                  <AffiliateLink
-                    product={entry.product}
-                    placement={`landing-${page.slug}-quicklist`}
-                    position={index + 1}
-                    className="text-sm font-semibold text-primary hover:underline"
-                  >
-                    Preis prüfen →
-                  </AffiliateLink>
-                </div>
-              </li>
-            ))}
+                  <div className="flex items-center gap-4">
+                    <span className="text-sm font-semibold">
+                      {formatPrice(primary.price)}
+                      <span className="ml-1 font-normal text-muted-foreground">
+                        bei {primary.merchant}
+                      </span>
+                    </span>
+                    <AffiliateLink
+                      product={entry.product}
+                      offer={primary}
+                      placement={`landing-${page.slug}-quicklist`}
+                      position={index + 1}
+                      isPrimary
+                      className="text-sm font-semibold text-primary hover:underline"
+                    >
+                      Preis prüfen →
+                    </AffiliateLink>
+                  </div>
+                </li>
+              );
+            })}
           </ul>
         </section>
 
@@ -231,44 +241,51 @@ export default async function LandingPageRoute({
                 <tr>
                   <th className="p-3 font-semibold">Produkt</th>
                   <th className="p-3 font-semibold">Bewertung</th>
-                  <th className="p-3 font-semibold">Richtpreis</th>
-                  <th className="p-3 font-semibold">Ideal für</th>
+                  <th className="p-3 font-semibold">Preis</th>
+                  <th className="p-3 font-semibold">Verfügbar bei</th>
                   <th className="p-3 font-semibold" />
                 </tr>
               </thead>
               <tbody>
-                {ranked.map((entry, index) => (
-                  <tr key={entry.product.id} className="border-t">
-                    <td className="p-3">
-                      <span className="font-semibold">
-                        {entry.product.name}
-                      </span>
-                      <span className="block text-xs text-muted-foreground">
-                        {entry.product.brand}
-                      </span>
-                    </td>
-                    <td className="p-3">
-                      <StarRating rating={entry.product.rating} />
-                    </td>
-                    <td className="p-3 font-semibold">
-                      {formatPrice(entry.product.price)}
-                    </td>
-                    <td className="p-3 text-muted-foreground">
-                      {entry.product.highlight ?? "Allrounder"}
-                    </td>
-                    <td className="p-3">
-                      <AffiliateLink
-                        product={entry.product}
-                        placement={`landing-${page.slug}-table`}
-                        position={index + 1}
-                        className="whitespace-nowrap font-semibold text-primary hover:underline"
-                      >
-                        Zum Angebot bei{" "}
-                        {getMerchantLabel(entry.product.network)} →
-                      </AffiliateLink>
-                    </td>
-                  </tr>
-                ))}
+                {ranked.map((entry, index) => {
+                  const { primary, offers } = getOfferView(entry.product);
+                  return (
+                    <tr key={entry.product.id} className="border-t">
+                      <td className="p-3">
+                        <span className="font-semibold">
+                          {entry.product.name}
+                        </span>
+                        <span className="block text-xs text-muted-foreground">
+                          {entry.product.brand}
+                        </span>
+                      </td>
+                      <td className="p-3">
+                        <StarRating rating={entry.product.rating} />
+                      </td>
+                      <td className="p-3 font-semibold">
+                        {formatPrice(primary.price)}
+                        <span className="block text-xs font-normal text-muted-foreground">
+                          bei {primary.merchant}
+                        </span>
+                      </td>
+                      <td className="p-3 text-muted-foreground">
+                        {offers.map((offer) => offer.merchant).join(", ")}
+                      </td>
+                      <td className="p-3">
+                        <AffiliateLink
+                          product={entry.product}
+                          offer={primary}
+                          placement={`landing-${page.slug}-table`}
+                          position={index + 1}
+                          isPrimary
+                          className="whitespace-nowrap font-semibold text-primary hover:underline"
+                        >
+                          Zum Angebot bei {primary.merchant} →
+                        </AffiliateLink>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -306,31 +323,38 @@ export default async function LandingPageRoute({
               Ebenfalls einen Blick wert
             </h2>
             <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {alternatives.map((product, index) => (
-                <div
-                  key={product.id}
-                  className="flex flex-col gap-2 rounded-lg border bg-card p-4"
-                >
-                  <p className="font-semibold leading-tight">{product.name}</p>
-                  <StarRating rating={product.rating} />
-                  <p className="text-sm text-muted-foreground">
-                    {product.summary}
-                  </p>
-                  <div className="mt-auto flex items-center justify-between pt-2">
-                    <span className="font-semibold">
-                      {formatPrice(product.price)}
-                    </span>
-                    <AffiliateLink
-                      product={product}
-                      placement={`landing-${page.slug}-alternatives`}
-                      position={index + 1}
-                      className="text-sm font-semibold text-primary hover:underline"
-                    >
-                      Preis prüfen →
-                    </AffiliateLink>
+              {alternatives.map((product, index) => {
+                const { primary } = getOfferView(product);
+                return (
+                  <div
+                    key={product.id}
+                    className="flex flex-col gap-2 rounded-lg border bg-card p-4"
+                  >
+                    <p className="font-semibold leading-tight">
+                      {product.name}
+                    </p>
+                    <StarRating rating={product.rating} />
+                    <p className="text-sm text-muted-foreground">
+                      {product.summary}
+                    </p>
+                    <div className="mt-auto flex items-center justify-between pt-2">
+                      <span className="font-semibold">
+                        {formatPrice(primary.price)}
+                      </span>
+                      <AffiliateLink
+                        product={product}
+                        offer={primary}
+                        placement={`landing-${page.slug}-alternatives`}
+                        position={index + 1}
+                        isPrimary
+                        className="text-sm font-semibold text-primary hover:underline"
+                      >
+                        Preis prüfen →
+                      </AffiliateLink>
+                    </div>
                   </div>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </section>
         )}

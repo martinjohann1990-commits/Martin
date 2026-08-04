@@ -48,6 +48,7 @@ data/
   taxonomy.json           Kategorien + Zielgruppen ← steuert die SEO-Seiten
 lib/
   affiliate.ts            URL-Anreicherung: Partner-ID, Sub-ID, UTM
+  offers.ts               Mehrere Händler je Produkt + Auswahl des CTA-Angebots
   analytics.ts            Tracking-Events (Vercel Analytics + dataLayer)
   recommend.ts            Scoring-Engine (Bewertung × Eignung × Budget)
   landing-pages.ts        Erzeugt/parst die Slugs der SEO-Seiten
@@ -106,7 +107,58 @@ https://www.amazon.de/dp/B0XXXXXXX
   &utm_campaign=landing-best-laptops-for-students&utm_content=aerobook-14-air
 ```
 
-### 3.3 Neues Netzwerk ergänzen
+### 3.3 Mehrere Händler pro Produkt (Umsatz-Hebel)
+
+Dasselbe Gerät liegt meist bei mehreren Händlern – mit sehr unterschiedlicher
+Provision. Amazon zahlt auf Elektronik ca. 1 %, ein Awin-Programm oft 3–6 %.
+Deshalb kann jedes Produkt beliebig viele Zusatz-Angebote haben:
+
+```jsonc
+{
+  "price": 1099,                                        // Haupt-Angebot
+  "affiliateUrl": "https://www.amazon.de/dp/B0XXXXXXX",
+  "network": "amazon",
+  "offers": [                                           // weitere Händler
+    {
+      "merchant": "Cyberport",
+      "network": "awin",
+      "url": "https://www.awin1.com/cread.php?awinmid=1001&ued=…",
+      "price": 1079,
+      "commissionRate": 3.5,      // Prozent; sonst Standard aus lib/offers.ts
+      "commissionCap": 10,        // optional: Deckelung pro Verkauf in EUR
+      "note": "Versandkostenfrei" // optional
+    }
+  ]
+}
+```
+
+**So wählt die Seite den CTA (`lib/offers.ts`):**
+
+1. Alle Angebote werden nach Preis sortiert – das ist der Preisvergleich, den
+   der Nutzer auf der Karte sieht.
+2. Für den großen Button wird daraus das Angebot mit der **höchsten erwarteten
+   Provision** gewählt (`Preis × Rate`, ggf. gedeckelt) …
+3. … aber **nur** unter den Angeboten, die maximal `MAX_PRICE_DELTA` (Standard
+   3 %) über dem Bestpreis liegen.
+
+Punkt 3 ist Absicht: ohne diese Schranke würde die Seite Nutzer systematisch
+zum teureren Händler schicken. Das kostet Vertrauen — und langfristig mehr,
+als die höhere Provision einbringt. Wer aggressiver monetarisieren will, dreht
+`MAX_PRICE_DELTA` hoch; wer immer den Bestpreis verlinken will, setzt ihn auf `0`.
+
+Beispiel aus den Beispieldaten (CampusLite 14): Amazon 549 € (1 % → 5,49 €),
+Cyberport 559 € (4 % → 22,36 €). Preisabstand 1,8 %, also innerhalb der Schranke
+→ CTA geht zu Cyberport, der günstigere Amazon-Preis steht sichtbar darunter.
+**Vervierfachte erwartete Provision bei identischem Klick.**
+
+Angezeigter Preis und Ziel des Links sind dabei immer identisch — auch in der
+Schnellübersicht und der Vergleichstabelle.
+
+Die Provisions-Standardwerte je Netzwerk stehen in `DEFAULT_COMMISSION_RATE`
+(`lib/offers.ts`) und sind bewusst konservativ. Trag dort deine echten Sätze ein,
+sobald du die Programme freigeschaltet hast.
+
+### 3.4 Neues Netzwerk ergänzen
 
 In `lib/affiliate.ts` drei Zeilen erweitern (`partnerIds`, `partnerParam`, `subIdParam`)
 und den Typ `AffiliateNetwork` in `lib/types.ts` ergänzen – TypeScript zeigt dir alle
@@ -173,6 +225,12 @@ Für neue Kategorien zusätzlich Kaufkriterien in `lib/content.ts` ergänzen
 | `finder_step`     | jede beantwortete Frage       | zeigt, an welcher Frage Nutzer abspringen |
 | `finder_complete` | Ergebnis wurde ausgeliefert   | Completion Rate                           |
 | `affiliate_click` | Klick auf einen Werbe-Link    | **die Umsatzkennzahl** (inkl. Placement)  |
+
+Das Event `affiliate_click` enthält neben Produkt und Placement auch `merchant`,
+`commission_rate`, `expected_payout` und `is_primary`. Damit siehst du im
+Dashboard nicht nur Klicks, sondern den **erwarteten Umsatz je Placement** –
+und ob die Nutzer den provisionsstarken CTA oder den günstigeren Alternativlink
+nehmen.
 
 Weiteres Ziel (GA4, Plausible, eigenes Backend) anbinden: nur die Funktion `sendEvent`
 in `lib/analytics.ts` erweitern – alle Events laufen dort durch.

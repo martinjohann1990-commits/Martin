@@ -5,6 +5,27 @@
 
 export type AffiliateNetwork = "amazon" | "awin" | "impact" | "digistore24";
 
+/**
+ * Ein Angebot eines Händlers für ein Produkt.
+ * Dasselbe Gerät kann bei mehreren Händlern liegen – unterschiedlicher Preis,
+ * unterschiedliches Netzwerk, unterschiedliche Provision.
+ */
+export interface ProductOffer {
+  /** Anzeigename des Händlers, z. B. "Cyberport" */
+  merchant: string;
+  network: AffiliateNetwork;
+  /** Roh-URL ohne Tracking-Parameter – die werden zur Laufzeit ergänzt. */
+  url: string;
+  /** Preis bei diesem Händler in EUR */
+  price: number;
+  /** Provision in Prozent. Überschreibt den Netzwerk-Standard aus lib/offers.ts. */
+  commissionRate?: number;
+  /** Deckelung der Provision pro Verkauf in EUR (z. B. Kategorie-Cap bei Amazon). */
+  commissionCap?: number;
+  /** Optionaler Zusatz auf der Karte, z. B. "Versandkostenfrei". */
+  note?: string;
+}
+
 export interface Product {
   /** Stabile, eindeutige ID (wird für Tracking-Events verwendet) */
   id: string;
@@ -14,14 +35,20 @@ export interface Product {
   /** Referenziert Category.slug aus data/taxonomy.json */
   category: string;
   brand: string;
-  /** Aktueller Straßenpreis in EUR (nur Orientierung, nie als Festpreis anzeigen!) */
+  /**
+   * Preis des Haupt-Angebots in EUR (nur Orientierung, nie als Festpreis anzeigen!).
+   * Für Vergleiche und Budget-Filter wird immer der günstigste Preis aus allen
+   * Angeboten verwendet – siehe getBestPrice() in lib/offers.ts.
+   */
   price: number;
   /** Redaktionelle Bewertung 0–5 */
   rating: number;
   reviewCount: number;
-  /** Ziel-URL beim Händler – wird zur Laufzeit mit Tracking-Parametern angereichert */
+  /** Ziel-URL des Haupt-Händlers – wird zur Laufzeit mit Tracking-Parametern angereichert */
   affiliateUrl: string;
   network: AffiliateNetwork;
+  /** Weitere Händler mit demselben Produkt. Optional. */
+  offers?: ProductOffer[];
   /** Kurzer USP-Satz für Karten und Meta-Descriptions */
   summary: string;
   pros: string[];

@@ -1,3 +1,4 @@
+import { resolveOffers } from "@/lib/offers";
 import { siteConfig } from "@/lib/site";
 import type { LandingPage, Product } from "@/lib/types";
 
@@ -8,6 +9,8 @@ import type { LandingPage, Product } from "@/lib/types";
  */
 
 export function productSchema(product: Product, url: string) {
+  const offers = resolveOffers(product);
+
   return {
     "@type": "Product",
     name: product.name,
@@ -20,15 +23,26 @@ export function productSchema(product: Product, url: string) {
       bestRating: 5,
       ratingCount: product.reviewCount,
     },
-    offers: {
-      "@type": "Offer",
-      price: product.price,
-      priceCurrency: "EUR",
-      availability: "https://schema.org/InStock",
-      // Bewusst die eigene Seite, nicht der Affiliate-Link: Google erwartet in
-      // Offer.url die Seite, auf der das Angebot beschrieben wird.
-      url,
-    },
+    // Bei mehreren Händlern ist AggregateOffer korrekt – Google zeigt dann
+    // "ab X €" und die Anzahl der Angebote im Snippet.
+    // Offer.url bleibt bewusst die eigene Seite, nicht der Affiliate-Link.
+    offers:
+      offers.length > 1
+        ? {
+            "@type": "AggregateOffer",
+            offerCount: offers.length,
+            lowPrice: offers[0].price,
+            highPrice: offers[offers.length - 1].price,
+            priceCurrency: "EUR",
+            url,
+          }
+        : {
+            "@type": "Offer",
+            price: offers[0].price,
+            priceCurrency: "EUR",
+            availability: "https://schema.org/InStock",
+            url,
+          },
   };
 }
 

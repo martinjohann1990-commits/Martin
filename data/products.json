@@ -16,9 +16,34 @@
       "Lüfterlos und damit absolut geräuschlos",
       "Sehr helles Display, auch draußen lesbar"
     ],
-    "cons": ["Nur zwei USB-C-Ports", "Aufpreis für mehr RAM ist happig"],
-    "bestForTags": ["students", "home-office", "travel", "beginners"],
+    "cons": [
+      "Nur zwei USB-C-Ports",
+      "Aufpreis für mehr RAM ist happig"
+    ],
+    "bestForTags": [
+      "students",
+      "home-office",
+      "travel",
+      "beginners"
+    ],
     "highlight": "Redaktions-Favorit",
+    "offers": [
+      {
+        "merchant": "Cyberport",
+        "network": "awin",
+        "url": "https://www.awin1.com/cread.php?awinmid=1001&ued=https%3A%2F%2Fwww.cyberport.de%2Fp-aerobook-14-air.html",
+        "price": 1079,
+        "commissionRate": 3.5,
+        "note": "Versandkostenfrei"
+      },
+      {
+        "merchant": "notebooksbilliger",
+        "network": "awin",
+        "url": "https://www.awin1.com/cread.php?awinmid=1002&ued=https%3A%2F%2Fwww.notebooksbilliger.de%2Faerobook%2B14%2Bair",
+        "price": 1119,
+        "commissionRate": 3
+      }
+    ],
     "accent": "from-sky-500 to-indigo-600"
   },
   {
@@ -38,9 +63,24 @@
       "Dedizierte GPU für Export und Rendering",
       "Hervorragende Lautsprecher und Webcam"
     ],
-    "cons": ["Mit 2,1 kg kein Reisebegleiter", "Unter Volllast deutlich hörbar"],
-    "bestForTags": ["creators", "home-office"],
+    "cons": [
+      "Mit 2,1 kg kein Reisebegleiter",
+      "Unter Volllast deutlich hörbar"
+    ],
+    "bestForTags": [
+      "creators",
+      "home-office"
+    ],
     "highlight": "Beste Bildqualität",
+    "offers": [
+      {
+        "merchant": "Alternate",
+        "network": "awin",
+        "url": "https://www.awin1.com/cread.php?awinmid=1003&ued=https%3A%2F%2Fwww.alternate.de%2Fnovabook-studio-16",
+        "price": 2149,
+        "commissionRate": 3
+      }
+    ],
     "accent": "from-fuchsia-500 to-purple-700"
   },
   {
@@ -60,9 +100,24 @@
       "RAM und SSD selbst aufrüstbar",
       "Sehr gute Kühlung im Performance-Modus"
     ],
-    "cons": ["Akku hält beim Spielen ~1,5 Stunden", "Netzteil ist ein Klotz"],
-    "bestForTags": ["gamers", "creators"],
+    "cons": [
+      "Akku hält beim Spielen ~1,5 Stunden",
+      "Netzteil ist ein Klotz"
+    ],
+    "bestForTags": [
+      "gamers",
+      "creators"
+    ],
     "highlight": "Gaming-Sieger",
+    "offers": [
+      {
+        "merchant": "notebooksbilliger",
+        "network": "awin",
+        "url": "https://www.awin1.com/cread.php?awinmid=1002&ued=https%3A%2F%2Fwww.notebooksbilliger.de%2Fraptoredge%2B15%2Brtx",
+        "price": 1599,
+        "commissionRate": 3.5
+      }
+    ],
     "accent": "from-emerald-500 to-teal-700"
   },
   {
@@ -82,9 +137,25 @@
       "Mattes Full-HD-Display",
       "Erstaunlich gute Tastatur für die Klasse"
     ],
-    "cons": ["Gehäuse aus Kunststoff", "Nicht für Videoschnitt geeignet"],
-    "bestForTags": ["students", "beginners", "home-office"],
+    "cons": [
+      "Gehäuse aus Kunststoff",
+      "Nicht für Videoschnitt geeignet"
+    ],
+    "bestForTags": [
+      "students",
+      "beginners",
+      "home-office"
+    ],
     "highlight": "Preis-Leistungs-Sieger",
+    "offers": [
+      {
+        "merchant": "Cyberport",
+        "network": "awin",
+        "url": "https://www.awin1.com/cread.php?awinmid=1001&ued=https%3A%2F%2Fwww.cyberport.de%2Fp-campuslite-14.html",
+        "price": 559,
+        "commissionRate": 4
+      }
+    ],
     "accent": "from-amber-500 to-orange-600"
   },
   {
@@ -104,9 +175,25 @@
       "30 Stunden Akku mit aktivem ANC",
       "Gesprächsqualität auch bei Wind top"
     ],
-    "cons": ["Nicht faltbar, Case ist groß", "Kein Wechselakku"],
-    "bestForTags": ["travel", "home-office", "students"],
+    "cons": [
+      "Nicht faltbar, Case ist groß",
+      "Kein Wechselakku"
+    ],
+    "bestForTags": [
+      "travel",
+      "home-office",
+      "students"
+    ],
     "highlight": "Bestes ANC",
+    "offers": [
+      {
+        "merchant": "Cyberport",
+        "network": "awin",
+        "url": "https://www.awin1.com/cread.php?awinmid=1001&ued=https%3A%2F%2Fwww.cyberport.de%2Fp-silentwave-pro-anc.html",
+        "price": 339,
+        "commissionRate": 5
+      }
+    ],
     "accent": "from-slate-600 to-slate-900"
   },
   {
@@ -126,8 +213,13 @@
       "Riesige Bühne für Mixing-Entscheidungen",
       "Ersatzteile einzeln nachkaufbar"
     ],
-    "cons": ["Schallt nach außen – nichts fürs Büro", "Kein Bluetooth"],
-    "bestForTags": ["creators"],
+    "cons": [
+      "Schallt nach außen – nichts fürs Büro",
+      "Kein Bluetooth"
+    ],
+    "bestForTags": [
+      "creators"
+    ],
     "highlight": "Studio-Referenz",
     "accent": "from-rose-500 to-red-700"
   },
@@ -148,9 +240,25 @@
       "IP57 – schweiß- und regenfest",
       "Sehr fairer Preis"
     ],
-    "cons": ["ANC nur rudimentär", "Case relativ dick"],
-    "bestForTags": ["beginners", "students", "travel"],
+    "cons": [
+      "ANC nur rudimentär",
+      "Case relativ dick"
+    ],
+    "bestForTags": [
+      "beginners",
+      "students",
+      "travel"
+    ],
     "highlight": "Preistipp",
+    "offers": [
+      {
+        "merchant": "Otto",
+        "network": "awin",
+        "url": "https://www.awin1.com/cread.php?awinmid=1004&ued=https%3A%2F%2Fwww.otto.de%2Fp%2Fpulsefit-sport-buds",
+        "price": 99,
+        "commissionRate": 6
+      }
+    ],
     "accent": "from-lime-500 to-green-700"
   },
   {
@@ -170,8 +278,14 @@
       "Funk mit unter 20 ms Latenz",
       "Extrem bequem auch nach 5 Stunden"
     ],
-    "cons": ["Design fällt auf", "Nur über USB-Dongle kabellos"],
-    "bestForTags": ["gamers", "home-office"],
+    "cons": [
+      "Design fällt auf",
+      "Nur über USB-Dongle kabellos"
+    ],
+    "bestForTags": [
+      "gamers",
+      "home-office"
+    ],
     "highlight": "Bestes Mikrofon",
     "accent": "from-violet-500 to-indigo-700"
   },
@@ -192,9 +306,24 @@
       "Ersetzt ein Zwei-Monitor-Setup",
       "Integrierter KVM-Switch"
     ],
-    "cons": ["Braucht viel Schreibtischtiefe", "Nur 100 Hz"],
-    "bestForTags": ["home-office", "creators"],
+    "cons": [
+      "Braucht viel Schreibtischtiefe",
+      "Nur 100 Hz"
+    ],
+    "bestForTags": [
+      "home-office",
+      "creators"
+    ],
     "highlight": "Home-Office-Sieger",
+    "offers": [
+      {
+        "merchant": "Alternate",
+        "network": "awin",
+        "url": "https://www.awin1.com/cread.php?awinmid=1003&ued=https%3A%2F%2Fwww.alternate.de%2Fvistawide-34",
+        "price": 689,
+        "commissionRate": 4
+      }
+    ],
     "accent": "from-cyan-500 to-blue-700"
   },
   {
@@ -214,9 +343,24 @@
       "240 Hz mit VRR ohne Tearing",
       "3 Jahre Burn-in-Garantie"
     ],
-    "cons": ["Teuer", "Textdarstellung auf dem Desktop leicht farbsäumig"],
-    "bestForTags": ["gamers", "creators"],
+    "cons": [
+      "Teuer",
+      "Textdarstellung auf dem Desktop leicht farbsäumig"
+    ],
+    "bestForTags": [
+      "gamers",
+      "creators"
+    ],
     "highlight": "Gaming-Referenz",
+    "offers": [
+      {
+        "merchant": "Cyberport",
+        "network": "awin",
+        "url": "https://www.awin1.com/cread.php?awinmid=1001&ued=https%3A%2F%2Fwww.cyberport.de%2Fp-framerush-27-oled.html",
+        "price": 919,
+        "commissionRate": 4
+      }
+    ],
     "accent": "from-pink-500 to-rose-700"
   },
   {
@@ -236,8 +380,15 @@
       "Scharfes QHD zum Einsteigerpreis",
       "Flimmerfrei mit Blaulichtfilter"
     ],
-    "cons": ["Kein USB-C", "Lautsprecher sind Beiwerk"],
-    "bestForTags": ["home-office", "students", "beginners"],
+    "cons": [
+      "Kein USB-C",
+      "Lautsprecher sind Beiwerk"
+    ],
+    "bestForTags": [
+      "home-office",
+      "students",
+      "beginners"
+    ],
     "highlight": "Preis-Leistungs-Sieger",
     "accent": "from-teal-500 to-cyan-700"
   },
@@ -258,8 +409,13 @@
       "Hardware-Kalibrierung inklusive Software",
       "Mattes Panel ohne Spiegelungen"
     ],
-    "cons": ["Nur 60 Hz", "Overkill für reine Office-Arbeit"],
-    "bestForTags": ["creators"],
+    "cons": [
+      "Nur 60 Hz",
+      "Overkill für reine Office-Arbeit"
+    ],
+    "bestForTags": [
+      "creators"
+    ],
     "highlight": "Farb-Referenz",
     "accent": "from-orange-500 to-amber-700"
   },
@@ -280,8 +436,15 @@
       "Drei Geräte per Bluetooth koppelbar",
       "Hot-Swap für eigene Switches"
     ],
-    "cons": ["Keine Nummernblock-Variante", "RGB nur einfarbig"],
-    "bestForTags": ["home-office", "students", "creators"],
+    "cons": [
+      "Keine Nummernblock-Variante",
+      "RGB nur einfarbig"
+    ],
+    "bestForTags": [
+      "home-office",
+      "students",
+      "creators"
+    ],
     "highlight": "Bürotauglich",
     "accent": "from-indigo-500 to-blue-800"
   },
@@ -302,9 +465,23 @@
       "8000-Hz-Polling für minimale Latenz",
       "Vollmetall-Gehäuse"
     ],
-    "cons": ["Software nur für Windows", "Kabelgebunden"],
-    "bestForTags": ["gamers"],
+    "cons": [
+      "Software nur für Windows",
+      "Kabelgebunden"
+    ],
+    "bestForTags": [
+      "gamers"
+    ],
     "highlight": "Gaming-Sieger",
+    "offers": [
+      {
+        "merchant": "Alternate",
+        "network": "awin",
+        "url": "https://www.awin1.com/cread.php?awinmid=1003&ued=https%3A%2F%2Fwww.alternate.de%2Frapidstrike-tkl",
+        "price": 179,
+        "commissionRate": 5
+      }
+    ],
     "accent": "from-red-500 to-rose-800"
   },
   {
@@ -324,8 +501,15 @@
       "Bis zu 3 Monate Akkulaufzeit",
       "Funktioniert mit Tablet und Smartphone"
     ],
-    "cons": ["Gewöhnungsbedürftiges Layout", "Spalt in der Mitte"],
-    "bestForTags": ["travel", "students", "beginners"],
+    "cons": [
+      "Gewöhnungsbedürftiges Layout",
+      "Spalt in der Mitte"
+    ],
+    "bestForTags": [
+      "travel",
+      "students",
+      "beginners"
+    ],
     "highlight": "Reise-Tipp",
     "accent": "from-emerald-500 to-green-800"
   },
@@ -346,8 +530,14 @@
       "Handballenauflagen aus Leder inklusive",
       "Merklich entspanntere Haltung"
     ],
-    "cons": ["1–2 Wochen Eingewöhnung", "Hoher Preis"],
-    "bestForTags": ["home-office", "creators"],
+    "cons": [
+      "1–2 Wochen Eingewöhnung",
+      "Hoher Preis"
+    ],
+    "bestForTags": [
+      "home-office",
+      "creators"
+    ],
     "highlight": "Ergonomie-Sieger",
     "accent": "from-purple-500 to-violet-800"
   },
@@ -368,9 +558,25 @@
       "7 Tage Akku bei normaler Nutzung",
       "Keine Abo-Pflicht für Auswertungen"
     ],
-    "cons": ["Nur eine Gehäusegröße", "Keine Musikspeicherung"],
-    "bestForTags": ["beginners", "travel", "home-office"],
+    "cons": [
+      "Nur eine Gehäusegröße",
+      "Keine Musikspeicherung"
+    ],
+    "bestForTags": [
+      "beginners",
+      "travel",
+      "home-office"
+    ],
     "highlight": "Allrounder",
+    "offers": [
+      {
+        "merchant": "Otto",
+        "network": "awin",
+        "url": "https://www.awin1.com/cread.php?awinmid=1004&ued=https%3A%2F%2Fwww.otto.de%2Fp%2Fvitaltrack-5-pro",
+        "price": 335,
+        "commissionRate": 4
+      }
+    ],
     "accent": "from-blue-500 to-indigo-800"
   },
   {
@@ -390,8 +596,13 @@
       "Saphirglas und Titanlünette",
       "Bis 21 Tage im Smartwatch-Modus"
     ],
-    "cons": ["Groß und schwer am Handgelenk", "Hoher Anschaffungspreis"],
-    "bestForTags": ["travel"],
+    "cons": [
+      "Groß und schwer am Handgelenk",
+      "Hoher Anschaffungspreis"
+    ],
+    "bestForTags": [
+      "travel"
+    ],
     "highlight": "Outdoor-Sieger",
     "accent": "from-stone-500 to-neutral-800"
   },
@@ -412,8 +623,14 @@
       "10 Tage Akkulaufzeit",
       "App ist wirklich selbsterklärend"
     ],
-    "cons": ["GPS nur über das Handy", "Kunststoffgehäuse"],
-    "bestForTags": ["beginners", "students"],
+    "cons": [
+      "GPS nur über das Handy",
+      "Kunststoffgehäuse"
+    ],
+    "bestForTags": [
+      "beginners",
+      "students"
+    ],
     "highlight": "Einsteiger-Tipp",
     "accent": "from-sky-400 to-cyan-700"
   },
@@ -434,8 +651,14 @@
       "Kalender- und Meeting-Ansicht",
       "Stress- und Atemübungen mit Erinnerung"
     ],
-    "cons": ["Sportmodi nur Basis", "Kein Mobilfunk"],
-    "bestForTags": ["home-office", "beginners"],
+    "cons": [
+      "Sportmodi nur Basis",
+      "Kein Mobilfunk"
+    ],
+    "bestForTags": [
+      "home-office",
+      "beginners"
+    ],
     "highlight": "Business-Tipp",
     "accent": "from-zinc-500 to-slate-800"
   },
@@ -456,9 +679,24 @@
       "120 Hz für flüssiges Skizzieren",
       "Stift liegt bei, kein Zubehörkauf nötig"
     ],
-    "cons": ["Tastatur-Cover kostet extra", "Nur 128 GB in der Basis"],
-    "bestForTags": ["creators", "students"],
+    "cons": [
+      "Tastatur-Cover kostet extra",
+      "Nur 128 GB in der Basis"
+    ],
+    "bestForTags": [
+      "creators",
+      "students"
+    ],
     "highlight": "Bestes Stift-Erlebnis",
+    "offers": [
+      {
+        "merchant": "Cyberport",
+        "network": "awin",
+        "url": "https://www.awin1.com/cread.php?awinmid=1001&ued=https%3A%2F%2Fwww.cyberport.de%2Fp-sketchpad-11.html",
+        "price": 649,
+        "commissionRate": 3
+      }
+    ],
     "accent": "from-violet-500 to-fuchsia-700"
   },
   {
@@ -478,8 +716,15 @@
       "Bei Sonnenlicht perfekt lesbar",
       "Nur 190 g leicht"
     ],
-    "cons": ["Kein Video, kein Farb-Content", "Seitenaufbau bewusst langsam"],
-    "bestForTags": ["travel", "students", "beginners"],
+    "cons": [
+      "Kein Video, kein Farb-Content",
+      "Seitenaufbau bewusst langsam"
+    ],
+    "bestForTags": [
+      "travel",
+      "students",
+      "beginners"
+    ],
     "highlight": "Reise-Liebling",
     "accent": "from-amber-400 to-yellow-700"
   },
@@ -500,8 +745,14 @@
       "Umfangreiche Kindersicherung",
       "microSD-Slot für mehr Speicher"
     ],
-    "cons": ["Display eher blass", "Nicht für anspruchsvolle Apps"],
-    "bestForTags": ["beginners", "travel"],
+    "cons": [
+      "Display eher blass",
+      "Nicht für anspruchsvolle Apps"
+    ],
+    "bestForTags": [
+      "beginners",
+      "travel"
+    ],
     "highlight": "Preistipp",
     "accent": "from-green-500 to-emerald-800"
   },
@@ -522,9 +773,26 @@
       "OLED mit 13 Zoll und HDR",
       "Ersetzt für viele das Notebook"
     ],
-    "cons": ["Mit Tastatur richtig teuer", "Akku unter Last nur ~6 Stunden"],
-    "bestForTags": ["creators", "home-office", "travel"],
+    "cons": [
+      "Mit Tastatur richtig teuer",
+      "Akku unter Last nur ~6 Stunden"
+    ],
+    "bestForTags": [
+      "creators",
+      "home-office",
+      "travel"
+    ],
     "highlight": "Leistungs-Sieger",
+    "offers": [
+      {
+        "merchant": "Hersteller-Shop",
+        "network": "impact",
+        "url": "https://powerslate.pxf.io/c/PLACEHOLDER/1234/5678",
+        "price": 1249,
+        "commissionRate": 6,
+        "note": "3 Jahre Garantie"
+      }
+    ],
     "accent": "from-indigo-500 to-purple-800"
   }
 ]

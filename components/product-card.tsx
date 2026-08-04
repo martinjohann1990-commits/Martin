@@ -4,7 +4,7 @@ import { StarRating } from "@/components/star-rating";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { buttonVariants } from "@/components/ui/button";
-import { getMerchantLabel } from "@/lib/affiliate";
+import { getOfferView } from "@/lib/offers";
 import type { Product } from "@/lib/types";
 import { cn, formatPrice } from "@/lib/utils";
 
@@ -36,6 +36,8 @@ export function ProductCard({
   className,
 }: ProductCardProps) {
   const isTop = position === 1;
+  const { primary, alternatives, bestPrice } = getOfferView(product);
+  const hasCheaperAlternative = primary.price > bestPrice;
 
   return (
     <Card
@@ -119,28 +121,70 @@ export function ProductCard({
         <div className="mt-auto space-y-3 pt-2">
           <div className="flex items-baseline gap-2">
             <span className="text-2xl font-bold">
-              {formatPrice(product.price)}
+              {formatPrice(primary.price)}
             </span>
             <span className="text-xs text-muted-foreground">
-              Richtpreis – Tagespreis prüfen
+              bei {primary.merchant} · Tagespreis prüfen
             </span>
           </div>
 
           <AffiliateLink
             product={product}
+            offer={primary}
             placement={placement}
             position={position}
+            isPrimary
             className={cn(
               buttonVariants({ variant: "cta", size: "lg" }),
               "w-full"
             )}
           >
-            Preis auf {getMerchantLabel(product.network)} prüfen
+            Preis auf {primary.merchant} prüfen
             <ArrowUpRight className="h-4 w-4" />
           </AffiliateLink>
 
+          {alternatives.length > 0 && (
+            <div className="rounded-md border border-dashed p-3">
+              <p className="text-xs font-semibold text-muted-foreground">
+                {hasCheaperAlternative
+                  ? "Günstiger bei:"
+                  : "Ebenfalls verfügbar bei:"}
+              </p>
+              <ul className="mt-1.5 space-y-1">
+                {alternatives.map((offer) => (
+                  <li
+                    key={offer.id}
+                    className="flex items-center justify-between gap-2 text-sm"
+                  >
+                    <AffiliateLink
+                      product={product}
+                      offer={offer}
+                      placement={`${placement}-alt`}
+                      position={position}
+                      className="font-medium text-primary hover:underline"
+                    >
+                      {offer.merchant}
+                    </AffiliateLink>
+                    <span
+                      className={cn(
+                        "tabular-nums",
+                        offer.price < primary.price
+                          ? "font-semibold text-success"
+                          : "text-muted-foreground"
+                      )}
+                    >
+                      {formatPrice(offer.price)}
+                      {offer.note ? ` · ${offer.note}` : ""}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
           <p className="text-center text-[11px] leading-tight text-muted-foreground">
-            Werbe-Link · Preis kann sich geändert haben · Kein Aufpreis für dich
+            Werbe-Links · Preise können sich geändert haben · Kein Aufpreis für
+            dich
           </p>
         </div>
       </CardContent>

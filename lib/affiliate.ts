@@ -1,4 +1,4 @@
-import type { AffiliateNetwork, Product } from "@/lib/types";
+import type { AffiliateNetwork, ProductOffer } from "@/lib/types";
 
 /**
  * Netzwerk-Konfiguration.
@@ -33,41 +33,45 @@ const utmSource = process.env.NEXT_PUBLIC_UTM_SOURCE ?? "deal-finder";
 export interface AffiliateLinkContext {
   /** Wo wurde geklickt? z. B. "finder-result", "landing-best-laptops-for-students" */
   placement: string;
+  /** Produkt-ID – landet in der Sub-ID des Netzwerks. */
+  productId: string;
+  /** Produkt-Slug – landet in utm_content. */
+  productSlug: string;
   /** Position in der Liste (1-basiert) – zeigt später, welche Slots konvertieren. */
   position?: number;
 }
 
 /**
- * Baut aus der Roh-URL des Produkts einen vollständigen Affiliate-Link:
+ * Baut aus der Roh-URL eines Angebots einen vollständigen Affiliate-Link:
  * Partner-ID + Sub-ID + UTM-Parameter. Bestehende Query-Parameter der
  * Ziel-URL bleiben erhalten, gesetzte Werte werden nicht überschrieben.
  */
 export function buildAffiliateUrl(
-  product: Product,
+  offer: ProductOffer,
   context: AffiliateLinkContext
 ): string {
   let url: URL;
   try {
-    url = new URL(product.affiliateUrl);
+    url = new URL(offer.url);
   } catch {
     // Ungültige URL in den Daten: lieber der Rohwert als ein kaputter Link.
-    return product.affiliateUrl;
+    return offer.url;
   }
 
-  const partnerId = partnerIds[product.network];
-  if (partnerId && !url.searchParams.has(partnerParam[product.network])) {
-    url.searchParams.set(partnerParam[product.network], partnerId);
+  const partnerId = partnerIds[offer.network];
+  if (partnerId && !url.searchParams.has(partnerParam[offer.network])) {
+    url.searchParams.set(partnerParam[offer.network], partnerId);
   }
 
-  const subId = buildSubId(product, context);
-  if (!url.searchParams.has(subIdParam[product.network])) {
-    url.searchParams.set(subIdParam[product.network], subId);
+  const subId = buildSubId(offer, context);
+  if (!url.searchParams.has(subIdParam[offer.network])) {
+    url.searchParams.set(subIdParam[offer.network], subId);
   }
 
   url.searchParams.set("utm_source", utmSource);
   url.searchParams.set("utm_medium", "affiliate");
   url.searchParams.set("utm_campaign", context.placement);
-  url.searchParams.set("utm_content", product.slug);
+  url.searchParams.set("utm_content", context.productSlug);
 
   return url.toString();
 }
@@ -75,9 +79,10 @@ export function buildAffiliateUrl(
 /**
  * Sub-IDs dürfen bei den meisten Netzwerken nur alphanumerisch + Bindestrich sein
  * und sind längenbegrenzt (Amazon: 100 Zeichen).
+ * Format: placement-produktid-haendler-posN
  */
-function buildSubId(product: Product, context: AffiliateLinkContext): string {
-  const parts = [context.placement, product.id];
+function buildSubId(offer: ProductOffer, context: AffiliateLinkContext): string {
+  const parts = [context.placement, context.productId, offer.merchant];
   if (context.position) parts.push(`pos${context.position}`);
   return parts
     .join("-")
@@ -88,17 +93,3 @@ function buildSubId(product: Product, context: AffiliateLinkContext): string {
 
 /** Einheitliche Rel-Attribute für alle bezahlten Links (Google-konform). */
 export const AFFILIATE_REL = "sponsored nofollow noopener noreferrer";
-
-/** Händlername für den CTA-Text, z. B. "Preis auf Amazon prüfen". */
-export function getMerchantLabel(network: AffiliateNetwork): string {
-  switch (network) {
-    case "amazon":
-      return "Amazon";
-    case "awin":
-      return "Partnershop";
-    case "impact":
-      return "Hersteller";
-    case "digistore24":
-      return "Anbieter";
-  }
-}
