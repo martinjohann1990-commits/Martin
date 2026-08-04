@@ -12,9 +12,12 @@ und vom CDN ausgeliefert.
 
 ---
 
-> **Nächste Schritte:** Der konkrete Umsetzungsplan von hier bis zum ersten Cashflow
-> steht in [`docs/UMSETZUNG.md`](docs/UMSETZUNG.md) — inklusive Reihenfolge,
-> Befehlen und Checkliste vor dem Livegang.
+> **Du willst live gehen?** [`docs/LIVEGANG.md`](docs/LIVEGANG.md) ist das Runbook:
+> jeder Schritt in der richtigen Reihenfolge, von der Node-Installation bis zur
+> Anmeldung bei Amazon PartnerNet — mit Prüfung nach jedem Schritt.
+>
+> **Du willst die Strategie dahinter?** [`docs/UMSETZUNG.md`](docs/UMSETZUNG.md)
+> erklärt die Phasen, die Reihenfolge-Logik und was danach kommt.
 
 ## 1. Schnellstart
 
