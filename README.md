@@ -11,6 +11,10 @@ werden zur Build-Zeit vorgerendert (SSG) und vom CDN ausgeliefert.
 
 ---
 
+> **Nächste Schritte:** Der konkrete Umsetzungsplan von hier bis zum ersten Cashflow
+> steht in [`docs/UMSETZUNG.md`](docs/UMSETZUNG.md) — inklusive Reihenfolge,
+> Befehlen und Checkliste vor dem Livegang.
+
 ## 1. Schnellstart
 
 ```bash
