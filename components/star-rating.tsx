@@ -6,6 +6,8 @@ interface StarRatingProps {
   reviewCount?: number;
   className?: string;
   size?: "sm" | "md";
+  /** Zusatz hinter der Note ausblenden – z. B. in der Vergleichstabelle. */
+  hideLabel?: boolean;
 }
 
 /**
@@ -17,6 +19,7 @@ export function StarRating({
   reviewCount,
   className,
   size = "sm",
+  hideLabel = false,
 }: StarRatingProps) {
   const clamped = Math.max(0, Math.min(5, rating));
   const percentage = (clamped / 5) * 100;
@@ -47,11 +50,14 @@ export function StarRating({
         </div>
       </div>
       <span className="text-sm font-semibold">{clamped.toFixed(1)}</span>
-      {typeof reviewCount === "number" && (
-        <span className="text-xs text-muted-foreground">
-          ({new Intl.NumberFormat("de-DE").format(reviewCount)} Bewertungen)
-        </span>
-      )}
+      {!hideLabel &&
+        (typeof reviewCount === "number" ? (
+          <span className="text-xs text-muted-foreground">
+            ({new Intl.NumberFormat("de-DE").format(reviewCount)} Bewertungen)
+          </span>
+        ) : (
+          <span className="text-xs text-muted-foreground">Redaktionswertung</span>
+        ))}
     </div>
   );
 }

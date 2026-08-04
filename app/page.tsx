@@ -107,11 +107,12 @@ export default function HomePage() {
               {[
                 {
                   title: "Produktart wählen",
-                  text: "Laptop, Kopfhörer, Monitor, Tastatur, Smartwatch oder Tablet.",
+                  // Aus der Taxonomie erzeugt: neue Kategorien stehen automatisch hier.
+                  text: `${categories.map((category) => category.label).join(", ")} – je nachdem, was du gerade suchst.`,
                 },
                 {
                   title: "Einsatzzweck angeben",
-                  text: "Studium, Gaming, Home-Office, Kreativarbeit, Reisen oder Einstieg.",
+                  text: `${targets.map((target) => target.label).join(", ")} – wir filtern danach, nicht nach Marketing-Versprechen.`,
                 },
                 {
                   title: "Budget festlegen",
@@ -119,7 +120,7 @@ export default function HomePage() {
                 },
                 {
                   title: "Top 3 vergleichen",
-                  text: "Mit Match-Score, Vor- und Nachteilen und Direktlink zum Händler.",
+                  text: "Mit Match-Score, Vor- und Nachteilen und Preisvergleich je Händler.",
                 },
               ].map((item, index) => (
                 <li key={item.title} className="flex gap-3">

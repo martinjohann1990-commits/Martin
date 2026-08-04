@@ -41,9 +41,15 @@ export interface Product {
    * Angeboten verwendet – siehe getBestPrice() in lib/offers.ts.
    */
   price: number;
-  /** Redaktionelle Bewertung 0–5 */
+  /** Redaktionelle Bewertung 0–5 – die Einschätzung der Redaktion, keine Kundenbewertung. */
   rating: number;
-  reviewCount: number;
+  /**
+   * Anzahl der Kundenbewertungen beim Händler. Optional und **nur** ausfüllen,
+   * wenn der Wert tatsächlich nachgeschlagen wurde: Nur dann wird
+   * AggregateRating-Markup ausgegeben. Erfundene Werte sind ein Verstoß gegen
+   * Googles Richtlinien für strukturierte Daten.
+   */
+  reviewCount?: number;
   /** Ziel-URL des Haupt-Händlers – wird zur Laufzeit mit Tracking-Parametern angereichert */
   affiliateUrl: string;
   network: AffiliateNetwork;

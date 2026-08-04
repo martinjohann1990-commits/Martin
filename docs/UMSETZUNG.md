@@ -2,8 +2,9 @@
 
 Stand: August 2026 · Branch `claude/niche-ai-recommendation-mvp-gdy1gd`
 
-Der Code ist fertig. Was jetzt fehlt, ist **kein Code, sondern Substanz**: echte Produkte,
-echte Partner-IDs, eine Domain, Rechtstexte und Traffic. Diese Datei ist die Reihenfolge,
+Der Code steht, die Rechtsseiten stehen, und die Kategorie **Monitore** ist mit acht
+echten Geräten gefüllt. Was jetzt fehlt, ist **kein Code**: deine Impressumsdaten, eine
+Domain, die Partner-IDs und Traffic. Diese Datei ist die Reihenfolge,
 in der du das abarbeitest — mit den konkreten Befehlen, Dateien und Abbruchkriterien.
 
 **Realistische Erwartung vorweg:** Phase 0 bis 2 sind 2–4 Arbeitstage. Der erste Umsatz
@@ -65,7 +66,7 @@ Kaufen bei einem beliebigen Registrar (INWX, Netcup, Namecheap). Kosten: ~10 €
 > **Merksatz:** `NEXT_PUBLIC_*` wird beim **Build** eingebacken. Jede Änderung an diesen
 > Variablen braucht danach ein **Redeploy**, sonst ist der alte Wert noch drin.
 
-**Fertig, wenn:** `https://deine-domain.de/best-laptops-for-students` lädt und
+**Fertig, wenn:** `https://deine-domain.de/best-monitors-for-home-office` lädt und
 `https://deine-domain.de/sitemap.xml` deine Domain enthält (nicht `deine-domain.de`).
 
 ### 0.4 Impressum und Datenschutzerklärung — Pflicht, nicht optional
@@ -124,69 +125,73 @@ ist und die Seite echte Produkte zeigt** — nicht vorher.
 
 ---
 
-## Phase 1 — Echte Produktdaten (2–3 Tage, der eigentliche Wert)
+## Phase 1 — Echte Produktdaten
 
-Aktuell stehen 24 Platzhalter-Produkte in `data/products.json` (`B0PLACEHOLD…`). Solange
-die drin sind, darf keine Werbung und kein Partnerprogramm auf die Seite.
+### 1.1 Erledigt: Kategorie Monitore mit acht echten Geräten
 
-### 1.1 Eine Kategorie statt sechs
+`data/products.json` enthält keine Platzhalter mehr, sondern acht real erhältliche
+Monitore. `data/taxonomy.json` ist auf die Kategorie **Monitore** und fünf Zielgruppen
+reduziert; daraus entstehen fünf Landingpages.
 
-**Fang mit genau einer Kategorie an** und mach sie vollständig. Sechs halbfertige
-Kategorien ranken nirgends; eine tiefe Kategorie kann für ihre Longtail-Keywords ranken.
+Warum Monitore: objektiv vergleichbare Kennzahlen (Größe, Auflösung, Bildrate, Panel),
+eine Kaufentscheidung, die sich in einem Absatz begründen lässt, ein mittlerer bis hoher
+Warenkorb (170–705 €) und eine saubere Zuordnung zu Zielgruppen — Home-Office, Gaming und
+Kreativarbeit stellen völlig unterschiedliche Anforderungen an dasselbe Produkt.
 
-Empfehlung für den Start: **Kopfhörer** oder **Monitore**.
-Begründung: mittlerer Preis (60–400 €), hohe Suchnachfrage, kurze Kaufentscheidung,
-und die Provisionssätze außerhalb von Amazon sind hier besser als bei Laptops.
+**Preise: Stand August 2026**, recherchiert über deutsche Preisvergleiche. Sie sind als
+Richtwerte gedacht — die Karten schreiben „Tagespreis prüfen" dazu.
 
-Nicht benötigte Kategorien vorerst aus `data/taxonomy.json` entfernen — dann verschwinden
-ihre Landingpages automatisch aus Sitemap und Navigation.
+### 1.2 Was du noch selbst eintragen musst
 
-### 1.2 Produkte recherchieren
+Zwei Dinge kann nur jemand mit Amazon-Zugang erledigen:
 
-Pro Kategorie **8 bis 12 echte Produkte**. Quellen: Testberichte (Stiftung Warentest,
-Computerbild, Techniktests), Amazon-Bestsellerlisten, Rezensionen mit „verifizierter
-Kauf"-Filter.
+1. **ASINs.** Die `affiliateUrl` zeigt aktuell auf eine Amazon-Suche nach dem exakten
+   Modellnamen. Das funktioniert und ist über PartnerNet vergütungsfähig, konvertiert aber
+   schlechter als ein direkter Produktlink. Ersetze sie nach und nach durch
+   `https://www.amazon.de/dp/<ASIN>` — die ASIN steht auf der Produktseite unter
+   „Produktinformationen". `npm run check:launch` listet dir alle offenen Links auf.
+2. **Kundenbewertungen.** Das Feld `reviewCount` ist bewusst leer. Trag es nur ein, wenn
+   du den Wert wirklich nachgeschlagen hast — nur dann gibt die Seite
+   AggregateRating-Markup aus. Erfundene Bewertungszahlen sind ein Verstoß gegen Googles
+   Richtlinien für strukturierte Daten und können zur Abwertung führen.
 
-Pro Produkt brauchst du:
+Das Feld `rating` ist die **redaktionelle Note der Seite**, keine Kundenbewertung. Sie
+wird als `Review` mit dir als Autor ausgezeichnet und auf den Karten als
+„Redaktionswertung" beschriftet. Geh die acht Noten durch und passe sie an deine eigene
+Einschätzung an — es ist deine Empfehlung, die dort steht.
+
+### 1.3 Auswahl erweitern
+
+Die Landingpage `/best-monitors-for-beginners` hat erst drei Produkte. Sinnvolle
+Ergänzungen: ein Büro-Monitor unter 200 €, ein 4K-Modell um 300 € und ein Ultrawide.
+Jedes weitere Produkt verteilt sich über `bestForTags` automatisch auf die passenden
+Seiten.
+
+Feld-für-Feld-Vorlage:
 
 | Feld | Woher |
 |---|---|
-| `name`, `brand` | Herstellerseite |
-| `slug` | selbst, kleingeschrieben mit Bindestrichen |
-| `affiliateUrl` | Amazon-Produktseite, URL **auf `/dp/ASIN` kürzen** — keine Suchparameter |
-| `price` | Tagespreis beim Erfassen, als Richtwert |
-| `rating` | **deine eigene redaktionelle Note**, nicht die Amazon-Sterne kopieren |
-| `reviewCount` | Anzahl Rezensionen zum Erfassungszeitpunkt |
-| `summary` | ein Satz, der den USP trifft |
-| `pros` / `cons` | 3 und 2 — **die Nachteile sind der Trust-Faktor, nicht weglassen** |
-| `bestForTags` | für welche Zielgruppen aus `taxonomy.json` das Gerät wirklich passt |
+| `name`, `brand` | Herstellerseite, exakte Modellbezeichnung inklusive Kürzel |
+| `slug` | kleingeschrieben mit Bindestrichen, muss eindeutig sein |
+| `affiliateUrl` | Amazon-Produktseite, auf `/dp/<ASIN>` gekürzt |
+| `price` | Straßenpreis am Tag der Recherche (Preisvergleich, nicht UVP) |
+| `rating` | deine redaktionelle Note von 0 bis 5 |
+| `summary` | ein Satz, der den Kaufgrund trifft |
+| `pros` / `cons` | 3 und 2 — **die Nachteile sind der Trust-Faktor** |
+| `bestForTags` | nur Zielgruppen, für die das Gerät wirklich die richtige Wahl ist |
 
 **Harte Regel:** Nichts erfinden. Ein falscher Preis oder eine erfundene Bewertung ist
 wettbewerbsrechtlich angreifbar und zerstört genau das Vertrauen, von dem das
-Geschäftsmodell lebt. Was du nicht belegen kannst, lässt du weg.
+Geschäftsmodell lebt.
 
-### 1.3 Datei bearbeiten und prüfen
-
-```bash
-# data/products.json bearbeiten, dann:
-npm run typecheck      # meckert bei falschen Feldern
-npm run build          # zeigt, wie viele Landingpages entstehen
-npm run dev            # optisch prüfen
-```
-
-`bestForTags` steuert, welche Landingpages entstehen: Eine Seite wird nur gebaut, wenn
-**mindestens 2 Produkte** die Kombination abdecken (`MIN_PRODUCTS_PER_PAGE` in
-`lib/landing-pages.ts`). Für eine gute Seite solltest du eher 4–6 Produkte pro
-Kombination anpeilen.
-
-**Fertig, wenn:** `npm run build` läuft durch, jede Landingpage zeigt mindestens
-4 Produkte, und in der ganzen Datei steht kein `PLACEHOLD` mehr.
+Nach jeder Änderung:
 
 ```bash
-grep -c PLACEHOLD data/products.json    # muss 0 ergeben
+npm run check:launch
+npm run build
 ```
 
----
+Und `lastReviewedAt` in `lib/site.ts` mitziehen.
 
 ## Phase 2 — Zweitanbieter für bessere Provisionen (1 Tag)
 

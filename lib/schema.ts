@@ -17,12 +17,34 @@ export function productSchema(product: Product, url: string) {
     brand: { "@type": "Brand", name: product.brand },
     description: product.summary,
     url,
-    aggregateRating: {
-      "@type": "AggregateRating",
-      ratingValue: product.rating,
-      bestRating: 5,
-      ratingCount: product.reviewCount,
+    /**
+     * Unsere Note ist eine redaktionelle Einschätzung, keine Sammlung von
+     * Kundenbewertungen – deshalb `Review` mit uns als Autor. AggregateRating
+     * kommt nur dazu, wenn eine tatsächlich nachgeschlagene Anzahl an
+     * Kundenbewertungen hinterlegt ist. Erfundene Zahlen wären ein Verstoß
+     * gegen Googles Richtlinien für strukturierte Daten.
+     */
+    review: {
+      "@type": "Review",
+      author: { "@type": "Organization", name: siteConfig.name },
+      reviewRating: {
+        "@type": "Rating",
+        ratingValue: product.rating,
+        bestRating: 5,
+        worstRating: 0,
+      },
+      reviewBody: product.summary,
     },
+    ...(product.reviewCount
+      ? {
+          aggregateRating: {
+            "@type": "AggregateRating",
+            ratingValue: product.rating,
+            bestRating: 5,
+            ratingCount: product.reviewCount,
+          },
+        }
+      : {}),
     // Bei mehreren Händlern ist AggregateOffer korrekt – Google zeigt dann
     // "ab X €" und die Anzahl der Angebote im Snippet.
     // Offer.url bleibt bewusst die eigene Seite, nicht der Affiliate-Link.

@@ -92,7 +92,9 @@ for (const product of products) {
   if (!(product.rating >= 0 && product.rating <= 5)) {
     fail(`${label}: rating muss zwischen 0 und 5 liegen.`);
   }
-  if (!(product.reviewCount >= 0)) warn(`${label}: reviewCount fehlt.`);
+  if (product.reviewCount !== undefined && !(product.reviewCount > 0)) {
+    fail(`${label}: reviewCount ist gesetzt, aber kein sinnvoller Wert – Feld weglassen oder echten Wert eintragen.`);
+  }
   if (!product.summary?.trim()) fail(`${label}: summary fehlt.`);
   if ((product.pros?.length ?? 0) < 2) fail(`${label}: mindestens 2 Vorteile angeben.`);
   if ((product.cons?.length ?? 0) < 1) {

@@ -6,8 +6,9 @@ plus automatisch generierte SEO-Landingpages nach dem Muster `/best-[category]-f
 **Tech-Stack:** Next.js 15 (App Router, Server Components) · TypeScript · Tailwind CSS ·
 shadcn-UI-Konventionen · Vercel Analytics · JSON-Datenquelle (kein Backend, keine Datenbank).
 
-**Kennzahlen des Builds:** 19 statische Landingpages, ~102 kB First-Load-JS, alle Seiten
-werden zur Build-Zeit vorgerendert (SSG) und vom CDN ausgeliefert.
+**Aktueller Stand:** Kategorie Monitore mit acht echten Geräten, 5 statische
+Landingpages, ~102 kB First-Load-JS, alle Seiten werden zur Build-Zeit vorgerendert (SSG)
+und vom CDN ausgeliefert.
 
 ---
 
@@ -54,7 +55,7 @@ Exit-Code 1, sobald ein Fehler gefunden wurde (damit auch CI-tauglich):
 app/
   layout.tsx              Grundgerüst, globale Metadaten, Analytics
   page.tsx                Startseite: Hero + Finder + Trust + FAQ + interne Links
-  [slug]/page.tsx         Programmatische Landingpages (/best-laptops-for-students)
+  [slug]/page.tsx         Programmatische Landingpages (/best-monitors-for-home-office)
   ratgeber/page.tsx       Übersicht aller generierten Landingpages
   impressum/ datenschutz/ ueber-uns/   Pflichtseiten, gespeist aus data/owner.json
   opengraph-image.tsx     OG-Bilder, zur Build-Zeit als PNG erzeugt
@@ -75,7 +76,7 @@ lib/
   recommend.ts            Scoring-Engine (Bewertung × Eignung × Budget)
   landing-pages.ts        Erzeugt/parst die Slugs der SEO-Seiten
   content.ts              Redaktionelle Textbausteine je Kategorie
-  schema.ts               JSON-LD (Product, AggregateRating, FAQ, Breadcrumbs)
+  schema.ts               JSON-LD (Product, Review, AggregateOffer, FAQ, Breadcrumbs)
   site.ts                 Name, Domain, Claim, Werbehinweis
 ```
 
@@ -124,9 +125,9 @@ Ergebnis-Link in der Praxis:
 ```
 https://www.amazon.de/dp/B0XXXXXXX
   ?tag=deintag-21
-  &ascsubtag=landing-best-laptops-for-students-lap-001-pos1
+  &ascsubtag=landing-best-monitors-for-home-office-mon-u2724de-amazon-pos1
   &utm_source=deal-finder&utm_medium=affiliate
-  &utm_campaign=landing-best-laptops-for-students&utm_content=aerobook-14-air
+  &utm_campaign=landing-best-monitors-for-home-office&utm_content=dell-ultrasharp-u2724de
 ```
 
 ### 3.3 Mehrere Händler pro Produkt (Umsatz-Hebel)
@@ -168,9 +169,9 @@ zum teureren Händler schicken. Das kostet Vertrauen — und langfristig mehr,
 als die höhere Provision einbringt. Wer aggressiver monetarisieren will, dreht
 `MAX_PRICE_DELTA` hoch; wer immer den Bestpreis verlinken will, setzt ihn auf `0`.
 
-Beispiel aus den Beispieldaten (CampusLite 14): Amazon 549 € (1 % → 5,49 €),
-Cyberport 559 € (4 % → 22,36 €). Preisabstand 1,8 %, also innerhalb der Schranke
-→ CTA geht zu Cyberport, der günstigere Amazon-Preis steht sichtbar darunter.
+Rechenbeispiel: Amazon 549 € bei 1 % ergibt 5,49 €, ein Awin-Händler 559 € bei 4 %
+ergibt 22,36 €. Preisabstand 1,8 %, also innerhalb der Schranke → der CTA geht zum
+Awin-Händler, der günstigere Amazon-Preis steht sichtbar darunter.
 **Vervierfachte erwartete Provision bei identischem Klick.**
 
 Angezeigter Preis und Ziel des Links sind dabei immer identisch — auch in der

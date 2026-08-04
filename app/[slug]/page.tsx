@@ -260,7 +260,7 @@ export default async function LandingPageRoute({
                         </span>
                       </td>
                       <td className="p-3">
-                        <StarRating rating={entry.product.rating} />
+                        <StarRating rating={entry.product.rating} hideLabel />
                       </td>
                       <td className="p-3 font-semibold">
                         {formatPrice(primary.price)}

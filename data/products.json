@@ -1,798 +1,194 @@
 [
   {
-    "id": "lap-001",
-    "name": "AeroBook 14 Air (M-Serie)",
-    "slug": "aerobook-14-air",
-    "category": "laptops",
-    "brand": "Aero",
-    "price": 1099,
-    "rating": 4.8,
-    "reviewCount": 3421,
-    "affiliateUrl": "https://www.amazon.de/dp/B0PLACEHOLD1",
-    "network": "amazon",
-    "summary": "Der Allrounder: 1,2 kg leicht, 18 Stunden Akku und komplett lautlos.",
-    "pros": [
-      "Bis zu 18 Stunden Akkulaufzeit",
-      "Lüfterlos und damit absolut geräuschlos",
-      "Sehr helles Display, auch draußen lesbar"
-    ],
-    "cons": [
-      "Nur zwei USB-C-Ports",
-      "Aufpreis für mehr RAM ist happig"
-    ],
-    "bestForTags": [
-      "students",
-      "home-office",
-      "travel",
-      "beginners"
-    ],
-    "highlight": "Redaktions-Favorit",
-    "offers": [
-      {
-        "merchant": "Cyberport",
-        "network": "awin",
-        "url": "https://www.awin1.com/cread.php?awinmid=1001&ued=https%3A%2F%2Fwww.cyberport.de%2Fp-aerobook-14-air.html",
-        "price": 1079,
-        "commissionRate": 3.5,
-        "note": "Versandkostenfrei"
-      },
-      {
-        "merchant": "notebooksbilliger",
-        "network": "awin",
-        "url": "https://www.awin1.com/cread.php?awinmid=1002&ued=https%3A%2F%2Fwww.notebooksbilliger.de%2Faerobook%2B14%2Bair",
-        "price": 1119,
-        "commissionRate": 3
-      }
-    ],
-    "accent": "from-sky-500 to-indigo-600"
-  },
-  {
-    "id": "lap-002",
-    "name": "NovaBook Studio 16",
-    "slug": "novabook-studio-16",
-    "category": "laptops",
-    "brand": "Nova",
-    "price": 2199,
-    "rating": 4.7,
-    "reviewCount": 1187,
-    "affiliateUrl": "https://www.amazon.de/dp/B0PLACEHOLD2",
-    "network": "amazon",
-    "summary": "16 Zoll Farbraum-Monster für 4K-Schnitt, RAW-Entwicklung und 3D.",
-    "pros": [
-      "100 % DCI-P3 und ab Werk kalibriert",
-      "Dedizierte GPU für Export und Rendering",
-      "Hervorragende Lautsprecher und Webcam"
-    ],
-    "cons": [
-      "Mit 2,1 kg kein Reisebegleiter",
-      "Unter Volllast deutlich hörbar"
-    ],
-    "bestForTags": [
-      "creators",
-      "home-office"
-    ],
-    "highlight": "Beste Bildqualität",
-    "offers": [
-      {
-        "merchant": "Alternate",
-        "network": "awin",
-        "url": "https://www.awin1.com/cread.php?awinmid=1003&ued=https%3A%2F%2Fwww.alternate.de%2Fnovabook-studio-16",
-        "price": 2149,
-        "commissionRate": 3
-      }
-    ],
-    "accent": "from-fuchsia-500 to-purple-700"
-  },
-  {
-    "id": "lap-003",
-    "name": "RaptorEdge 15 RTX",
-    "slug": "raptoredge-15-rtx",
-    "category": "laptops",
-    "brand": "Raptor",
-    "price": 1649,
-    "rating": 4.5,
-    "reviewCount": 2043,
-    "affiliateUrl": "https://www.amazon.de/dp/B0PLACEHOLD3",
-    "network": "amazon",
-    "summary": "165-Hz-Gaming-Laptop mit aktueller RTX-GPU und aufrüstbarem RAM.",
-    "pros": [
-      "165 Hz bei voller Auflösung",
-      "RAM und SSD selbst aufrüstbar",
-      "Sehr gute Kühlung im Performance-Modus"
-    ],
-    "cons": [
-      "Akku hält beim Spielen ~1,5 Stunden",
-      "Netzteil ist ein Klotz"
-    ],
-    "bestForTags": [
-      "gamers",
-      "creators"
-    ],
-    "highlight": "Gaming-Sieger",
-    "offers": [
-      {
-        "merchant": "notebooksbilliger",
-        "network": "awin",
-        "url": "https://www.awin1.com/cread.php?awinmid=1002&ued=https%3A%2F%2Fwww.notebooksbilliger.de%2Fraptoredge%2B15%2Brtx",
-        "price": 1599,
-        "commissionRate": 3.5
-      }
-    ],
-    "accent": "from-emerald-500 to-teal-700"
-  },
-  {
-    "id": "lap-004",
-    "name": "CampusLite 14",
-    "slug": "campuslite-14",
-    "category": "laptops",
-    "brand": "Campus",
-    "price": 549,
-    "rating": 4.3,
-    "reviewCount": 5610,
-    "affiliateUrl": "https://www.amazon.de/dp/B0PLACEHOLD4",
-    "network": "amazon",
-    "summary": "Solides Einsteiger-Notebook für Skript, Recherche und Videocalls.",
-    "pros": [
-      "Unschlagbares Preis-Leistungs-Verhältnis",
-      "Mattes Full-HD-Display",
-      "Erstaunlich gute Tastatur für die Klasse"
-    ],
-    "cons": [
-      "Gehäuse aus Kunststoff",
-      "Nicht für Videoschnitt geeignet"
-    ],
-    "bestForTags": [
-      "students",
-      "beginners",
-      "home-office"
-    ],
-    "highlight": "Preis-Leistungs-Sieger",
-    "offers": [
-      {
-        "merchant": "Cyberport",
-        "network": "awin",
-        "url": "https://www.awin1.com/cread.php?awinmid=1001&ued=https%3A%2F%2Fwww.cyberport.de%2Fp-campuslite-14.html",
-        "price": 559,
-        "commissionRate": 4
-      }
-    ],
-    "accent": "from-amber-500 to-orange-600"
-  },
-  {
-    "id": "hp-001",
-    "name": "SilentWave Pro ANC",
-    "slug": "silentwave-pro-anc",
-    "category": "headphones",
-    "brand": "SilentWave",
-    "price": 349,
-    "rating": 4.8,
-    "reviewCount": 8934,
-    "affiliateUrl": "https://www.amazon.de/dp/B0PLACEHOLD5",
-    "network": "amazon",
-    "summary": "Referenz-Noise-Cancelling – Großraumbüro und Flugzeug verschwinden.",
-    "pros": [
-      "Stärkstes ANC im Test",
-      "30 Stunden Akku mit aktivem ANC",
-      "Gesprächsqualität auch bei Wind top"
-    ],
-    "cons": [
-      "Nicht faltbar, Case ist groß",
-      "Kein Wechselakku"
-    ],
-    "bestForTags": [
-      "travel",
-      "home-office",
-      "students"
-    ],
-    "highlight": "Bestes ANC",
-    "offers": [
-      {
-        "merchant": "Cyberport",
-        "network": "awin",
-        "url": "https://www.awin1.com/cread.php?awinmid=1001&ued=https%3A%2F%2Fwww.cyberport.de%2Fp-silentwave-pro-anc.html",
-        "price": 339,
-        "commissionRate": 5
-      }
-    ],
-    "accent": "from-slate-600 to-slate-900"
-  },
-  {
-    "id": "hp-002",
-    "name": "StudioRef 900 Open",
-    "slug": "studioref-900-open",
-    "category": "headphones",
-    "brand": "StudioRef",
-    "price": 279,
-    "rating": 4.7,
-    "reviewCount": 1422,
-    "affiliateUrl": "https://www.amazon.de/dp/B0PLACEHOLD6",
-    "network": "amazon",
-    "summary": "Offener Studiokopfhörer mit neutralem Klang fürs Mixing zu Hause.",
-    "pros": [
-      "Sehr neutrale, ehrliche Abstimmung",
-      "Riesige Bühne für Mixing-Entscheidungen",
-      "Ersatzteile einzeln nachkaufbar"
-    ],
-    "cons": [
-      "Schallt nach außen – nichts fürs Büro",
-      "Kein Bluetooth"
-    ],
-    "bestForTags": [
-      "creators"
-    ],
-    "highlight": "Studio-Referenz",
-    "accent": "from-rose-500 to-red-700"
-  },
-  {
-    "id": "hp-003",
-    "name": "PulseFit Sport Buds",
-    "slug": "pulsefit-sport-buds",
-    "category": "headphones",
-    "brand": "PulseFit",
-    "price": 99,
-    "rating": 4.4,
-    "reviewCount": 12780,
-    "affiliateUrl": "https://www.amazon.de/dp/B0PLACEHOLD7",
-    "network": "amazon",
-    "summary": "In-Ears mit Bügel, die beim Laufen garantiert nicht rausfallen.",
-    "pros": [
-      "Bombenfester Sitz beim Sport",
-      "IP57 – schweiß- und regenfest",
-      "Sehr fairer Preis"
-    ],
-    "cons": [
-      "ANC nur rudimentär",
-      "Case relativ dick"
-    ],
-    "bestForTags": [
-      "beginners",
-      "students",
-      "travel"
-    ],
-    "highlight": "Preistipp",
-    "offers": [
-      {
-        "merchant": "Otto",
-        "network": "awin",
-        "url": "https://www.awin1.com/cread.php?awinmid=1004&ued=https%3A%2F%2Fwww.otto.de%2Fp%2Fpulsefit-sport-buds",
-        "price": 99,
-        "commissionRate": 6
-      }
-    ],
-    "accent": "from-lime-500 to-green-700"
-  },
-  {
-    "id": "hp-004",
-    "name": "ClearComm Headset G7",
-    "slug": "clearcomm-headset-g7",
-    "category": "headphones",
-    "brand": "ClearComm",
-    "price": 189,
-    "rating": 4.6,
-    "reviewCount": 3305,
-    "affiliateUrl": "https://www.amazon.de/dp/B0PLACEHOLD8",
-    "network": "amazon",
-    "summary": "Gaming- und Meeting-Headset mit Broadcast-Mikrofon und Low-Latency-Funk.",
-    "pros": [
-      "Mikrofon auf Podcast-Niveau",
-      "Funk mit unter 20 ms Latenz",
-      "Extrem bequem auch nach 5 Stunden"
-    ],
-    "cons": [
-      "Design fällt auf",
-      "Nur über USB-Dongle kabellos"
-    ],
-    "bestForTags": [
-      "gamers",
-      "home-office"
-    ],
-    "highlight": "Bestes Mikrofon",
-    "accent": "from-violet-500 to-indigo-700"
-  },
-  {
-    "id": "mon-001",
-    "name": "VistaWide 34 UltraWide",
-    "slug": "vistawide-34-ultrawide",
+    "id": "mon-u2724de",
+    "name": "Dell UltraSharp U2724DE",
+    "slug": "dell-ultrasharp-u2724de",
     "category": "monitors",
-    "brand": "Vista",
-    "price": 699,
-    "rating": 4.7,
-    "reviewCount": 2211,
-    "affiliateUrl": "https://www.amazon.de/dp/B0PLACEHOLD9",
+    "brand": "Dell",
+    "price": 407,
+    "rating": 4.8,
+    "affiliateUrl": "https://www.amazon.de/s?k=Dell+UltraSharp+U2724DE",
     "network": "amazon",
-    "summary": "34 Zoll Ultrawide mit USB-C-Docking – ein Kabel für Bild, Strom und LAN.",
+    "summary": "27 Zoll QHD mit 120 Hz und Thunderbolt-Dock – ein Kabel für Bild, Strom, LAN und Peripherie.",
     "pros": [
-      "90 W Power Delivery über USB-C",
-      "Ersetzt ein Zwei-Monitor-Setup",
-      "Integrierter KVM-Switch"
+      "Thunderbolt 4 mit 90 W Power Delivery lädt das Notebook nebenbei",
+      "Integrierter KVM-Switch und LAN-Anschluss ersetzen die Dockingstation",
+      "IPS-Black-Panel mit spürbar tieferem Schwarz als übliche IPS-Displays"
     ],
     "cons": [
-      "Braucht viel Schreibtischtiefe",
-      "Nur 100 Hz"
+      "Deutlich teurer als der baugleiche U2724D ohne Dock",
+      "QHD statt 4K – für Bildbearbeitung fehlt etwas Detailschärfe"
     ],
-    "bestForTags": [
-      "home-office",
-      "creators"
-    ],
+    "bestForTags": ["home-office", "creators"],
     "highlight": "Home-Office-Sieger",
-    "offers": [
-      {
-        "merchant": "Alternate",
-        "network": "awin",
-        "url": "https://www.awin1.com/cread.php?awinmid=1003&ued=https%3A%2F%2Fwww.alternate.de%2Fvistawide-34",
-        "price": 689,
-        "commissionRate": 4
-      }
-    ],
     "accent": "from-cyan-500 to-blue-700"
   },
   {
-    "id": "mon-002",
-    "name": "FrameRush 27 OLED 240",
-    "slug": "framerush-27-oled-240",
+    "id": "mon-u2724d",
+    "name": "Dell UltraSharp U2724D",
+    "slug": "dell-ultrasharp-u2724d",
     "category": "monitors",
-    "brand": "FrameRush",
-    "price": 899,
-    "rating": 4.8,
-    "reviewCount": 1450,
-    "affiliateUrl": "https://www.amazon.de/dp/B0PLACEHOLDA",
+    "brand": "Dell",
+    "price": 300,
+    "rating": 4.6,
+    "affiliateUrl": "https://www.amazon.de/s?k=Dell+UltraSharp+U2724D",
     "network": "amazon",
-    "summary": "OLED mit 240 Hz und 0,03 ms – der Traum für kompetitive Shooter.",
+    "summary": "Das gleiche 120-Hz-Panel wie im Dock-Modell, rund 100 Euro günstiger.",
     "pros": [
-      "Perfektes Schwarz und irre Kontraste",
-      "240 Hz mit VRR ohne Tearing",
-      "3 Jahre Burn-in-Garantie"
+      "Identisches IPS-Black-Panel mit 120 Hz zum kleineren Preis",
+      "Voll höhen-, neige- und drehverstellbar inklusive Pivot",
+      "Drei Jahre Austauschservice ab Werk"
     ],
     "cons": [
-      "Teuer",
-      "Textdarstellung auf dem Desktop leicht farbsäumig"
+      "Kein Thunderbolt-Dock und kein LAN-Anschluss",
+      "Notebook muss separat mit Strom versorgt werden"
     ],
-    "bestForTags": [
-      "gamers",
-      "creators"
-    ],
-    "highlight": "Gaming-Referenz",
-    "offers": [
-      {
-        "merchant": "Cyberport",
-        "network": "awin",
-        "url": "https://www.awin1.com/cread.php?awinmid=1001&ued=https%3A%2F%2Fwww.cyberport.de%2Fp-framerush-27-oled.html",
-        "price": 919,
-        "commissionRate": 4
-      }
-    ],
-    "accent": "from-pink-500 to-rose-700"
-  },
-  {
-    "id": "mon-003",
-    "name": "OfficeClear 27 QHD",
-    "slug": "officeclear-27-qhd",
-    "category": "monitors",
-    "brand": "OfficeClear",
-    "price": 249,
-    "rating": 4.5,
-    "reviewCount": 9860,
-    "affiliateUrl": "https://www.amazon.de/dp/B0PLACEHOLDB",
-    "network": "amazon",
-    "summary": "Der vernünftige 27-Zöller: QHD, höhenverstellbar, augenschonend.",
-    "pros": [
-      "Voll höhen- und drehverstellbar",
-      "Scharfes QHD zum Einsteigerpreis",
-      "Flimmerfrei mit Blaulichtfilter"
-    ],
-    "cons": [
-      "Kein USB-C",
-      "Lautsprecher sind Beiwerk"
-    ],
-    "bestForTags": [
-      "home-office",
-      "students",
-      "beginners"
-    ],
+    "bestForTags": ["home-office", "students", "beginners"],
     "highlight": "Preis-Leistungs-Sieger",
     "accent": "from-teal-500 to-cyan-700"
   },
   {
-    "id": "mon-004",
-    "name": "ColorTrue 32 4K Pro",
-    "slug": "colortrue-32-4k-pro",
+    "id": "mon-pa279crv",
+    "name": "ASUS ProArt PA279CRV",
+    "slug": "asus-proart-pa279crv",
     "category": "monitors",
-    "brand": "ColorTrue",
-    "price": 1099,
-    "rating": 4.6,
-    "reviewCount": 640,
-    "affiliateUrl": "https://www.amazon.de/dp/B0PLACEHOLDC",
+    "brand": "ASUS",
+    "price": 412,
+    "rating": 4.7,
+    "affiliateUrl": "https://www.amazon.de/s?k=ASUS+ProArt+PA279CRV",
     "network": "amazon",
-    "summary": "Hardware-kalibrierter 4K-Monitor für Print, Foto und Colorgrading.",
+    "summary": "4K-Display mit 99 Prozent AdobeRGB und DCI-P3 – ab Werk kalibriert ausgeliefert.",
     "pros": [
-      "99 % AdobeRGB, ab Werk kalibriert",
-      "Hardware-Kalibrierung inklusive Software",
-      "Mattes Panel ohne Spiegelungen"
+      "99 % AdobeRGB und 99 % DCI-P3 mit Calman-Verifizierung",
+      "USB-C mit 96 W Power Delivery und USB-Hub",
+      "Mattes Panel ohne störende Spiegelungen"
     ],
     "cons": [
-      "Nur 60 Hz",
-      "Overkill für reine Office-Arbeit"
+      "Nur 60 Hz – zum Spielen die falsche Wahl",
+      "HDR-Zertifizierung bringt in der Praxis wenig"
     ],
-    "bestForTags": [
-      "creators"
-    ],
+    "bestForTags": ["creators", "home-office"],
     "highlight": "Farb-Referenz",
     "accent": "from-orange-500 to-amber-700"
   },
   {
-    "id": "kb-001",
-    "name": "TypeSilent 75 Wireless",
-    "slug": "typesilent-75-wireless",
-    "category": "keyboards",
-    "brand": "TypeSilent",
-    "price": 149,
-    "rating": 4.7,
-    "reviewCount": 4120,
-    "affiliateUrl": "https://www.amazon.de/dp/B0PLACEHOLDD",
-    "network": "amazon",
-    "summary": "Mechanik mit gedämpften Switches – leise genug fürs Großraumbüro.",
-    "pros": [
-      "Deutlich leiser als klassische Mechanik",
-      "Drei Geräte per Bluetooth koppelbar",
-      "Hot-Swap für eigene Switches"
-    ],
-    "cons": [
-      "Keine Nummernblock-Variante",
-      "RGB nur einfarbig"
-    ],
-    "bestForTags": [
-      "home-office",
-      "students",
-      "creators"
-    ],
-    "highlight": "Bürotauglich",
-    "accent": "from-indigo-500 to-blue-800"
-  },
-  {
-    "id": "kb-002",
-    "name": "RapidStrike TKL Magnetic",
-    "slug": "rapidstrike-tkl-magnetic",
-    "category": "keyboards",
-    "brand": "RapidStrike",
-    "price": 179,
-    "rating": 4.8,
-    "reviewCount": 2760,
-    "affiliateUrl": "https://www.amazon.de/dp/B0PLACEHOLDE",
-    "network": "amazon",
-    "summary": "Hall-Effekt-Switches mit einstellbarem Auslösepunkt und Rapid Trigger.",
-    "pros": [
-      "Auslösepunkt in 0,1-mm-Schritten einstellbar",
-      "8000-Hz-Polling für minimale Latenz",
-      "Vollmetall-Gehäuse"
-    ],
-    "cons": [
-      "Software nur für Windows",
-      "Kabelgebunden"
-    ],
-    "bestForTags": [
-      "gamers"
-    ],
-    "highlight": "Gaming-Sieger",
-    "offers": [
-      {
-        "merchant": "Alternate",
-        "network": "awin",
-        "url": "https://www.awin1.com/cread.php?awinmid=1003&ued=https%3A%2F%2Fwww.alternate.de%2Frapidstrike-tkl",
-        "price": 179,
-        "commissionRate": 5
-      }
-    ],
-    "accent": "from-red-500 to-rose-800"
-  },
-  {
-    "id": "kb-003",
-    "name": "FoldPack Travel Keys",
-    "slug": "foldpack-travel-keys",
-    "category": "keyboards",
-    "brand": "FoldPack",
-    "price": 79,
-    "rating": 4.3,
-    "reviewCount": 1890,
-    "affiliateUrl": "https://www.amazon.de/dp/B0PLACEHOLDF",
-    "network": "amazon",
-    "summary": "Faltbare Bluetooth-Tastatur, die in jede Laptoptasche passt.",
-    "pros": [
-      "Klappt auf Handygröße zusammen",
-      "Bis zu 3 Monate Akkulaufzeit",
-      "Funktioniert mit Tablet und Smartphone"
-    ],
-    "cons": [
-      "Gewöhnungsbedürftiges Layout",
-      "Spalt in der Mitte"
-    ],
-    "bestForTags": [
-      "travel",
-      "students",
-      "beginners"
-    ],
-    "highlight": "Reise-Tipp",
-    "accent": "from-emerald-500 to-green-800"
-  },
-  {
-    "id": "kb-004",
-    "name": "ErgoSplit Comfort Board",
-    "slug": "ergosplit-comfort-board",
-    "category": "keyboards",
-    "brand": "ErgoSplit",
-    "price": 229,
-    "rating": 4.6,
-    "reviewCount": 980,
-    "affiliateUrl": "https://www.amazon.de/dp/B0PLACEHOLDG",
-    "network": "amazon",
-    "summary": "Geteilte Ergonomie-Tastatur gegen Handgelenkschmerzen im Dauereinsatz.",
-    "pros": [
-      "Frei positionierbare Hälften",
-      "Handballenauflagen aus Leder inklusive",
-      "Merklich entspanntere Haltung"
-    ],
-    "cons": [
-      "1–2 Wochen Eingewöhnung",
-      "Hoher Preis"
-    ],
-    "bestForTags": [
-      "home-office",
-      "creators"
-    ],
-    "highlight": "Ergonomie-Sieger",
-    "accent": "from-purple-500 to-violet-800"
-  },
-  {
-    "id": "sw-001",
-    "name": "VitalTrack 5 Pro",
-    "slug": "vitaltrack-5-pro",
-    "category": "smartwatches",
-    "brand": "VitalTrack",
-    "price": 329,
-    "rating": 4.7,
-    "reviewCount": 6540,
-    "affiliateUrl": "https://www.amazon.de/dp/B0PLACEHOLDH",
-    "network": "amazon",
-    "summary": "Präzises GPS, EKG und ein Schlaftracking, das wirklich brauchbar ist.",
-    "pros": [
-      "Dual-Band-GPS, extrem genau",
-      "7 Tage Akku bei normaler Nutzung",
-      "Keine Abo-Pflicht für Auswertungen"
-    ],
-    "cons": [
-      "Nur eine Gehäusegröße",
-      "Keine Musikspeicherung"
-    ],
-    "bestForTags": [
-      "beginners",
-      "travel",
-      "home-office"
-    ],
-    "highlight": "Allrounder",
-    "offers": [
-      {
-        "merchant": "Otto",
-        "network": "awin",
-        "url": "https://www.awin1.com/cread.php?awinmid=1004&ued=https%3A%2F%2Fwww.otto.de%2Fp%2Fvitaltrack-5-pro",
-        "price": 335,
-        "commissionRate": 4
-      }
-    ],
-    "accent": "from-blue-500 to-indigo-800"
-  },
-  {
-    "id": "sw-002",
-    "name": "TrailPeak Adventure GPS",
-    "slug": "trailpeak-adventure-gps",
-    "category": "smartwatches",
-    "brand": "TrailPeak",
-    "price": 549,
-    "rating": 4.8,
-    "reviewCount": 2310,
-    "affiliateUrl": "https://www.amazon.de/dp/B0PLACEHOLDI",
-    "network": "amazon",
-    "summary": "Outdoor-Uhr mit Offline-Karten und bis zu 21 Tagen Laufzeit.",
-    "pros": [
-      "Topo-Karten offline auf der Uhr",
-      "Saphirglas und Titanlünette",
-      "Bis 21 Tage im Smartwatch-Modus"
-    ],
-    "cons": [
-      "Groß und schwer am Handgelenk",
-      "Hoher Anschaffungspreis"
-    ],
-    "bestForTags": [
-      "travel"
-    ],
-    "highlight": "Outdoor-Sieger",
-    "accent": "from-stone-500 to-neutral-800"
-  },
-  {
-    "id": "sw-003",
-    "name": "DayLite Watch SE",
-    "slug": "daylite-watch-se",
-    "category": "smartwatches",
-    "brand": "DayLite",
-    "price": 129,
+    "id": "mon-pa279cv",
+    "name": "ASUS ProArt PA279CV",
+    "slug": "asus-proart-pa279cv",
+    "category": "monitors",
+    "brand": "ASUS",
+    "price": 343,
     "rating": 4.4,
-    "reviewCount": 15420,
-    "affiliateUrl": "https://www.amazon.de/dp/B0PLACEHOLDJ",
+    "affiliateUrl": "https://www.amazon.de/s?k=ASUS+ProArt+PA279CV",
     "network": "amazon",
-    "summary": "Günstiger Einstieg mit Schritten, Puls, Schlaf und Benachrichtigungen.",
+    "summary": "Der günstigere ProArt: 4K, kalibriertes sRGB und USB-C mit 65 Watt.",
     "pros": [
-      "Sehr günstig für den Funktionsumfang",
-      "10 Tage Akkulaufzeit",
-      "App ist wirklich selbsterklärend"
+      "4K-Schärfe auf 27 Zoll zum Mittelklassepreis",
+      "100 % sRGB, ab Werk kalibriert",
+      "USB-C mit 65 W reicht für die meisten Ultrabooks"
     ],
     "cons": [
-      "GPS nur über das Handy",
-      "Kunststoffgehäuse"
+      "Kleinerer Farbraum als das CRV-Modell, kein AdobeRGB",
+      "Ebenfalls nur 60 Hz"
     ],
-    "bestForTags": [
-      "beginners",
-      "students"
-    ],
-    "highlight": "Einsteiger-Tipp",
-    "accent": "from-sky-400 to-cyan-700"
+    "bestForTags": ["creators", "home-office", "students"],
+    "highlight": "4K-Einstieg",
+    "accent": "from-amber-500 to-orange-600"
   },
   {
-    "id": "sw-004",
-    "name": "FocusBand Work",
-    "slug": "focusband-work",
-    "category": "smartwatches",
-    "brand": "FocusBand",
-    "price": 219,
-    "rating": 4.5,
-    "reviewCount": 1130,
-    "affiliateUrl": "https://www.amazon.de/dp/B0PLACEHOLDK",
-    "network": "amazon",
-    "summary": "Diskrete Uhr mit Stressmessung, Fokus-Timer und Kalender am Handgelenk",
-    "pros": [
-      "Unauffälliges, seriöses Design",
-      "Kalender- und Meeting-Ansicht",
-      "Stress- und Atemübungen mit Erinnerung"
-    ],
-    "cons": [
-      "Sportmodi nur Basis",
-      "Kein Mobilfunk"
-    ],
-    "bestForTags": [
-      "home-office",
-      "beginners"
-    ],
-    "highlight": "Business-Tipp",
-    "accent": "from-zinc-500 to-slate-800"
-  },
-  {
-    "id": "tab-001",
-    "name": "SketchPad 11 Pen Edition",
-    "slug": "sketchpad-11-pen-edition",
-    "category": "tablets",
-    "brand": "SketchPad",
-    "price": 649,
+    "id": "mon-27gs95qe",
+    "name": "LG UltraGear OLED 27GS95QE-B",
+    "slug": "lg-ultragear-oled-27gs95qe",
+    "category": "monitors",
+    "brand": "LG",
+    "price": 545,
     "rating": 4.8,
-    "reviewCount": 4980,
-    "affiliateUrl": "https://www.amazon.de/dp/B0PLACEHOLDL",
+    "affiliateUrl": "https://www.amazon.de/s?k=LG+UltraGear+OLED+27GS95QE",
     "network": "amazon",
-    "summary": "120-Hz-Display und Stift ohne Latenz – zum Zeichnen und Mitschreiben.",
+    "summary": "OLED mit 240 Hz und 0,03 ms – der Referenzpunkt für kompetitive Shooter.",
     "pros": [
-      "Stift praktisch verzögerungsfrei",
-      "120 Hz für flüssiges Skizzieren",
-      "Stift liegt bei, kein Zubehörkauf nötig"
+      "0,03 ms Reaktionszeit, keine sichtbaren Schlieren",
+      "240 Hz bei QHD, perfektes Schwarz durch OLED",
+      "Entspiegelte Oberfläche statt glänzendem Panel"
     ],
     "cons": [
-      "Tastatur-Cover kostet extra",
-      "Nur 128 GB in der Basis"
+      "Schrift wirkt am Desktop durch die Subpixel-Anordnung leicht farbsäumig",
+      "Für reine Büroarbeit zu teuer"
     ],
-    "bestForTags": [
-      "creators",
-      "students"
-    ],
-    "highlight": "Bestes Stift-Erlebnis",
-    "offers": [
-      {
-        "merchant": "Cyberport",
-        "network": "awin",
-        "url": "https://www.awin1.com/cread.php?awinmid=1001&ued=https%3A%2F%2Fwww.cyberport.de%2Fp-sketchpad-11.html",
-        "price": 649,
-        "commissionRate": 3
-      }
-    ],
-    "accent": "from-violet-500 to-fuchsia-700"
+    "bestForTags": ["gamers", "creators"],
+    "highlight": "Gaming-Referenz",
+    "accent": "from-pink-500 to-rose-700"
   },
   {
-    "id": "tab-002",
-    "name": "ReadLight Paper 8",
-    "slug": "readlight-paper-8",
-    "category": "tablets",
-    "brand": "ReadLight",
-    "price": 189,
-    "rating": 4.6,
-    "reviewCount": 22140,
-    "affiliateUrl": "https://www.amazon.de/dp/B0PLACEHOLDM",
-    "network": "amazon",
-    "summary": "E-Ink-Tablet mit Wochenakku – augenschonend lesen, auch am Strand.",
-    "pros": [
-      "Wochenlange Akkulaufzeit",
-      "Bei Sonnenlicht perfekt lesbar",
-      "Nur 190 g leicht"
-    ],
-    "cons": [
-      "Kein Video, kein Farb-Content",
-      "Seitenaufbau bewusst langsam"
-    ],
-    "bestForTags": [
-      "travel",
-      "students",
-      "beginners"
-    ],
-    "highlight": "Reise-Liebling",
-    "accent": "from-amber-400 to-yellow-700"
-  },
-  {
-    "id": "tab-003",
-    "name": "FamilyTab 10 Basic",
-    "slug": "familytab-10-basic",
-    "category": "tablets",
-    "brand": "FamilyTab",
-    "price": 179,
-    "rating": 4.2,
-    "reviewCount": 18760,
-    "affiliateUrl": "https://www.amazon.de/dp/B0PLACEHOLDN",
-    "network": "amazon",
-    "summary": "Robustes Streaming- und Familien-Tablet mit Kindersicherung.",
-    "pros": [
-      "Sehr günstig, robuste Verarbeitung",
-      "Umfangreiche Kindersicherung",
-      "microSD-Slot für mehr Speicher"
-    ],
-    "cons": [
-      "Display eher blass",
-      "Nicht für anspruchsvolle Apps"
-    ],
-    "bestForTags": [
-      "beginners",
-      "travel"
-    ],
-    "highlight": "Preistipp",
-    "accent": "from-green-500 to-emerald-800"
-  },
-  {
-    "id": "tab-004",
-    "name": "PowerSlate 13 Ultra",
-    "slug": "powerslate-13-ultra",
-    "category": "tablets",
-    "brand": "PowerSlate",
-    "price": 1249,
+    "id": "mon-272urx",
+    "name": "MSI MPG 272URX QD-OLED",
+    "slug": "msi-mpg-272urx-qd-oled",
+    "category": "monitors",
+    "brand": "MSI",
+    "price": 705,
     "rating": 4.7,
-    "reviewCount": 860,
-    "affiliateUrl": "https://www.amazon.de/dp/B0PLACEHOLDO",
+    "affiliateUrl": "https://www.amazon.de/s?k=MSI+MPG+272URX+QD-OLED",
     "network": "amazon",
-    "summary": "Tablet-Laptop-Hybrid, der Videoschnitt und Desktop-Apps wirklich stemmt.",
+    "summary": "4K und 240 Hz auf einem QD-OLED – Schärfe und Tempo ohne Kompromiss.",
     "pros": [
-      "Laptop-Leistung im Tablet-Format",
-      "OLED mit 13 Zoll und HDR",
-      "Ersetzt für viele das Notebook"
+      "4K-Auflösung mit 240 Hz, kein Entweder-oder mehr",
+      "QD-OLED liefert Kontraste, die kein IPS erreicht",
+      "DisplayPort 2.1 und KVM-Switch an Bord"
     ],
     "cons": [
-      "Mit Tastatur richtig teuer",
-      "Akku unter Last nur ~6 Stunden"
+      "Hoher Preis",
+      "Große helle Flächen werden vom Panel abgedunkelt (ABL)"
     ],
-    "bestForTags": [
-      "creators",
-      "home-office",
-      "travel"
+    "bestForTags": ["gamers", "creators"],
+    "highlight": "Beste Bildqualität",
+    "accent": "from-violet-500 to-indigo-700"
+  },
+  {
+    "id": "mon-g50d",
+    "name": "Samsung Odyssey G5 G50D (27 Zoll)",
+    "slug": "samsung-odyssey-g5-g50d-27",
+    "category": "monitors",
+    "brand": "Samsung",
+    "price": 177,
+    "rating": 4.3,
+    "affiliateUrl": "https://www.amazon.de/s?k=Samsung+Odyssey+G5+G50D+27",
+    "network": "amazon",
+    "summary": "QHD mit 180 Hz auf IPS-Basis – der vernünftigste Gaming-Einstieg unter 200 Euro.",
+    "pros": [
+      "180 Hz und QHD zum Preis vieler Full-HD-Monitore",
+      "IPS-Panel mit stabilen Blickwinkeln",
+      "G-Sync- und FreeSync-kompatibel"
     ],
-    "highlight": "Leistungs-Sieger",
-    "offers": [
-      {
-        "merchant": "Hersteller-Shop",
-        "network": "impact",
-        "url": "https://powerslate.pxf.io/c/PLACEHOLDER/1234/5678",
-        "price": 1249,
-        "commissionRate": 6,
-        "note": "3 Jahre Garantie"
-      }
+    "cons": [
+      "Kein USB-Hub",
+      "HDR existiert nur auf dem Datenblatt"
     ],
-    "accent": "from-indigo-500 to-purple-800"
+    "bestForTags": ["gamers", "students", "beginners"],
+    "highlight": "Preistipp",
+    "accent": "from-emerald-500 to-teal-700"
+  },
+  {
+    "id": "mon-g55c",
+    "name": "Samsung Odyssey G5 G55C (32 Zoll)",
+    "slug": "samsung-odyssey-g5-g55c-32",
+    "category": "monitors",
+    "brand": "Samsung",
+    "price": 171,
+    "rating": 4.2,
+    "affiliateUrl": "https://www.amazon.de/s?k=Samsung+Odyssey+G5+G55C+32",
+    "network": "amazon",
+    "summary": "32 Zoll gebogenes QHD mit 165 Hz – maximale Bildfläche pro Euro.",
+    "pros": [
+      "32 Zoll QHD für unter 200 Euro",
+      "1000R-Krümmung zieht die Bildränder ins Sichtfeld",
+      "165 Hz mit adaptiver Synchronisation"
+    ],
+    "cons": [
+      "VA-Panel neigt in dunklen Szenen zu Schlieren",
+      "Farbtreue reicht nicht für Bildbearbeitung"
+    ],
+    "bestForTags": ["gamers", "students", "beginners"],
+    "highlight": "Meiste Fläche fürs Geld",
+    "accent": "from-indigo-500 to-blue-800"
   }
 ]
