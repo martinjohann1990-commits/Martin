@@ -70,15 +70,29 @@ Kaufen bei einem beliebigen Registrar (INWX, Netcup, Namecheap). Kosten: ~10 €
 
 ### 0.4 Impressum und Datenschutzerklärung — Pflicht, nicht optional
 
-Beides fehlt aktuell im Projekt und ist in Deutschland abmahnfähig. Ohne diese Seiten
-lehnen dich außerdem seriöse Partnerprogramme ab.
+Die Seiten `/impressum`, `/datenschutz` und `/ueber-uns` sind **fertig gebaut** und im
+Footer verlinkt. Sie lesen alle persönlichen Angaben aus **einer** Datei:
 
-1. Texte erzeugen: e-recht24.de oder datenschutz-generator.de (kostenlose Generatoren).
-   Angaben, die du brauchst: voller Name, ladungsfähige Anschrift, E-Mail,
-   ggf. USt-IdNr., Hinweis auf Affiliate-Links und auf Vercel als Hoster (Server-Logs).
-2. Zwei Seiten anlegen: `app/impressum/page.tsx` und `app/datenschutz/page.tsx`.
-   Struktur kannst du von `app/ratgeber/page.tsx` abschauen — Container, `h1`, Fließtext.
-3. Beide im Footer verlinken (`components/site-footer.tsx`).
+```bash
+# data/owner.json öffnen und jeden Wert in eckigen Klammern ersetzen:
+#   name, street, zip, city, email   (Pflicht)
+#   phone, vatId, companyForm        (optional)
+npm run check:launch    # sagt dir, was noch fehlt
+```
+
+Solange Platzhalter drinstehen, zeigen die drei Seiten einen roten Warnhinweis — auch in
+Produktion. Das ist Absicht: Eine Seite mit unvollständigem Impressum darf nicht
+unbemerkt online stehen.
+
+**Zwei Dinge musst du selbst prüfen:**
+
+1. Die Texte sind ein sorgfältig gebautes Gerüst für den hier vorliegenden Fall
+   (Affiliate-Seite, Vercel-Hosting, cookielose Analyse, kein Formular, kein Konto) —
+   **aber keine Rechtsberatung**. Gleiche sie mit einem Generator (e-recht24.de,
+   datenschutz-generator.de) ab oder lass sie prüfen, bevor du live gehst.
+2. Sobald du etwas ergänzt, das Daten verarbeitet — Kontaktformular, Newsletter,
+   Google Analytics, Werbepixel, eingebettete Videos — musst du die
+   Datenschutzerklärung erweitern und brauchst je nach Dienst eine Einwilligung.
 
 **Cookie-Banner:** Aktuell brauchst du keinen. Vercel Analytics arbeitet cookielos, und
 die Cookies der Händler werden erst *auf deren Seite* nach dem Klick gesetzt. Sobald du
@@ -89,9 +103,12 @@ Google Analytics oder Werbepixel einbaust, ändert sich das sofort.
 
 ### 0.5 Über uns / Redaktion (starkes Trust-Signal)
 
-Eine Seite `app/ueber-uns/page.tsx`: Wer bist du, wie testest/recherchierst du, wie
-verdienst du Geld. Drei Absätze reichen. Das ist gleichzeitig ein Baustein für Googles
-E-E-A-T-Bewertung und für die Freischaltung bei Awin.
+`/ueber-uns` steht bereits inklusive redaktioneller Grundsätze und Finanzierungshinweis.
+Was du selbst schreiben musst, ist der Absatz zu deinem Hintergrund in
+`app/ueber-uns/page.tsx` (im Code markiert). Zwei bis drei Sätze: wer du bist, warum
+ausgerechnet diese Produktkategorie, seit wann. Genau diesen Teil bewertet Google unter
+E-E-A-T und genau den liest Awin bei der Freischaltung. `npm run check:launch` erinnert
+dich daran, solange der Platzhaltertext drinsteht.
 
 ### 0.6 Amazon PartnerNet anmelden
 
@@ -309,15 +326,24 @@ In dieser Reihenfolge, jeweils erst wenn die Stufe davor Umsatz zeigt:
 
 ## Kurzcheck vor dem Livegang
 
+Das meiste davon prüft das Skript für dich:
+
+```bash
+npm run check:launch     # Exit-Code 1, solange etwas fehlt
 ```
-[ ] grep -c PLACEHOLD data/products.json  →  0
-[ ] Impressum und Datenschutzerklärung vorhanden und im Footer verlinkt
-[ ] Über-uns-Seite mit Angaben zur Person und zur Finanzierung
-[ ] NEXT_PUBLIC_SITE_URL zeigt auf die echte Domain, danach Redeploy
-[ ] Partner-ID im Link sichtbar (Rechtsklick auf einen CTA)
-[ ] Werbehinweis im Footer und auf jeder Landingpage sichtbar
-[ ] sitemap.xml erreichbar und in der Search Console eingereicht
+
+Es deckt ab: Platzhalter-URLs, Betreiberangaben, doppelte IDs/Slugs, ungültige Links,
+fehlende Nachteile, unbekannte Kategorien/Zielgruppen, zu dünne Landingpages, fehlende
+Umgebungsvariablen und ein veraltetes Prüfdatum.
+
+Von Hand bleibt:
+
+```
+[ ] Rechtstexte mit einem Generator abgeglichen oder anwaltlich geprüft
+[ ] Absatz zum eigenen Hintergrund in app/ueber-uns/page.tsx geschrieben
+[ ] NEXT_PUBLIC_SITE_URL in Vercel gesetzt → Redeploy ausgelöst
+[ ] Partner-ID im Link sichtbar (Rechtsklick auf einen CTA → Adresse kopieren)
+[ ] sitemap.xml in der Google Search Console eingereicht
 [ ] Rich-Results-Test ohne Fehler
-[ ] Jede Landingpage zeigt mindestens 4 Produkte
-[ ] Nachteile (cons) bei jedem Produkt ausgefüllt
+[ ] OG-Bild geprüft: /opengraph-image im Browser öffnen
 ```

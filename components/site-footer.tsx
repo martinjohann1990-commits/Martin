@@ -38,7 +38,18 @@ export function SiteFooter() {
       </div>
 
       <div className="border-t">
-        <div className="container flex flex-col gap-2 py-6 text-xs text-muted-foreground">
+        <div className="container flex flex-col gap-3 py-6 text-xs text-muted-foreground">
+          <nav className="flex flex-wrap gap-x-5 gap-y-2 text-sm font-medium">
+            <Link href="/ueber-uns" className="transition-colors hover:text-foreground">
+              Über uns
+            </Link>
+            <Link href="/impressum" className="transition-colors hover:text-foreground">
+              Impressum
+            </Link>
+            <Link href="/datenschutz" className="transition-colors hover:text-foreground">
+              Datenschutz
+            </Link>
+          </nav>
           <p>{siteConfig.affiliateDisclosure}</p>
           <p>
             © {new Date().getFullYear()} {siteConfig.name} · Alle Preise inkl.

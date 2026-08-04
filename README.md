@@ -28,8 +28,23 @@ Weitere Skripte:
 ```bash
 npm run build      # Produktions-Build inkl. Generierung aller SEO-Seiten
 npm run start      # Produktions-Server lokal starten
-npm run typecheck  # TypeScript prüfen
+npm run typecheck     # TypeScript prüfen
+npm run check:launch  # Livegang-Prüfung: Platzhalter, Betreiberdaten, Produktdaten
 ```
+
+### Vor dem Livegang: `npm run check:launch`
+
+Das Skript prüft mechanisch, was sonst leicht übersehen wird, und beendet sich mit
+Exit-Code 1, sobald ein Fehler gefunden wurde (damit auch CI-tauglich):
+
+- Platzhalter-URLs (`B0PLACEHOLD…`) in Produkten und Angeboten
+- unvollständige Betreiberangaben in `data/owner.json` (Impressumspflicht)
+- doppelte Produkt-IDs und -Slugs, ungültige URLs, Amazon-Links ohne `/dp/<ASIN>`
+- fehlende Nachteile (`cons`), fehlende Vorteile, unplausible Preise und Bewertungen
+- Kategorien und Zielgruppen, die es in `data/taxonomy.json` nicht gibt
+- Landingpages mit weniger als vier Produkten (Hinweis)
+- `NEXT_PUBLIC_SITE_URL` / `NEXT_PUBLIC_AMAZON_TAG` nicht gesetzt (Hinweis)
+- redaktionelle Prüfung älter als 90 Tage (Hinweis)
 
 ---
 
@@ -41,6 +56,8 @@ app/
   page.tsx                Startseite: Hero + Finder + Trust + FAQ + interne Links
   [slug]/page.tsx         Programmatische Landingpages (/best-laptops-for-students)
   ratgeber/page.tsx       Übersicht aller generierten Landingpages
+  impressum/ datenschutz/ ueber-uns/   Pflichtseiten, gespeist aus data/owner.json
+  opengraph-image.tsx     OG-Bilder, zur Build-Zeit als PNG erzeugt
   sitemap.ts robots.ts    Automatische sitemap.xml und robots.txt
 components/
   finder.tsx              3-Schritt-Finder (Client, rechnet ohne API im Browser)
@@ -50,6 +67,7 @@ components/
 data/
   products.json           Produkt-Datenbank  ← hier pflegst du Produkte
   taxonomy.json           Kategorien + Zielgruppen ← steuert die SEO-Seiten
+  owner.json              Deine Impressumsdaten ← einzige Stelle für persönliche Angaben
 lib/
   affiliate.ts            URL-Anreicherung: Partner-ID, Sub-ID, UTM
   offers.ts               Mehrere Händler je Produkt + Auswahl des CTA-Angebots

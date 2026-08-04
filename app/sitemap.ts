@@ -24,5 +24,11 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "weekly" as const,
       priority: 0.9,
     })),
+    ...["ueber-uns", "impressum", "datenschutz"].map((path) => ({
+      url: `${siteConfig.url}/${path}`,
+      lastModified,
+      changeFrequency: "yearly" as const,
+      priority: 0.3,
+    })),
   ];
 }

@@ -1,0 +1,23 @@
+{
+  "_hinweis": "Angaben des Seitenbetreibers. Diese Datei ist die EINZIGE Stelle, an der deine persönlichen Daten stehen – Impressum, Datenschutzerklärung und Schema.org lesen alles von hier. Ersetze jeden Wert in eckigen Klammern. Prüfen mit: npm run check:launch",
+
+  "name": "[DEIN VOLLSTÄNDIGER NAME]",
+  "street": "[STRASSE UND HAUSNUMMER]",
+  "zip": "[PLZ]",
+  "city": "[ORT]",
+  "country": "Deutschland",
+  "email": "[DEINE E-MAIL-ADRESSE]",
+
+  "phone": "",
+  "vatId": "",
+  "companyForm": "",
+
+  "_optional": "phone, vatId und companyForm dürfen leer bleiben. Eine USt-IdNr. gibst du nur an, wenn du eine hast (Kleinunternehmer nach § 19 UStG haben in der Regel keine).",
+
+  "kleinunternehmer": true,
+  "hosting": {
+    "provider": "Vercel Inc.",
+    "address": "440 N Barranca Ave #4133, Covina, CA 91723, USA",
+    "privacyUrl": "https://vercel.com/legal/privacy-policy"
+  }
+}
