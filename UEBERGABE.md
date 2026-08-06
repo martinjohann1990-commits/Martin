@@ -201,6 +201,10 @@ identisch. Sinnvoll wäre, dass das Belegpaket die JSON-Sicherung des
 Rechnungsgenerators **einlesen kann** — dann trägt niemand seine Daten zweimal
 ein. Das ist zugleich ein gutes Verkaufsargument für das Bundle.
 
+**Shop-Abteilungen anlegen**, sobald das zweite Produkt online ist — vorher
+steht das Listing auf „Keine". Geplante Einteilung, benannt nach der Aufgabe:
+*Rechnung & Angebot*, *Mahnung & Nachweise*, *Sparpakete*.
+
 **Nicht vergessen:** eigener Abnahmetest nach dem Muster von
 `tests/abnahme.mjs`, eigene Listing-Bilder über eine Erweiterung von
 `listing-bilder.mjs`, eigenes Etsy-Listing nach dem Muster von
