@@ -158,6 +158,26 @@ normalerweise am selben Tag und finde eine Lösung.
 
 ---
 
+## Warenkorb-Zusammenfassung
+
+Ein bis zwei Sätze, höchstens 200 Zeichen. Etsy zeigt die Zeile im Warenkorb und
+beim Bezahlen — oft das Letzte, was jemand vor dem Kauf liest. Deshalb steht
+darin, **was man bekommt und in welcher Form**, nicht warum es gut ist.
+
+```
+Rechnungen, Angebote und Stornos als PDF – erstellt mit einer einzigen HTML-Datei, die offline im Browser läuft. Mit § 19 UStG, 19 % und 7 %. Sofort-Download, kein Abo, keine Installation.
+```
+
+188 von 200 Zeichen.
+
+Sachlichere Fassung, falls dir die erste zu werblich ist (181 Zeichen):
+
+```
+Digitaler Sofort-Download: Rechnungsgenerator als einzelne HTML-Datei für Windows, Mac und Linux. Rechnung, Angebot und Storno als PDF, § 19 UStG inklusive. Einmal zahlen, kein Abo.
+```
+
+---
+
 ## Schlagwörter (Tags)
 
 Alle 13 Plätze nutzen — ungenutzte Tags sind verschenkte Sichtbarkeit.
