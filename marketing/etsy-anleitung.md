@@ -12,13 +12,15 @@ Die Feldinhalte im Einzelnen stehen in `etsy-listing.md` und `etsy-shop.md`.
 
 Bevor du Etsy überhaupt öffnest. Dauert zehn Minuten und erspart dir, mitten im Anlegen abbrechen zu müssen.
 
-### 1. Paket bauen
+### 1. Verkaufsdatei bereitlegen
 
-Im Repository `./bauen.sh` ausführen. Das erzeugt `dist/rechnungsgenerator-kleinunternehmer-v1.0.0.zip` — **das ist die Datei, die der Käufer bekommt.**
+**Kein Terminal nötig.** Die fertige Datei `rechnungsgenerator-kleinunternehmer-v1.0.0.zip` (22 kB) liegt bereits vor — herunterladen und auf den Schreibtisch legen. **Das ist die Datei, die der Käufer bekommt.**
+
+> Nur wenn du am Produkt etwas geändert hast, muss die ZIP neu gebaut werden: Repository klonen, im Ordner `./bauen.sh` ausführen (Mac und Linux im Terminal, Windows in Git Bash oder WSL). Solange sich nichts ändert, ist das nicht nötig.
 
 ### 2. Paket selbst testen
 
-ZIP entpacken und die HTML-Datei in einem **frischen Browserprofil** öffnen (Inkognito reicht). So erlebt es der Käufer. Einmal eine Rechnung schreiben und als PDF speichern.
+ZIP entpacken und per Doppelklick auf `rechnungsgenerator.html` öffnen — am besten in einem **privaten Fenster**, damit du es so erlebst wie ein Käufer beim ersten Mal. Einmal eine Rechnung schreiben und als PDF speichern.
 
 ### 3. Alle Dateien griffbereit legen
 
@@ -33,7 +35,7 @@ Kopiere dir diese Dateien in einen Ordner auf den Schreibtisch — du brauchst s
 | `assets/etsy/05-editor.png` | Listing-Bild 5 |
 | `assets/etsy/06-lieferumfang.png` | Listing-Bild 6 |
 | `assets/etsy/listing-video.mp4` | Listing-Video |
-| `dist/…v1.0.0.zip` | die Datei zum Verkaufen |
+| `rechnungsgenerator-…-v1.0.0.zip` | die Datei zum Verkaufen |
 | `assets/etsy/shop-icon.png` | Shop-Bild |
 | `assets/etsy/shop-banner.png` | Shop-Banner |
 
@@ -414,4 +416,6 @@ Der wichtigste Schritt im ganzen Plan. Ein Listing ohne Bewertungen wird von Ets
 | Shop-Bild | `assets/etsy/shop-icon.png` |
 | Shop-Banner | `assets/etsy/shop-banner.png` |
 
-Die ZIP liegt nicht im Repository — sie entsteht mit `./bauen.sh`.
+Die ZIP liegt nicht im Repository, weil sie ein Bauergebnis ist. Sie wurde
+bereits erzeugt und ausgeliefert — neu bauen musst du sie nur, wenn sich am
+Produkt etwas ändert (`./bauen.sh`).

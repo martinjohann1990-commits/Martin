@@ -121,10 +121,11 @@ const abschnitte = [
     titel: 'Vorbereitung',
     hinweis: 'Bevor du Etsy überhaupt öffnest. Dauert zehn Minuten und erspart dir, mitten im Anlegen abbrechen zu müssen.',
     schritte: [
-      { t: 'Paket bauen',
-        b: 'Im Repository <code>./bauen.sh</code> ausführen. Das erzeugt <code>dist/rechnungsgenerator-kleinunternehmer-v1.0.0.zip</code> — <strong>das ist die Datei, die der Käufer bekommt.</strong>' },
+      { t: 'Verkaufsdatei bereitlegen',
+        b: '<strong>Kein Terminal nötig.</strong> Die fertige Datei <code>rechnungsgenerator-kleinunternehmer-v1.0.0.zip</code> (22 kB) liegt bereits vor — herunterladen und auf den Schreibtisch legen. <strong>Das ist die Datei, die der Käufer bekommt.</strong>',
+        hinweisBox: 'Nur wenn du am Produkt etwas geändert hast, muss die ZIP neu gebaut werden: Repository klonen, im Ordner <code>./bauen.sh</code> ausführen (Mac und Linux im Terminal, Windows in Git Bash oder WSL). Solange sich nichts ändert, ist das nicht nötig.' },
       { t: 'Paket selbst testen',
-        b: 'ZIP entpacken und die HTML-Datei in einem <strong>frischen Browserprofil</strong> öffnen (Inkognito reicht). So erlebt es der Käufer. Einmal eine Rechnung schreiben und als PDF speichern.' },
+        b: 'ZIP entpacken und per Doppelklick auf <code>rechnungsgenerator.html</code> öffnen — am besten in einem <strong>privaten Fenster</strong>, damit du es so erlebst wie ein Käufer beim ersten Mal. Einmal eine Rechnung schreiben und als PDF speichern.' },
       { t: 'Alle Dateien griffbereit legen',
         b: 'Kopiere dir diese Dateien in einen Ordner auf den Schreibtisch — du brauchst sie gleich alle:',
         dateien: [
@@ -135,7 +136,7 @@ const abschnitte = [
           ['assets/etsy/05-editor.png', 'Listing-Bild 5'],
           ['assets/etsy/06-lieferumfang.png', 'Listing-Bild 6'],
           ['assets/etsy/listing-video.mp4', 'Listing-Video'],
-          ['dist/…v1.0.0.zip', 'die Datei zum Verkaufen'],
+          ['rechnungsgenerator-…-v1.0.0.zip', 'die Datei zum Verkaufen'],
           ['assets/etsy/shop-icon.png', 'Shop-Bild'],
           ['assets/etsy/shop-banner.png', 'Shop-Banner']
         ] },
@@ -275,6 +276,7 @@ for (const a of abschnitte) {
     nr++;
     md += `### ${nr}. ${s.t}\n\n${strichHtml(s.b)}\n\n`;
     if (s.warnung) md += `> **Achtung:** ${strichHtml(s.warnung)}\n\n`;
+    if (s.hinweisBox) md += `> ${strichHtml(s.hinweisBox)}\n\n`;
     if (s.dateien) {
       md += `| Datei | Wofür |\n|---|---|\n`;
       for (const [d, w] of s.dateien) md += `| \`${d}\` | ${w} |\n`;
@@ -293,7 +295,9 @@ md += `| Video | \`assets/etsy/listing-video.mp4\` |\n`;
 md += `| Digitale Datei (Verkauf) | \`dist/rechnungsgenerator-kleinunternehmer-v1.0.0.zip\` |\n`;
 md += `| Shop-Bild | \`assets/etsy/shop-icon.png\` |\n`;
 md += `| Shop-Banner | \`assets/etsy/shop-banner.png\` |\n\n`;
-md += `Die ZIP liegt nicht im Repository — sie entsteht mit \`./bauen.sh\`.\n`;
+md += `Die ZIP liegt nicht im Repository, weil sie ein Bauergebnis ist. Sie wurde\n`;
+md += `bereits erzeugt und ausgeliefert — neu bauen musst du sie nur, wenn sich am\n`;
+md += `Produkt etwas ändert (\`./bauen.sh\`).\n`;
 
 await writeFile(join(wurzel, 'marketing', 'etsy-anleitung.md'), md);
 
@@ -320,6 +324,7 @@ const html = abschnitte.map(a => `
         <div class="koerper">
           <p>${s.b}</p>
           ${s.warnung ? `<p class="warnung">${s.warnung}</p>` : ''}
+          ${s.hinweisBox ? `<p class="nebenbei">${s.hinweisBox}</p>` : ''}
           ${s.dateien ? `<ul class="dateien">${s.dateien.map(([d,w]) =>
             `<li><code>${esc(d)}</code><span>${esc(w)}</span></li>`).join('')}</ul>` : ''}
           ${s.etiketten ? `<div class="etiketten">${s.etiketten.map(e =>
@@ -397,6 +402,7 @@ const seite = `<title>Etsy-Listing anlegen — Klickstrecke</title>
   .koerper p{margin:0 0 12px; font-size:15px; color:var(--gedaempft)}
   .koerper p strong{color:var(--tinte)}
   .warnung{border-left:3px solid var(--warn); padding-left:13px; color:var(--warn) !important}
+  .nebenbei{border-left:3px solid var(--linie); padding-left:13px; font-size:14px !important}
   .warnung strong{color:var(--warn) !important}
 
   .dateien{list-style:none; padding:0; margin:0 0 12px; display:flex; flex-direction:column; gap:7px}
