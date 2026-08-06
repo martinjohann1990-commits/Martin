@@ -17,6 +17,87 @@ hat sich in den letzten Jahren etwas geändert (siehe Befund 3 und 4).
 
 ---
 
+# Teil 0 — Wo kommt was hin
+
+Etsy verteilt die Rechtstexte auf **drei verschiedene Bereiche**. Das ist die
+vollständige Zuordnung.
+
+## Übersicht
+
+| Text | Ort bei Etsy |
+|---|---|
+| **Impressum** | Einstellungen → **Info und Ansicht** → Abschnitt *Impressum* |
+| **Widerrufsbelehrung + Muster-Widerrufsformular** | Einstellungen → **AGB-Einstellungen** → Reiter *Rückgaben & Umtausch* |
+| **Stornierungen** | Einstellungen → **AGB-Einstellungen** → Reiter *Stornierungen* |
+| **Datenschutz** | Einstellungen → **AGB-Einstellungen** → Reiter *Datenschutz* |
+| **Lieferung, Gewährleistung, Zahlung** | Impressum-Bereich → *„Füge mehr Infos für Käufer:innen hinzu"* |
+| **Widerrufs-Kurzhinweis** | im **Listing**, am Ende der Beschreibung |
+| **Funktionsweise und Kompatibilität** | im **Listing**, Abschnitt *Technische Voraussetzungen* |
+| **Lizenzbedingungen** | liegen als `LIZENZ.txt` **in der ZIP** — bei Etsy nichts einzutragen |
+| ~~Feste AGB~~ | **nichts eintragen** — schreibgeschützt, siehe unten |
+
+## Bereich 1 — Info und Ansicht
+
+Dort steht der Abschnitt **Impressum**, in dem auch der Verkäuferstatus
+(*Händler* / *Privatperson*) abgefragt wird. Reihenfolge:
+
+1. Verkäuferstatus auf **Händler** stellen und speichern
+2. Impressumsangaben eintragen (Text in Teil 2 A)
+3. Über **„Füge mehr Infos für Käufer:innen hinzu"** die drei Zusatztexte
+   ergänzen: Lieferung, Gewährleistung, Zahlung (Teil 2 D)
+
+Warum die drei Zusatztexte hierhin: Etsy hat für sie kein eigenes Feld. Sie
+gehören trotzdem zu den vorvertraglichen Informationspflichten.
+
+## Bereich 2 — AGB-Einstellungen
+
+Vier Reiter, drei davon füllst du:
+
+| Reiter | Inhalt |
+|---|---|
+| *Rückgaben & Umtausch* | **Widerrufsbelehrung** + Muster-Widerrufsformular (Teil 2 B) |
+| *Stornierungen* | Kurztext zur Stornierung vor dem Download |
+| *Datenschutz* | Datenschutztext (Teil 2 F) |
+| *Feste AGB* | **nichts** — schreibgeschützt |
+
+**Zum Reiter „Feste AGB":** Er enthält Etsys eigene Liefer- und
+Zollbedingungen und lässt sich nicht ändern („gelten für den gesamten Shop und
+können nicht geändert werden"). Für einen Shop mit ausschließlich digitalen
+Downloads ist er gegenstandslos — kein Versand, keine Einfuhrgebühren.
+Ignorieren.
+
+**Text für den Reiter „Stornierungen":**
+
+```
+Eine Stornierung ist möglich, solange die Datei noch nicht heruntergeladen
+wurde. Melden Sie sich in diesem Fall bitte über die Nachrichtenfunktion — ich
+storniere die Bestellung und erstatte den Kaufpreis.
+
+Davon unberührt bleibt Ihr gesetzliches Widerrufsrecht; die
+Widerrufsbelehrung finden Sie unter „Rückgaben & Umtausch".
+```
+
+## Bereich 3 — Das Listing selbst
+
+Zwei Abschnitte in der Produktbeschreibung, beide bereits im fertigen
+Listing-Text enthalten:
+
+- **Am Ende der Beschreibung:** der Kurzhinweis zum Widerruf (Teil 2 C) mit
+  Verweis auf die vollständige Belehrung in den Shop-Richtlinien.
+- **Abschnitt „Technische Voraussetzungen":** Funktionsweise und
+  Interoperabilität nach Art. 246a EGBGB (Teil 2 E).
+
+## Reihenfolge beim Ausfüllen
+
+1. **Info und Ansicht** → Verkäuferstatus, Impressum, Zusatztexte
+2. **AGB-Einstellungen** → drei Reiter
+3. **Listing** → Beschreibung mit den beiden Abschnitten
+
+Der Impressum-Bereich zuerst: Ohne korrekten Verkäuferstatus fehlt die
+Grundlage für alles Weitere.
+
+---
+
 # Teil 1 — Kritische Prüfung des Bestehenden
 
 Acht Befunde. Die ersten drei halte ich für ernst.
