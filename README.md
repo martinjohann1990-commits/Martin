@@ -60,6 +60,7 @@ produkt/          Das, was der Käufer bekommt
 marketing/        Verkauf
   vermarktung.md            Marktplatzentscheidung, Preis, 30-Tage-Plan, Support
   verkaufsstrategie.md      Woher Verkäufe kommen, Ads-Rechnung, Kennzahlen
+  rechtstexte.md            Impressum, Widerrufsbelehrung, Prüfung mit 8 Befunden
   etsy-shop.md              Shop „Papierkramerei": Name, Profil, Richtlinien
   etsy-listing.md           Das Listing, Feld für Feld zum Einfügen
   etsy-anleitung.md         Klickstrecke: 30 Schritte vom Konto bis „Veröffentlichen"

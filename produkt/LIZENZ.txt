@@ -51,17 +51,24 @@ eine Lizenz erforderlich. Auf Anfrage sind Mehrfachlizenzen erhaeltlich.
 
 5. GEWAEHRLEISTUNG UND HAFTUNG
 
-Das Produkt wird ohne Zusicherung bestimmter Eigenschaften bereitgestellt.
+Es gelten die gesetzlichen Regelungen, bei Verbrauchern insbesondere die
+Vorschriften ueber digitale Produkte (§§ 327 ff. BGB).
 
 Das Produkt unterstuetzt beim Erstellen von Belegen und weist auf fehlende
 Pflichtangaben nach § 14 UStG hin. Es ersetzt keine Steuer- oder
 Rechtsberatung und keine Buchhaltungssoftware. Die inhaltliche und steuerliche
 Richtigkeit der erstellten Belege liegt in deiner Verantwortung.
 
-Eine Haftung fuer Schaeden, die aus der Nutzung des Produkts entstehen, ist
-ausgeschlossen, soweit gesetzlich zulaessig. Unberuehrt bleibt die Haftung
-fuer Vorsatz, grobe Fahrlaessigkeit sowie fuer Schaeden aus der Verletzung
-des Lebens, des Koerpers oder der Gesundheit.
+Fuer Schaeden aus der Verletzung des Lebens, des Koerpers oder der Gesundheit
+sowie bei Vorsatz und grober Fahrlaessigkeit wird unbeschraenkt gehaftet.
+
+Bei einfacher Fahrlaessigkeit wird nur gehaftet, wenn eine wesentliche
+Vertragspflicht verletzt wird, deren Erfuellung die ordnungsgemaesse
+Durchfuehrung des Vertrags ueberhaupt erst ermoeglicht und auf deren Einhaltung
+du regelmaessig vertrauen darfst. In diesem Fall ist die Haftung auf den bei
+Vertragsschluss vorhersehbaren, vertragstypischen Schaden begrenzt.
+
+Die Haftung nach dem Produkthaftungsgesetz bleibt unberuehrt.
 
 
 6. DATENVERARBEITUNG
@@ -73,12 +80,22 @@ Anbieter oder an Dritte statt. Es werden keine externen Ressourcen geladen.
 
 7. WIDERRUF BEI DIGITALEN INHALTEN
 
-Bei digitalen Inhalten erlischt das Widerrufsrecht, sobald der Download
-begonnen wurde und du diesem Erloeschen zuvor ausdruecklich zugestimmt hast
-(§ 356 Abs. 5 BGB). Die entsprechende Zustimmung wird beim Kauf eingeholt.
+Das Widerrufsrecht erlischt nach § 356 Abs. 5 BGB, wenn du ausdruecklich
+zugestimmt hast, dass mit der Bereitstellung vor Ablauf der Widerrufsfrist
+begonnen wird, du deine Kenntnis vom Verlust des Widerrufsrechts bestaetigt
+hast und die Bereitstellung begonnen hat.
+
+Die vollstaendige Widerrufsbelehrung mit Muster-Widerrufsformular findest du in
+den Shop-Richtlinien.
 
 
-8. SCHLUSSBESTIMMUNGEN
+8. AKTUALISIERUNGEN
+
+Aktualisierungen, die zur Erhaltung der Vertragsmaessigkeit erforderlich sind,
+werden bereitgestellt und stehen dir kostenfrei zur Verfuegung.
+
+
+9. SCHLUSSBESTIMMUNGEN
 
 Sollte eine Bestimmung dieser Lizenz unwirksam sein, bleibt die Wirksamkeit
 der uebrigen Bestimmungen unberuehrt.

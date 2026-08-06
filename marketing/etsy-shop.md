@@ -139,16 +139,17 @@ wird nichts versendet.
 
 **Rückgabe und Umtausch**
 
-```
-Digitale Downloads können nach dem Herunterladen nicht zurückgegeben oder
-umgetauscht werden.
+> **Nicht mehr verwenden.** Der frühere Text behauptete pauschal, digitale
+> Downloads seien von der Rückgabe ausgeschlossen. Das Widerrufsrecht erlischt
+> nur unter den vier Voraussetzungen des § 356 Abs. 5 BGB.
+>
+> **Die vollständige Widerrufsbelehrung samt Muster-Widerrufsformular sowie
+> Impressum, Gewährleistungs-, Zahlungs- und Datenschutztext stehen in
+> `rechtstexte.md`** — mit einer kritischen Prüfung der bisherigen Fassungen.
 
-Sollte eine Datei nicht funktionieren oder etwas nicht wie beschrieben sein,
-melde dich bitte — ich helfe weiter oder erstatte den Kaufpreis.
-```
-
-Die freiwillige Erstattungszusage kostet erfahrungsgemäß fast nie etwas und
-nimmt beim Kauf die letzte Hemmung.
+Die freiwillige Erstattungszusage bleibt Teil der Texte: Sie kostet
+erfahrungsgemäß fast nie etwas und nimmt beim Kauf die letzte Hemmung — steht
+jetzt aber neben dem gesetzlichen Recht statt an dessen Stelle.
 
 **Datenschutz**
 

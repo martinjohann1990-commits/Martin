@@ -158,10 +158,15 @@ SOFORT-DOWNLOAD
 
 Die Dateien stehen direkt nach dem Kauf zum Herunterladen bereit.
 
-Da es sich um ein digitales Produkt handelt, das sofort heruntergeladen werden
-kann, ist eine Rückgabe nach dem Download nicht möglich. Wenn etwas nicht
-funktioniert oder du eine Frage hast: Schreib mir einfach. Ich antworte
-normalerweise am selben Tag und finde eine Lösung.
+Es handelt sich um einen digitalen Inhalt. Ihr Widerrufsrecht erlischt, sobald
+Sie ausdrücklich zugestimmt haben, dass mit der Bereitstellung vor Ablauf der
+Widerrufsfrist begonnen wird, Sie Ihre Kenntnis vom Verlust des Widerrufsrechts
+bestätigt haben und die Bereitstellung begonnen hat. Die vollständige
+Widerrufsbelehrung finden Sie in den Shop-Richtlinien.
+
+Unabhängig davon: Wenn eine Datei nicht funktioniert oder etwas nicht wie
+beschrieben ist, melden Sie sich bitte. Ich helfe weiter oder erstatte den
+Kaufpreis.
 ```
 
 ---
@@ -286,17 +291,21 @@ die Anleitung beim Werkzeug.
 
 ## Angaben zur Rückgabe
 
-Digitale Downloads sind bei Etsy vom Widerrufsrecht ausgenommen. Trage in den
-Shop-Richtlinien ein:
+> **Achtung, hier stand ein Fehler.** Digitale Downloads sind **nicht** pauschal
+> vom Widerrufsrecht ausgenommen. Das Recht erlischt nur, wenn alle vier
+> Voraussetzungen des § 356 Abs. 5 BGB erfüllt sind — unter anderem die
+> ausdrückliche Zustimmung des Käufers und dessen Bestätigung, dass er dadurch
+> sein Widerrufsrecht verliert. Eine Klausel, die pauschal „keine Rückgabe"
+> behauptet, ist unwirksam und selbst abmahnfähig.
 
-```
-Digitale Downloads können nach dem Herunterladen nicht zurückgegeben oder
-umgetauscht werden. Sollte es ein Problem mit der Datei geben oder etwas nicht
-funktionieren, melde dich bitte — ich helfe weiter oder erstatte den Kaufpreis.
-```
+**Die vollständigen Rechtstexte stehen in `rechtstexte.md`**: Impressum,
+Widerrufsbelehrung mit Muster-Widerrufsformular, Shop-Richtlinien,
+Verbraucherinformationen zu digitalen Inhalten und Datenschutzhinweis — dazu
+die kritische Prüfung mit acht Befunden.
 
-Die freiwillige Erstattungszusage kostet erfahrungsgemäß fast nie etwas und
-nimmt beim Kauf die letzte Hemmung.
+Die freiwillige Erstattungszusage bleibt Teil des Textes: Sie kostet
+erfahrungsgemäß fast nie etwas und nimmt beim Kauf die letzte Hemmung. Sie
+steht jetzt aber **neben** dem gesetzlichen Recht, nicht an dessen Stelle.
 
 ---
 

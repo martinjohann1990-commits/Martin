@@ -222,7 +222,9 @@ SOFORT-DOWNLOAD
 
 Die Dateien stehen direkt nach dem Kauf zum Herunterladen bereit.
 
-Da es sich um ein digitales Produkt handelt, das sofort heruntergeladen werden kann, ist eine Rückgabe nach dem Download nicht möglich. Wenn etwas nicht funktioniert oder du eine Frage hast: Schreib mir einfach. Ich antworte normalerweise am selben Tag und finde eine Lösung.
+Es handelt sich um einen digitalen Inhalt. Ihr Widerrufsrecht erlischt, sobald Sie ausdrücklich zugestimmt haben, dass mit der Bereitstellung vor Ablauf der Widerrufsfrist begonnen wird, Sie Ihre Kenntnis vom Verlust des Widerrufsrechts bestätigt haben und die Bereitstellung begonnen hat. Die vollständige Widerrufsbelehrung finden Sie in den Shop-Richtlinien.
+
+Unabhängig davon: Wenn eine Datei nicht funktioniert oder etwas nicht wie beschrieben ist, melden Sie sich bitte. Ich helfe weiter oder erstatte den Kaufpreis.
 ```
 
 ### 17. Warenkorb-Zusammenfassung
@@ -384,19 +386,134 @@ Etsy stellt standardmäßig auf **Privatperson** — das ist hier falsch. Wer pl
 
 > Danach fragt Etsy die Impressumsangaben ab: vollständiger Name (kein Fantasiename — „Papierkramerei" ist der Shop, nicht der Verkäufer), ladungsfähige Anschrift ohne Postfach, E-Mail, USt-IdNr. falls vorhanden. Die Anschrift ist öffentlich sichtbar; wer von zu Hause arbeitet, veröffentlicht damit die Privatadresse. Fehlt noch die Gewerbeanmeldung, gehört sie hierhin — nicht die Wahl von „Privatperson".
 
-### 31. Richtlinien und Impressum
+### 31. Impressum eintragen
 
-Unter „Shop-Richtlinien". Das Impressumsfeld heißt bei Etsy **„Rechtliche Informationen des Verkäufers"** — dort gehören Name, Anschrift und E-Mail hinein.
+Unter „Shop-Richtlinien" → **„Rechtliche Informationen des Verkäufers"**. Platzhalter in eckigen Klammern ersetzen.
 
-**Rückgabe und Umtausch:**
+> **Achtung:** Nicht „TMG“ schreiben — die Impressumspflicht steht seit Mai 2024 in § 5 DDG. Und keinen Link zur EU-Streitbeilegungsplattform aufnehmen: Die wurde zum 20. Juli 2025 eingestellt, viele kursierende Vorlagen enthalten ihn noch.
+
+**Impressum:**
 
 ```
-Digitale Downloads können nach dem Herunterladen nicht zurückgegeben oder umgetauscht werden.
+Angaben gemäß § 5 DDG
 
-Sollte eine Datei nicht funktionieren oder etwas nicht wie beschrieben sein, melde dich bitte — ich helfe weiter oder erstatte den Kaufpreis.
+[Vorname Nachname]
+[Straße und Hausnummer]
+[PLZ] [Ort]
+Deutschland
+
+Kontakt
+E-Mail: [E-Mail-Adresse]
+Telefon: [Telefonnummer]
+
+Umsatzsteuer
+Kleinunternehmer gemäß § 19 UStG. Es wird keine Umsatzsteuer ausgewiesen.
+
+Verantwortlich für den Inhalt
+[Vorname Nachname], Anschrift wie oben
+
+Verbraucherstreitbeilegung
+Ich bin nicht bereit und nicht verpflichtet, an Streitbeilegungsverfahren vor
+einer Verbraucherschlichtungsstelle teilzunehmen.
 ```
 
-### 32. Nachricht nach dem Kauf hinterlegen
+### 32. Widerrufsbelehrung eintragen
+
+Die Belehrungspflicht besteht **unabhängig davon**, ob das Widerrufsrecht später erlischt. Fehlt sie, verlängert sich die Frist auf bis zu zwölf Monate und 14 Tage. Das Muster-Widerrufsformular gehört dazu.
+
+> **Achtung:** Der frühere Text „keine Rückgabe möglich“ ist unhaltbar. Das Widerrufsrecht erlischt nur, wenn alle vier Voraussetzungen des § 356 Abs. 5 BGB erfüllt sind — unter anderem die ausdrückliche Zustimmung des Käufers und dessen Bestätigung, dass er dadurch sein Widerrufsrecht verliert.
+
+> Prüfe an einer Testbestellung, ob Etsys Kasse diese Zustimmung überhaupt einholt. Tut sie es nicht, bleibt das Widerrufsrecht bestehen — dann ist eine gegenteilige Klausel unwirksam und selbst abmahnfähig.
+
+**Widerrufsbelehrung mit Muster-Formular:**
+
+```
+WIDERRUFSBELEHRUNG
+
+Widerrufsrecht
+
+Sie haben das Recht, binnen vierzehn Tagen ohne Angabe von Gründen diesen Vertrag zu widerrufen. Die Widerrufsfrist beträgt vierzehn Tage ab dem Tag des Vertragsschlusses.
+
+Um Ihr Widerrufsrecht auszuüben, müssen Sie mir
+
+  [Vorname Nachname]
+  [Straße und Hausnummer]
+  [PLZ] [Ort]
+  E-Mail: [E-Mail-Adresse]
+
+mittels einer eindeutigen Erklärung (z. B. ein mit der Post versandter Brief oder eine E-Mail) über Ihren Entschluss, diesen Vertrag zu widerrufen, informieren. Sie können dafür das beigefügte Muster-Widerrufsformular verwenden, das jedoch nicht vorgeschrieben ist.
+
+Zur Wahrung der Widerrufsfrist reicht es aus, dass Sie die Mitteilung über die Ausübung des Widerrufsrechts vor Ablauf der Widerrufsfrist absenden.
+
+Folgen des Widerrufs
+
+Wenn Sie diesen Vertrag widerrufen, habe ich Ihnen alle Zahlungen, die ich von Ihnen erhalten habe, unverzüglich und spätestens binnen vierzehn Tagen ab dem Tag zurückzuzahlen, an dem die Mitteilung über Ihren Widerruf dieses Vertrags bei mir eingegangen ist. Für diese Rückzahlung verwende ich dasselbe Zahlungsmittel, das Sie bei der ursprünglichen Transaktion eingesetzt haben, es sei denn, mit Ihnen wurde ausdrücklich etwas anderes vereinbart; in keinem Fall werden Ihnen wegen dieser Rückzahlung Entgelte berechnet.
+
+Vorzeitiges Erlöschen des Widerrufsrechts
+
+Ihr Widerrufsrecht erlischt vorzeitig, wenn ich mit der Ausführung des Vertrags begonnen habe, nachdem Sie ausdrücklich zugestimmt haben, dass ich mit der Ausführung vor Ablauf der Widerrufsfrist beginne, und Sie Ihre Kenntnis davon bestätigt haben, dass Sie durch Ihre Zustimmung mit Beginn der Ausführung des Vertrags Ihr Widerrufsrecht verlieren.
+
+Ende der Widerrufsbelehrung
+
+
+MUSTER-WIDERRUFSFORMULAR
+
+(Wenn Sie den Vertrag widerrufen wollen, füllen Sie bitte dieses Formular aus und senden Sie es zurück.)
+
+An
+[Vorname Nachname]
+[Straße und Hausnummer]
+[PLZ] [Ort]
+E-Mail: [E-Mail-Adresse]
+
+Hiermit widerrufe(n) ich/wir (*) den von mir/uns (*) abgeschlossenen Vertrag über den Kauf der folgenden Waren (*) / die Erbringung der folgenden Dienstleistung (*)
+
+Bestellt am (*) / erhalten am (*)
+
+Name des/der Verbraucher(s)
+
+Anschrift des/der Verbraucher(s)
+
+Unterschrift des/der Verbraucher(s) (nur bei Mitteilung auf Papier)
+
+Datum
+
+(*) Unzutreffendes streichen.
+```
+
+### 33. Weitere Richtlinientexte
+
+Ebenfalls unter „Shop-Richtlinien“.
+
+**Lieferung / Bereitstellung:**
+
+```
+Alle Artikel in diesem Shop sind digitale Downloads. Nach Zahlungseingang stehen die Dateien sofort in Ihrem Etsy-Konto unter „Käufe und Bewertungen" bereit. Es erfolgt kein Versand.
+```
+
+**Gewährleistung:**
+
+```
+Es gelten die gesetzlichen Regelungen zur Vertragsmäßigkeit digitaler Produkte (§§ 327 ff. BGB). Sollte das Produkt nicht wie beschrieben funktionieren, melden Sie sich bitte — ich stelle eine korrigierte Fassung bereit oder erstatte den Kaufpreis.
+```
+
+**Zahlung:**
+
+```
+Die Zahlung wird über Etsy Payments abgewickelt. Der angegebene Preis ist der Endpreis. Als Kleinunternehmer gemäß § 19 UStG weise ich keine Umsatzsteuer aus.
+```
+
+**Datenschutz:**
+
+```
+Für die Abwicklung des Kaufs werden nur die Daten verarbeitet, die Etsy mir zu diesem Zweck bereitstellt — insbesondere Name, Rechnungsanschrift und Bestelldaten. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO. Die Daten werden für die Dauer der gesetzlichen Aufbewahrungsfristen gespeichert und nicht an Dritte weitergegeben.
+
+Das verkaufte Produkt selbst verarbeitet keine Daten: Es läuft ausschließlich lokal im Browser des Käufers und überträgt nichts ins Internet.
+
+Verantwortlich im Sinne der DSGVO: [Vorname Nachname], Anschrift wie im Impressum. Für die Verarbeitung auf der Plattform ist Etsy verantwortlich; es gilt deren Datenschutzerklärung.
+```
+
+### 34. Nachricht nach dem Kauf hinterlegen
 
 Unter „Info & Darstellung" → „Nachricht an Käufer". Wer sofort loslegt, bewertet eher.
 
@@ -427,17 +544,17 @@ Papierkramerei
 
 Zwei Einstellungen und der eigentlich wichtigste Schritt.
 
-### 33. Offsite Ads eingeschaltet lassen
+### 35. Offsite Ads eingeschaltet lassen
 
 Sie kosten **Provision nur bei Verkauf** (15 %). Ohne Verkauf keine Kosten — bezahlt aus dem Erlös eines Verkaufs, den es sonst nicht gegeben hätte.
 
-### 34. Etsy Ads (Onsite) ausgeschaltet lassen
+### 36. Etsy Ads (Onsite) ausgeschaltet lassen
 
 Die kosten **pro Klick**, auch ohne Verkauf. Ein Listing ohne Bewertungen konvertiert unter 1 % — ein Verkauf würde 25 bis 35 € kosten und 12,84 € einbringen.
 
 > **Achtung:** Erst testen, wenn drei Punkte stimmen: fünf Bewertungen, Konversion über 2 %, und das Listing verkauft sich schon organisch.
 
-### 35. Die ersten fünf Nutzer holen
+### 37. Die ersten fünf Nutzer holen
 
 Der wichtigste Schritt im ganzen Plan. Ein Listing ohne Bewertungen wird von Etsy kaum ausgespielt. Fünf Selbstständige aus deinem Umfeld anschreiben, die ZIP schenken, um eine ehrliche Rückmeldung bitten.
 
