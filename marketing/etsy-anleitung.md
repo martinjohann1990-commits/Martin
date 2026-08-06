@@ -114,17 +114,25 @@ Rechnungsvorlage Kleinunternehmer § 19 UStG | Rechnung & Angebot als PDF | Ohne
 
 **Wer hat es gemacht?** Ich selbst · **Was ist es?** Ein fertiges Produkt · **Wann?** 2020 – 2026
 
-### 13. Kategorie wählen
+### 13. „Wie wird dieser digitale Inhalt erstellt?“
+
+**Mit einem KI-Generator** auswählen. Code, Listing-Texte, Bilder und Video sind von einer KI erzeugt worden — Etsys Formulierung lautet „mit Hilfe eines KI-Generators", und genau das trifft zu.
+
+> **Achtung:** „Von mir geschaffen" wäre eine Falschangabe. Etsy sanktioniert nicht die Offenlegung, sondern das Verschweigen — und im schlimmsten Fall trifft es nicht das Listing, sondern den Shop.
+
+> Praktisch wirkt die Kennzeichnung dort, wo Käufer Handarbeit erwarten — bei Kunstdrucken, Illustrationen, Schmuck. Bei einem Werkzeug zählt, ob es rechnet und ob das PDF sauber aussieht. Optional kannst du es offen in die Beschreibung schreiben („entwickelt mit KI-Unterstützung, geprüft mit 85 automatischen Tests im echten Browser"); bei Software ist das eher ein Vertrauenspunkt.
+
+### 14. Kategorie wählen
 
 Papier & Party → Papier → Kalender & Planer → Vorlagen. Falls Etsy die Pfade umbenannt hat: Hauptsache eine Vorlagen-Kategorie.
 
-### 14. Art des Angebots: Digitaler Download
+### 15. Art des Angebots: Digitaler Download
 
 Unbedingt **„Digitaler Download"** wählen, nicht „Physischer Artikel".
 
 > **Achtung:** Nur mit dieser Einstellung liefert Etsy die Datei automatisch aus, und nur dann greift der Ausschluss vom Widerrufsrecht.
 
-### 15. Beschreibung einfügen
+### 16. Beschreibung einfügen
 
 Der komplette Text. Etsy nimmt keine Formatierung — Absätze und Großbuchstaben tragen die Gliederung.
 
@@ -217,7 +225,7 @@ Die Dateien stehen direkt nach dem Kauf zum Herunterladen bereit.
 Da es sich um ein digitales Produkt handelt, das sofort heruntergeladen werden kann, ist eine Rückgabe nach dem Download nicht möglich. Wenn etwas nicht funktioniert oder du eine Frage hast: Schreib mir einfach. Ich antworte normalerweise am selben Tag und finde eine Lösung.
 ```
 
-### 16. Warenkorb-Zusammenfassung
+### 17. Warenkorb-Zusammenfassung
 
 Ein bis zwei Sätze, höchstens 200 Zeichen. Etsy zeigt diese Zeile im **Warenkorb und beim Bezahlen** — oft das Letzte, was jemand vor dem Kauf liest. Deshalb steht darin, was man bekommt und in welcher Form, nicht warum es gut ist.
 
@@ -229,7 +237,7 @@ Ein bis zwei Sätze, höchstens 200 Zeichen. Etsy zeigt diese Zeile im **Warenko
 Rechnungen, Angebote und Stornos als PDF – erstellt mit einer einzigen HTML-Datei, die offline im Browser läuft. Mit § 19 UStG, 19 % und 7 %. Sofort-Download, kein Abo, keine Installation.
 ```
 
-### 17. Preis und Anzahl
+### 18. Preis und Anzahl
 
 **Preis: 9,90 €** als Einführungspreis für die ersten zwei Wochen oder zehn Verkäufe. Danach auf 14,90 € anheben. **Anzahl: 999.**
 
@@ -245,7 +253,7 @@ Rechnungen, Angebote und Stornos als PDF – erstellt mit einer einzigen HTML-Da
 999
 ```
 
-### 18. Alle 13 Schlagwörter setzen
+### 19. Alle 13 Schlagwörter setzen
 
 Ungenutzte Plätze sind verschenkte Sichtbarkeit. Einzeln eintragen — Etsy nimmt keine Liste auf einmal. Drei stehen bewusst ohne Umlaut, weil Etsys Suche „ä" und „ae" nicht zuverlässig gleich behandelt.
 
@@ -265,7 +273,7 @@ Gruendung Set
 Paragraph 19 UStG
 ```
 
-### 19. Materialien angeben
+### 20. Materialien angeben
 
 Vier Einträge, ebenfalls einzeln:
 
@@ -276,7 +284,7 @@ PDF-Ausgabe
 Vorlage
 ```
 
-### 20. Die Verkaufsdatei hochladen
+### 21. Die Verkaufsdatei hochladen
 
 **Die ZIP-Datei, nicht die einzelnen Dateien.** So bleibt die Anleitung beim Werkzeug. Etsy erlaubt bis zu fünf Dateien à 20 MB — das Paket liegt bei rund 22 kB.
 
@@ -284,11 +292,11 @@ Vorlage
 |---|---|
 | `rechnungsgenerator-kleinunternehmer-v1.0.0.zip` | aus dem Ordner dist/ |
 
-### 21. Personalisierung ausschalten
+### 22. Personalisierung ausschalten
 
 Nicht aktivieren. Es gibt nichts zu personalisieren, und aktiviert erzeugt es nur Rückfragen.
 
-### 22. Vorschau ansehen, dann veröffentlichen
+### 23. Vorschau ansehen, dann veröffentlichen
 
 Vor dem Klick auf „Veröffentlichen" einmal die Vorschau prüfen: Steht das richtige Bild auf Platz 1? Ist die Beschreibung vollständig? Sind alle 13 Tags gesetzt?
 
@@ -299,7 +307,7 @@ Vor dem Klick auf „Veröffentlichen" einmal die Vorschau prüfen: Steht das ri
 
 Geht erst, wenn der Shop existiert. Unter Shop-Manager → Shop-Einstellungen. Zwanzig Minuten, die sich unmittelbar auszahlen — ein leeres Profil kostet Vertrauen.
 
-### 23. Shop-Bild und Banner hochladen
+### 24. Shop-Bild und Banner hochladen
 
 Unter „Shop-Darstellung" bzw. „Design".
 
@@ -308,7 +316,7 @@ Unter „Shop-Darstellung" bzw. „Design".
 | `shop-icon.png` | Shop-Bild — wird als kleiner Kreis gezeigt |
 | `shop-banner.png` | Banner — die breite Fläche oben |
 
-### 24. Shop-Titel eintragen
+### 25. Shop-Titel eintragen
 
 Die Zeile direkt unter dem Namen, 49 von 55 erlaubten Zeichen. Sie sagt, für wen der Shop ist — nicht, was gerade darin liegt.
 
@@ -318,7 +326,7 @@ Die Zeile direkt unter dem Namen, 49 von 55 erlaubten Zeichen. Sie sagt, für we
 Werkzeuge gegen den Papierkram für Selbstständige
 ```
 
-### 25. Ankündigung setzen
+### 26. Ankündigung setzen
 
 Erscheint oben im Shop. Während des Einführungspreises die zweite Fassung nehmen und das Datum eintragen.
 
@@ -334,7 +342,7 @@ Digitale Werkzeuge für alle, die nebenbei oder hauptberuflich selbstständig si
 Einführungspreis bis [Datum]: Der Rechnungsgenerator kostet 9,90 € statt 14,90 €. Danach gilt der reguläre Preis. Bei Fragen schreib mir einfach.
 ```
 
-### 26. Shop-Story schreiben
+### 27. Shop-Story schreiben
 
 Der Text, der aus einem anonymen Download einen Menschen macht.
 
@@ -356,7 +364,7 @@ Was du bekommst, ist bewusst klein: kein Alleskönner, sondern ein Werkzeug für
 Wenn etwas nicht funktioniert oder du eine Frage hast: Schreib mir. Hinter diesem Shop steckt kein Support-Team, sondern eine Person, die selbst Rechnungen schreibt.
 ```
 
-### 27. Richtlinien und Impressum
+### 28. Richtlinien und Impressum
 
 Unter „Shop-Richtlinien". Das Impressumsfeld heißt bei Etsy **„Rechtliche Informationen des Verkäufers"** — dort gehören Name, Anschrift und E-Mail hinein.
 
@@ -368,7 +376,7 @@ Digitale Downloads können nach dem Herunterladen nicht zurückgegeben oder umge
 Sollte eine Datei nicht funktionieren oder etwas nicht wie beschrieben sein, melde dich bitte — ich helfe weiter oder erstatte den Kaufpreis.
 ```
 
-### 28. Nachricht nach dem Kauf hinterlegen
+### 29. Nachricht nach dem Kauf hinterlegen
 
 Unter „Info & Darstellung" → „Nachricht an Käufer". Wer sofort loslegt, bewertet eher.
 
@@ -399,17 +407,17 @@ Papierkramerei
 
 Zwei Einstellungen und der eigentlich wichtigste Schritt.
 
-### 29. Offsite Ads eingeschaltet lassen
+### 30. Offsite Ads eingeschaltet lassen
 
 Sie kosten **Provision nur bei Verkauf** (15 %). Ohne Verkauf keine Kosten — bezahlt aus dem Erlös eines Verkaufs, den es sonst nicht gegeben hätte.
 
-### 30. Etsy Ads (Onsite) ausgeschaltet lassen
+### 31. Etsy Ads (Onsite) ausgeschaltet lassen
 
 Die kosten **pro Klick**, auch ohne Verkauf. Ein Listing ohne Bewertungen konvertiert unter 1 % — ein Verkauf würde 25 bis 35 € kosten und 12,84 € einbringen.
 
 > **Achtung:** Erst testen, wenn drei Punkte stimmen: fünf Bewertungen, Konversion über 2 %, und das Listing verkauft sich schon organisch.
 
-### 31. Die ersten fünf Nutzer holen
+### 32. Die ersten fünf Nutzer holen
 
 Der wichtigste Schritt im ganzen Plan. Ein Listing ohne Bewertungen wird von Etsy kaum ausgespielt. Fünf Selbstständige aus deinem Umfeld anschreiben, die ZIP schenken, um eine ehrliche Rückmeldung bitten.
 

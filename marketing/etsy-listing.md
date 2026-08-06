@@ -40,8 +40,16 @@ weil genau diese Leute danach suchen. Die Verkaufsargumente stehen hinten — si
 |---|---|
 | Kategorie | Papier & Party → Papier → Kalender & Planer → Vorlagen |
 | Art des Angebots | **Digitaler Download** |
+| Wie wird der Inhalt erstellt? | **Mit einem KI-Generator** |
 | Verlängerung | **Automatisch** (0,20 $ alle 4 Monate — bei einem laufenden Produkt lohnt das immer) |
 | Anzahl | 999 |
+
+**Zur KI-Kennzeichnung:** Code, Listing-Texte, Bilder und Video sind mit
+KI-Unterstützung entstanden. Etsys Formulierung lautet „mit Hilfe eines
+KI-Generators" — das trifft zu. „Von mir geschaffen" wäre eine Falschangabe,
+und Etsy sanktioniert das Verschweigen, nicht die Offenlegung. Bei einem
+Werkzeug ist die Kennzeichnung praktisch unkritisch: Käufer interessiert, ob es
+rechnet, nicht wie es entstanden ist.
 
 Falls Etsy die Kategorie anders benennt: Entscheidend ist, dass **„Digitaler
 Download"** gesetzt ist. Nur dann liefert Etsy die Datei automatisch aus, und
