@@ -215,6 +215,9 @@ const abschnitte = [
         hinweisBox: 'Sobald das zweite Produkt online ist, lohnt sich die Einteilung: <strong>Rechnung &amp; Angebot</strong> (Rechnungsgenerator), <strong>Mahnung &amp; Nachweise</strong> (Vorlagenpaket), <strong>Sparpakete</strong> (Bundle). Benannt nach der Aufgabe, nicht nach dem Dateiformat — so suchen Leute. Anlegen unter Shop-Manager → Einträge → Abteilungen; bestehende Listings lassen sich jederzeit zuordnen.' },
       { t: 'Personalisierung ausschalten',
         b: 'Nicht aktivieren. Es gibt nichts zu personalisieren, und aktiviert erzeugt es nur Rückfragen.' },
+      { t: 'Ins Schaufenster stellen: an',
+        b: 'Das Schaufenster ist die hervorgehobene Reihe oben auf der Shop-Seite, mit größeren Kacheln als im Raster darunter. Ein leeres Schaufenster wirkt unfertig.',
+        hinweisBox: 'Bei einem einzigen Artikel entsteht eine kleine Doppelung — er steht oben im Schaufenster und nochmal im Raster. Das wiegt weniger als der prominente Platz. Ab dem zweiten Produkt löst es sich auf; Etsy erlaubt bis zu vier Artikel im Schaufenster, das geplante Sortiment passt vollständig hinein.' },
       { t: 'Vorschau ansehen, dann veröffentlichen',
         b: 'Vor dem Klick auf „Veröffentlichen" einmal die Vorschau prüfen: Steht das richtige Bild auf Platz 1? Ist die Beschreibung vollständig? Sind alle 13 Tags gesetzt?' }
     ]
