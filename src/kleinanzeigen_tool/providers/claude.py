@@ -31,9 +31,11 @@ class ClaudeProvider(Provider):
         try:
             import anthropic
         except ImportError as exc:
+            import sys
+
             raise MissingDependency(
-                "Für Claude fehlt das Anthropic-SDK. Installation:\n"
-                "  pip install 'kleinanzeigen-tool[claude]'\n"
+                f"Für Claude fehlt das Anthropic-SDK ({exc}). Installation:\n"
+                f"  {sys.executable} -m pip install -U anthropic\n"
                 "Auf Android dauert das länger — es enthält eine Rust-Komponente.\n"
                 "Wer nur Gemini nutzt, braucht es nicht: --provider gemini"
             ) from exc

@@ -1,8 +1,9 @@
 #!/usr/bin/env bash
 # Startet die Oberfläche. Richtet beim ersten Aufruf alles ein.
 #
-#   ./start.sh           starten
-#   ./start.sh --check    nur prüfen, was da ist (nichts installieren)
+#   ./start.sh              starten
+#   ./start.sh --check      nur prüfen, was da ist (nichts installieren)
+#   ./start.sh --reparieren  Umgebung verwerfen und neu aufbauen
 #
 # Absichtlich OHNE `set -e`: ein fehlgeschlagener Zwischenschritt soll eine
 # verständliche Meldung erzeugen, nicht das Skript wortlos beenden. Genau das
@@ -16,8 +17,24 @@ case "${PREFIX:-}" in *com.termux*) IS_TERMUX=1 ;; esac
 
 BIN=".venv/bin/kleinanzeigen"
 
+# Auf Android nur Gemini: das Anthropic-SDK zieht mit `jiter` eine weitere
+# Rust-Erweiterung nach, die dort übersetzt werden müsste — für einen
+# Anbieter, den man mangels kostenlosem Kontingent selten nutzt.
+if [ "$IS_TERMUX" = 1 ]; then EXTRA="gemini"; else EXTRA="all"; fi
+
 schritt() { printf '\n== %s\n' "$1"; }
 hinweis() { printf '   %s\n' "$1"; }
+
+# Ist die Umgebung wirklich benutzbar? Dass `$BIN` existiert, heißt nur, dass
+# pip einmal durchgelaufen ist — nicht, dass die Anbieter-SDKs auch ladbar
+# sind. Genau daran ist es einmal gescheitert: Programm da, google.genai nicht
+# importierbar, und der Fehler kam erst beim Klick auf "Inserat erstellen".
+sdk_laedt() {
+  .venv/bin/python - <<'PY' >/dev/null 2>&1
+import sys
+from google import genai  # noqa: F401
+PY
+}
 
 finde_python() {
   for kandidat in python3 python; do
@@ -28,6 +45,14 @@ finde_python() {
   done
   return 1
 }
+
+# ----------------------------------------------------------- --reparieren
+if [ "${1:-}" = "--reparieren" ] || [ "${1:-}" = "--repair" ]; then
+  schritt "Umgebung wird verworfen und neu aufgebaut"
+  rm -rf .venv
+  hinweis ".venv gelöscht — die Einrichtung läuft gleich neu."
+  shift
+fi
 
 # ---------------------------------------------------------------- --check
 if [ "${1:-}" = "--check" ]; then
@@ -46,7 +71,12 @@ if [ "${1:-}" = "--check" ]; then
     if [ -x "$BIN" ]; then
       hinweis "vollständig ($BIN vorhanden)"
       hinweis "Pakete: $(.venv/bin/python -c 'import PIL,pydantic;print("Pillow+pydantic ok")' 2>&1 | head -1)"
-      hinweis "google-genai: $(.venv/bin/python -c 'import google.genai;print("ok")' 2>&1 | tail -1)"
+      if sdk_laedt; then
+        hinweis "google-genai: ok"
+      else
+        hinweis "google-genai: LÄDT NICHT — $(.venv/bin/python -c 'from google import genai' 2>&1 | tail -1)"
+        hinweis "Beheben mit:  ./start.sh --reparieren"
+      fi
     else
       hinweis "UNVOLLSTÄNDIG — .venv existiert, aber $BIN fehlt."
       hinweis "Beheben mit:  rm -rf .venv && ./start.sh"
@@ -128,10 +158,6 @@ if [ ! -x "$BIN" ]; then
 
   .venv/bin/pip install --quiet --upgrade pip || true
 
-  # Auf Android nur Gemini: das Anthropic-SDK zieht mit `jiter` eine weitere
-  # Rust-Erweiterung nach, die dort übersetzt werden müsste — für einen
-  # Anbieter, den man mangels kostenlosem Kontingent selten nutzt.
-  if [ "$IS_TERMUX" = 1 ]; then EXTRA="gemini"; else EXTRA="all"; fi
   hinweis "Installiere Pakete ($EXTRA) — beim ersten Mal dauert das ..."
   if ! .venv/bin/pip install -e ".[$EXTRA]"; then
     schritt "Die Installation ist fehlgeschlagen"
@@ -158,6 +184,27 @@ HINWEIS
     exit 1
   fi
   hinweis "Fertig."
+fi
+
+# ------------------------------------------------------------- SDK-Kontrolle
+# Auch eine vorhandene Umgebung kann unbrauchbar sein — etwa nach einem
+# abgebrochenen pip-Lauf oder wenn ein anderes Paket den geteilten
+# Namensraum `google` verdeckt. Lieber hier merken als beim Klick im Browser.
+if ! sdk_laedt; then
+  schritt "Das Gemini-SDK lässt sich nicht laden — wird nachinstalliert"
+  .venv/bin/pip install -e ".[$EXTRA]" || hinweis "pip meldete einen Fehler."
+
+  if ! sdk_laedt; then
+    schritt "Es lädt weiterhin nicht"
+    hinweis "Genauer Grund:"
+    .venv/bin/python -c 'from google import genai' 2>&1 | sed 's/^/   /'
+    hinweis ""
+    hinweis "Meist verdeckt ein anderes Paket den Namensraum 'google'."
+    hinweis "Umgebung komplett neu aufbauen:"
+    hinweis "    ./start.sh --reparieren"
+    exit 1
+  fi
+  hinweis "Jetzt vorhanden."
 fi
 
 # ------------------------------------------------------------------ Schlüssel

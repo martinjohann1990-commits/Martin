@@ -5,10 +5,12 @@ dieselbe Aufgabe in ihr jeweiliges Format übersetzen und dass die Auswahl
 anhand der Zugangsdaten funktioniert.
 """
 
+import sys
 from pathlib import Path
 
 import pytest
 
+from kleinanzeigen_tool.providers import gemini as gemini_modul
 from kleinanzeigen_tool.analyzer import ListingRequest
 from kleinanzeigen_tool.images import PreparedImage
 from kleinanzeigen_tool.providers import (
@@ -248,3 +250,54 @@ def test_gemini_modellfehler_gibt_googles_begruendung_weiter(monkeypatch, reques
 def test_gemini_standardmodell_ist_ein_mitlaufender_alias():
     # Feste Versionen werden von Google fuer neue Nutzer abgeschaltet.
     assert GeminiProvider.default_model.endswith("latest")
+
+
+# --- Fehlende oder verdeckte SDKs ---------------------------------------
+#
+# "Das SDK fehlt" war lange die einzige Antwort auf einen ImportError. Das ist
+# nur die halbe Wahrheit: `google` ist ein geteilter Namensraum, und ein
+# installiertes Paket kann trotzdem unauffindbar sein. Die beiden Faelle
+# brauchen unterschiedliche Loesungen, also auch unterschiedliche Meldungen.
+
+
+def test_nicht_installiertes_sdk_nennt_den_installationsbefehl(monkeypatch):
+    monkeypatch.setattr(gemini_modul, "installierte_version", lambda _: None)
+    text = gemini_modul.genai_import_hinweis(ImportError("No module named 'google'"))
+    assert "nicht installiert" in text
+    assert "pip install -U google-genai" in text
+    # Der Pfad des laufenden Interpreters, nicht irgendein pip aus dem PATH.
+    assert sys.executable in text
+
+
+def test_installiertes_aber_unladbares_sdk_nennt_den_namensraum(monkeypatch):
+    monkeypatch.setattr(gemini_modul, "installierte_version", lambda _: "2.17.0")
+    monkeypatch.setattr(gemini_modul, "_google_pfade", lambda: ["/usr/lib/python3/google"])
+    text = gemini_modul.genai_import_hinweis(
+        ImportError("No module named 'google.genai'")
+    )
+    assert "2.17.0" in text
+    assert "/usr/lib/python3/google" in text
+    assert "--reparieren" in text
+    # Zum Installieren raten waere hier falsch — es ist ja schon da.
+    assert "pip install" not in text
+
+
+def test_version_unbekannter_pakete_ist_none():
+    assert gemini_modul.installierte_version("gibt-es-ganz-sicher-nicht") is None
+
+
+def test_google_pfade_stuerzen_nie_ab():
+    # Wird nur zur Fehlersuche aufgerufen — ein Fehler dort darf die
+    # eigentliche Meldung nicht verschlucken.
+    assert isinstance(gemini_modul._google_pfade(), list)
+
+
+def test_fehlendes_anthropic_sdk_nennt_gemini_als_ausweg(monkeypatch):
+    monkeypatch.setitem(sys.modules, "anthropic", None)
+    from kleinanzeigen_tool.providers.base import MissingDependency
+
+    with pytest.raises(MissingDependency) as exc:
+        ClaudeProvider()._client()
+    text = str(exc.value)
+    assert "--provider gemini" in text
+    assert sys.executable in text

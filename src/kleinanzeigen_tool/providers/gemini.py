@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import base64
 import os
+import sys
 
 from kleinanzeigen_tool.providers.base import (
     MissingCredentials,
@@ -18,6 +19,69 @@ from kleinanzeigen_tool.providers.base import (
     ProviderError,
     ProviderResult,
 )
+
+
+def installierte_version(paket: str) -> str | None:
+    """Version eines Pakets, oder None wenn es gar nicht installiert ist."""
+    from importlib.metadata import PackageNotFoundError, version
+
+    try:
+        return version(paket)
+    except PackageNotFoundError:
+        return None
+    except Exception:  # kaputte Metadaten sollen hier nichts umwerfen
+        return None
+
+
+def genai_import_hinweis(exc: ImportError) -> str:
+    """Erklärt, warum `from google import genai` gescheitert ist.
+
+    Es gibt zwei völlig verschiedene Ursachen mit völlig verschiedenen
+    Lösungen, und "SDK fehlt" traf bisher nur die erste:
+
+    1. Das Paket ist nicht installiert — dann hilft installieren.
+    2. Es ist installiert, aber `google` ist ein geteilter Namensraum
+       (google-genai, google-auth, protobuf ... liegen alle darin). Bringt
+       eines dieser Pakete ein eigenes `google/__init__.py` mit, verschwinden
+       die übrigen. Installieren hilft dann gar nichts; das verdeckende Paket
+       muss weichen. Auf Android passiert das leicht, weil die Umgebung mit
+       --system-site-packages auch die Termux-Pakete sieht.
+    """
+    pip = f"{sys.executable} -m pip"
+    version = installierte_version("google-genai")
+
+    if version is None:
+        return (
+            f"Das Google-GenAI-SDK ist nicht installiert ({exc}).\n"
+            "Nachinstallieren mit:\n"
+            f"  {pip} install -U google-genai\n"
+            "Oder die Einrichtung wiederholen:  ./start.sh --reparieren"
+        )
+
+    zeilen = [
+        f"Das Google-GenAI-SDK ist installiert (Version {version}), lässt "
+        f"sich aber nicht laden ({exc}).",
+    ]
+    pfade = _google_pfade()
+    if pfade:
+        zeilen.append("Der Namensraum 'google' kommt aus:")
+        zeilen.extend(f"  {p}" for p in pfade)
+    zeilen.append(
+        "Meist verdeckt ein anderes Paket den geteilten Namensraum 'google'. "
+        "Die Umgebung neu aufbauen behebt das:\n"
+        "  ./start.sh --reparieren"
+    )
+    return "\n".join(zeilen)
+
+
+def _google_pfade() -> list[str]:
+    """Wo der Namensraum `google` tatsächlich herkommt (für die Fehlersuche)."""
+    try:
+        import google
+
+        return [str(p) for p in getattr(google, "__path__", [])]
+    except Exception:
+        return []
 
 MAX_OUTPUT_TOKENS = 16000
 RESEARCH_MAX_OUTPUT_TOKENS = 8000
@@ -51,10 +115,7 @@ class GeminiProvider(Provider):
         try:
             from google import genai
         except ImportError as exc:
-            raise MissingDependency(
-                "Das Google-GenAI-SDK fehlt. Installation:\n"
-                "  pip install 'kleinanzeigen-tool[gemini]'"
-            ) from exc
+            raise MissingDependency(genai_import_hinweis(exc)) from exc
 
         api_key = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
         if not api_key:
