@@ -1,4 +1,5 @@
 import base64
+import io
 
 import pytest
 from PIL import Image
@@ -126,3 +127,49 @@ def test_kleinere_stufe_erzeugt_kleinere_dateien(tmp_path):
     klein = prepare_images([path], size="klein")[0]
     assert klein.width < gross.width
     assert klein.size_kb < gross.size_kb
+
+
+def _foto_mit_gps(path, size=(1200, 800), orientation=6):
+    """Simuliert ein Handyfoto: GPS-Koordinaten, Kameramodell, Drehung."""
+    from PIL.TiffImagePlugin import IFDRational
+
+    img = Image.new("RGB", size, (90, 120, 60))
+    exif = img.getexif()
+    exif[0x0112] = orientation
+    exif[0x010F] = "TestPhone"
+    exif[0x0110] = "TestPhone 15 Pro"
+    gps = exif.get_ifd(0x8825)
+    gps[1] = "N"
+    gps[2] = (IFDRational(52), IFDRational(30), IFDRational(58))
+    gps[3] = "E"
+    gps[4] = (IFDRational(13), IFDRational(22), IFDRational(39))
+    img.save(path, exif=exif, quality=90)
+    return path
+
+
+def _exif_von(prepared):
+    roh = base64.standard_b64decode(prepared.data_b64)
+    return Image.open(io.BytesIO(roh)).getexif()
+
+
+def test_gps_koordinaten_werden_entfernt(tmp_path):
+    """Datenschutz-Zusage: das hochgeladene Bild darf die Wohnadresse
+    nicht mehr enthalten. Bricht still, wenn jemand EXIF wieder mitspeichert."""
+    path = _foto_mit_gps(tmp_path / "handyfoto.jpg")
+    assert dict(Image.open(path).getexif().get_ifd(0x8825)), "Testaufbau kaputt"
+
+    exif = _exif_von(prepare_image(path))
+    assert not dict(exif.get_ifd(0x8825))
+
+
+def test_kameramodell_wird_entfernt(tmp_path):
+    exif = _exif_von(prepare_image(_foto_mit_gps(tmp_path / "a.jpg")))
+    assert exif.get(0x010F) is None
+    assert exif.get(0x0110) is None
+
+
+def test_exif_drehung_wird_angewandt(tmp_path):
+    # Orientation 6 = 90 Grad gedreht: Quer- wird zu Hochformat.
+    prepared = prepare_image(_foto_mit_gps(tmp_path / "quer.jpg", size=(1200, 800)))
+    assert (prepared.width, prepared.height) == (800, 1200)
+    assert _exif_von(prepared).get(0x0112) is None
