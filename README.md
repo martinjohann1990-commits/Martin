@@ -88,8 +88,14 @@ stoppt der Server.
 Deine Fotos liegen nach `termux-setup-storage` unter `~/storage/dcim`. In der
 Oberfläche wählst du sie ohnehin über den normalen Android-Dateidialog aus.
 
-**Wenn die Installation abbricht:** Ursache ist fast immer `pydantic-core` —
-eine Rust-Komponente, für die es kein Android-Fertigpaket gibt. Dann:
+Auf Android wird bewusst **nur Gemini** installiert. Das Anthropic-SDK zieht
+mit `jiter` eine weitere Rust-Komponente nach, die dort übersetzt werden
+müsste — für einen Anbieter, den man ohne kostenloses Kontingent selten nutzt.
+Nachrüsten geht jederzeit mit `.venv/bin/pip install -e ".[claude]"`.
+
+**Wenn die Installation abbricht oder sehr lange dauert:** Ursache ist
+`pydantic-core` — eine Rust-Komponente, für die es kein Android-Fertigpaket
+gibt. Sie muss einmalig übersetzt werden. Dann:
 
 ```bash
 pkg install rust binutils
@@ -107,7 +113,9 @@ Upload über Mobilfunk und Rechenzeit beim Skalieren.
 ```bash
 python3 -m venv .venv && source .venv/bin/activate
 
-pip install -e ".[gemini]"          # Analyse mit Gemini und Claude
+pip install -e ".[gemini]"          # nur Gemini (schlank, ohne Rust-Extras)
+pip install -e ".[claude]"          # nur Claude
+pip install -e ".[all]"             # beide Anbieter
 pip install -e ".[browser]"         # zusätzlich das Vorausfüllen
 playwright install chromium         # einmalig, nur für [browser]
 

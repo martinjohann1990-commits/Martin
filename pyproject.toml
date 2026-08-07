@@ -9,16 +9,20 @@ description = "Erstellt aus Fotos automatisch ein fertiges Kleinanzeigen-Inserat
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }
+# Bewusst schlank: pro Anbieter ein eigenes Extra. Das Anthropic-SDK zieht
+# `jiter` nach (eine Rust-Erweiterung), und wer nur Gemini nutzt, soll die auf
+# Geräten ohne Fertigpaket — etwa Android/Termux — nicht übersetzen müssen.
 dependencies = [
-    "anthropic>=0.69",
     "pydantic>=2.6",
     "pillow>=10.2",
 ]
 
 [project.optional-dependencies]
-browser = ["playwright>=1.44"]
+claude = ["anthropic>=0.69"]
 gemini = ["google-genai>=1.0"]
-dev = ["pytest>=8.0", "google-genai>=1.0"]
+all = ["anthropic>=0.69", "google-genai>=1.0"]
+browser = ["playwright>=1.44"]
+dev = ["pytest>=8.0", "anthropic>=0.69", "google-genai>=1.0"]
 
 [project.scripts]
 kleinanzeigen = "kleinanzeigen_tool.cli:main"

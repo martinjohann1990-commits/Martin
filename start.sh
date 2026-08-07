@@ -72,7 +72,8 @@ fi
 # ------------------------------------------------------------- Termux-Setup
 if [ "$IS_TERMUX" = 1 ]; then
   schritt "Termux erkannt — Systempakete"
-  for paket in python python-pillow; do
+  # Alles, wofür Termux Fertigpakete hat — sonst müsste pip sie übersetzen.
+  for paket in python python-pillow python-cryptography; do
     if pkg list-installed 2>/dev/null | grep -q "^$paket/"; then
       hinweis "$paket ist da"
     else
@@ -127,8 +128,12 @@ if [ ! -x "$BIN" ]; then
 
   .venv/bin/pip install --quiet --upgrade pip || true
 
-  hinweis "Installiere Pakete (kann beim ersten Mal dauern) ..."
-  if ! .venv/bin/pip install -e ".[gemini]"; then
+  # Auf Android nur Gemini: das Anthropic-SDK zieht mit `jiter` eine weitere
+  # Rust-Erweiterung nach, die dort übersetzt werden müsste — für einen
+  # Anbieter, den man mangels kostenlosem Kontingent selten nutzt.
+  if [ "$IS_TERMUX" = 1 ]; then EXTRA="gemini"; else EXTRA="all"; fi
+  hinweis "Installiere Pakete ($EXTRA) — beim ersten Mal dauert das ..."
+  if ! .venv/bin/pip install -e ".[$EXTRA]"; then
     schritt "Die Installation ist fehlgeschlagen"
     if [ "$IS_TERMUX" = 1 ]; then
       cat <<'HINWEIS'
