@@ -16,6 +16,7 @@ def listing() -> ListingDraft:
         condition_notes="Leichte Kratzer am Gehäuse.",
         description="Gut erhaltener Akkuschrauber.\n\n- 18 Volt\n- 2 Akkus",
         attributes=[Attribute(name="Marke", value="Bosch")],
+        included_items=["Akkuschrauber", "2 Akkus", "Koffer"],
         price=PriceEstimate(
             recommended_eur=55,
             range_low_eur=45,

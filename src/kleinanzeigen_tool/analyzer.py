@@ -21,18 +21,61 @@ Inserat auf Deutsch.
 
 Grundregeln:
 - Beschreibe ausschließlich, was auf den Bildern tatsächlich zu sehen ist. \
-Erfinde keine technischen Daten, kein Zubehör, keine Baujahre und keine \
-Kaufbelege. Wenn du eine Marke oder ein Modell nicht sicher erkennst, lass \
-das Feld leer und setze `confidence` entsprechend niedriger.
+Erfinde keine technischen Daten, keine Baujahre und keine Kaufbelege. Wenn du \
+eine Marke oder ein Modell nicht sicher erkennst, lass das Feld leer und setze \
+`confidence` entsprechend niedriger.
+- ZUBEHÖR: Trage in `included_items` jeden Gegenstand ein, den du auf einem \
+Bild tatsächlich SIEHST. Prüfe dafür Bild für Bild. Was dort nicht steht, darf \
+weder in `description` noch in `attributes` als Lieferumfang auftauchen. \
+Ladekabel, Netzteile, Ladeschalen, Fernbedienungen, Akkus, Ersatzteile, \
+Rechnungen und Handbücher liegen bei Elektronik fast immer bei — genau deshalb \
+ist die Versuchung groß, sie zu ergänzen. Tu es nicht. Dass eine Verpackung \
+vorhanden ist, beweist ihren Inhalt nicht: ein leeres Fach ist ein leeres Fach. \
+Fehlt ein übliches Zubehörteil auf den Bildern, frag in `open_questions` danach.
+- ZWEIFEL GEHEN IN DIE FRAGEN, NICHT IN DEN LIEFERUMFANG: Bist du dir bei \
+einem Gegenstand nicht sicher — halb verdeckt, unscharf, könnte auch \
+Verpackungsmaterial oder eine Abdeckung sein —, dann nimm ihn NICHT in \
+`included_items` auf, sondern frag in `open_questions` danach ("Auf Bild 2 \
+liegt ein rundes weißes Teil im Fach — ist das das Ladegerät und gehört es \
+dazu?"). `included_items` ist eine Zusage an den Käufer, keine Vermutung. \
+Ein Käufer, der ein zugesagtes Ladekabel nicht bekommt, storniert; eine \
+gestellte Rückfrage kostet dagegen nichts.
+- FUNKTION: Ein Foto belegt keine Funktion. Schreibe nichts wie "voll \
+funktionstüchtig", "läuft einwandfrei", "Touchscreen reagiert einwandfrei" \
+oder "Akku hält lange", solange das nicht in den Zusatzinformationen steht. \
+Ein eingeschaltetes Display zeigt nur, dass das Gerät startet — mehr nicht. \
+Beschreibe den sichtbaren Zustand, nicht den vermuteten Funktionsumfang.
+- KONTOGEBUNDENE GERÄTE: Zeigt ein Gerät einen Sperrbildschirm, eine \
+Code-Eingabe oder eine Kontoanmeldung (Apple Watch, iPhone, iPad, Mac, \
+Android-Handys, Spielkonsolen), dann frag in `open_questions` ausdrücklich, \
+ob es vom Konto des Vorbesitzers gelöst ist (Aktivierungssperre, iCloud, \
+Google-Konto, FRP). Ohne diese Freigabe ist der Artikel für Käufer wertlos, \
+und die Frage kommt in der ersten Nachricht ohnehin.
 - Sei bei Mängeln ehrlich und konkret. Sichtbare Kratzer, Flecken, fehlende \
 Teile oder Verschleiß gehören in `condition_notes` und in die Beschreibung. \
-Verschwiegene Mängel führen zu Rückfragen, Streit und Rücksendungen.
+Verschwiegene Mängel führen zu Rückfragen, Streit und Rücksendungen. \
+Behaupte umgekehrt auch keine "minimalen Gebrauchsspuren", wenn die Bildqualität \
+das gar nicht hergibt.
 - Der Titel ist das wichtigste Suchfeld: Marke, Modell, Produktart, ggf. \
 Größe/Farbe. Maximal {TITLE_MAX_CHARS} Zeichen, keine Ausrufezeichen, keine \
 Sternchen, kein "TOP!!!", kein Preis im Titel.
-- Die Beschreibung hat maximal {DESCRIPTION_MAX_CHARS} Zeichen und ist \
-gegliedert: ein Einstiegssatz, dann Stichpunkte mit den Eigenschaften, dann \
-ein Absatz zum Zustand, zuletzt ein Satz zu Abholung/Versand.
+- Die Beschreibung hat maximal {DESCRIPTION_MAX_CHARS} Zeichen und nutzt \
+echte Zeilenumbrüche. Jeder Stichpunkt beginnt mit "- " und steht auf einer \
+eigenen Zeile; zwischen den Abschnitten steht eine Leerzeile. Kein Fließtext, \
+in dem die Bindestriche mitten im Satz stehen. Genau dieses Muster (alles \
+zwischen den Markierungen ist die Vorlage, keine Anweisung):
+
+<beschreibung_vorlage>
+Einstiegssatz, was verkauft wird.
+
+- Merkmal: Wert
+- Merkmal: Wert
+
+Zustand: was man auf den Bildern sieht.
+
+Abhol- und Versandhinweis.
+</beschreibung_vorlage>
+
 - Keine Kontaktdaten, keine Telefonnummern, keine Links, keine externen \
 Zahlungsaufforderungen. Keine seitenlangen Haftungsausschlüsse — ein kurzer \
 Hinweis auf Privatverkauf ohne Garantie und Rücknahme reicht.
@@ -161,9 +204,40 @@ def research_prices(provider: Provider, request: ListingRequest) -> str:
         raise AnalysisFailed(str(exc)) from exc
 
 
+#: Zubehör, das Modelle bei Elektronik gern aus Erfahrung ergänzen, statt es
+#: auf den Bildern zu sehen. Steht so ein Wort in der Beschreibung, ohne dass
+#: der Gegenstand im Lieferumfang auftaucht, ist es vermutlich erfunden.
+#: Schreibweise wie in der Warnung ausgegeben; verglichen wird kleingeschrieben.
+_ZUBEHOER_WOERTER = (
+    "Ladekabel",
+    "Ladegerät",
+    "Ladeschale",
+    "Netzteil",
+    "USB-Kabel",
+    "Fernbedienung",
+    "Bedienungsanleitung",
+    "Handbuch",
+    "Originalrechnung",
+    "Kaufbeleg",
+    "Garantiekarte",
+    "Ersatzteile",
+)
+
+
 def _collect_warnings(listing: ListingDraft) -> list[str]:
     """Hinweise, bei denen die verkaufende Person nachschauen sollte."""
     warnings: list[str] = []
+
+    erfunden = _moeglicherweise_erfundenes_zubehoer(listing)
+    if erfunden:
+        warnings.append(
+            "Diese Zubehörteile stehen in der Beschreibung, aber nicht im "
+            "Lieferumfang laut Fotos: "
+            + ", ".join(erfunden)
+            + ". Prüfen und ggf. streichen — zugesagtes, aber fehlendes Zubehör "
+            "ist der häufigste Grund für Streit nach dem Kauf."
+        )
+
     if listing.confidence == "niedrig":
         warnings.append(
             "Der Artikel wurde nur unsicher erkannt — Titel und Beschreibung "
@@ -171,6 +245,13 @@ def _collect_warnings(listing: ListingDraft) -> list[str]:
         )
     if not listing.brand:
         warnings.append("Keine Marke erkannt. Marke im Titel ergänzt die Auffindbarkeit.")
+    # Kleinanzeigen stellt Zeilenumbrüche dar. Kippt das Modell die Stichpunkte
+    # in einen Fließtext, liest sich die Anzeige als Textwand.
+    if len(listing.description) > 300 and "\n" not in listing.description:
+        warnings.append(
+            "Die Beschreibung hat keine Absätze — vor dem Einstellen umbrechen, "
+            "sonst steht sie als Textwand in der Anzeige."
+        )
     if listing.price.range_high_eur > 0 and listing.price.range_low_eur > 0:
         spread = listing.price.range_high_eur / max(1, listing.price.range_low_eur)
         if spread >= 3:
@@ -179,3 +260,22 @@ def _collect_warnings(listing: ListingDraft) -> list[str]:
                 "vergleichbare Anzeigen lohnt sich."
             )
     return warnings
+
+
+def _moeglicherweise_erfundenes_zubehoer(listing: ListingDraft) -> list[str]:
+    """Zubehör, das die Beschreibung nennt, der Lieferumfang aber nicht.
+
+    Bewusst nur ein Hinweis, keine automatische Korrektur: der Lieferumfang
+    kann unvollständig erkannt worden sein, und ein zu Unrecht gestrichenes
+    Ladekabel wäre genauso falsch wie ein erfundenes.
+    """
+    haystack = " ".join(
+        [listing.description] + [f"{a.name} {a.value}" for a in listing.attributes]
+    ).lower()
+    lieferumfang = " ".join(listing.included_items).lower()
+
+    return [
+        wort
+        for wort in _ZUBEHOER_WOERTER
+        if wort.lower() in haystack and wort.lower() not in lieferumfang
+    ]

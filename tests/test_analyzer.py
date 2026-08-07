@@ -133,3 +133,57 @@ def test_warnung_bei_sehr_breiter_preisspanne(listing):
 
 def test_keine_warnungen_bei_sauberem_ergebnis(listing):
     assert analyzer._collect_warnings(listing) == []
+
+
+# --- Erfundenes Zubehoer -----------------------------------------------
+# Regressionstests aus einem echten Lauf: bei Apple-Watch-Fotos ohne
+# sichtbares Ladekabel schrieb das Modell zweimal "Ladekabel" in die
+# Beschreibung, einmal sogar mit "laut Fotos" davor.
+
+
+def test_zubehoer_in_beschreibung_ohne_lieferumfang_wird_gemeldet(listing):
+    listing.description = "Verkaufe die Uhr inklusive Ladekabel und OVP."
+    listing.included_items = ["Uhr", "Armband"]
+    warnungen = analyzer._collect_warnings(listing)
+    assert any("Ladekabel" in w for w in warnungen)
+
+
+def test_zubehoer_im_lieferumfang_wird_nicht_gemeldet(listing):
+    listing.description = "Verkaufe die Uhr inklusive Ladekabel und OVP."
+    listing.included_items = ["Uhr", "Ladekabel"]
+    assert not any("Ladekabel" in w for w in analyzer._collect_warnings(listing))
+
+
+def test_zubehoer_auch_in_attributen_erkannt(listing):
+    from kleinanzeigen_tool.models import Attribute
+
+    listing.description = "Gepflegtes Geraet."
+    listing.attributes = [Attribute(name="Lieferumfang", value="Geraet, Netzteil")]
+    listing.included_items = ["Geraet"]
+    assert any("Netzteil" in w for w in analyzer._collect_warnings(listing))
+
+
+def test_mehrere_erfundene_teile_in_einer_warnung(listing):
+    listing.description = "Mit Ladekabel, Fernbedienung und Bedienungsanleitung."
+    listing.included_items = ["Geraet"]
+    warnungen = [w for w in analyzer._collect_warnings(listing) if "Zubehörteile" in w]
+    assert len(warnungen) == 1
+    assert all(t in warnungen[0] for t in ("Ladekabel", "Fernbedienung"))
+
+
+# --- Formatierung ------------------------------------------------------
+
+
+def test_lange_beschreibung_ohne_absaetze_wird_gemeldet(listing):
+    listing.description = "Ein Satz ohne jeden Umbruch. " * 20
+    assert any("Absätze" in w for w in analyzer._collect_warnings(listing))
+
+
+def test_kurze_beschreibung_ohne_absaetze_ist_in_ordnung(listing):
+    listing.description = "Kurzer Einzeiler."
+    assert not any("Absätze" in w for w in analyzer._collect_warnings(listing))
+
+
+def test_gegliederte_beschreibung_wird_nicht_gemeldet(listing):
+    listing.description = "Einstieg.\n\n- Merkmal: Wert\n" + "Fuelltext. " * 40
+    assert not any("Absätze" in w for w in analyzer._collect_warnings(listing))

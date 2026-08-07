@@ -55,6 +55,11 @@ def to_markdown(result: AnalysisResult) -> str:
         "",
     ]
 
+    if listing.included_items:
+        lines += ["## Lieferumfang (laut Fotos)", ""]
+        lines += [f"- {item}" for item in listing.included_items]
+        lines.append("")
+
     if listing.attributes:
         lines += ["## Details", ""]
         lines += [f"- **{a.name}:** {a.value}" for a in listing.attributes]
@@ -126,6 +131,13 @@ def to_terminal(result: AnalysisResult, color: bool = True) -> str:
         bold("BESCHREIBUNG"),
     ]
     out += [f"  {line}" for line in listing.description.splitlines()]
+
+    if listing.included_items:
+        out += [
+            "",
+            bold("LIEFERUMFANG (laut Fotos)"),
+            f"  {', '.join(listing.included_items)}",
+        ]
 
     if listing.tags:
         out += ["", bold("SUCHBEGRIFFE"), f"  {', '.join(listing.tags)}"]

@@ -110,6 +110,15 @@ class ListingDraft(BaseModel):
     attributes: list[Attribute] = Field(
         description="Konkrete Merkmale, die aus den Bildern ablesbar sind. Nichts erfinden."
     )
+    included_items: list[str] = Field(
+        description=(
+            "Der Lieferumfang: jeder einzelne Gegenstand, der auf mindestens einem "
+            "Bild SICHTBAR ist und mitverkauft wird, z.B. ['Uhr', 'Armband S/M', "
+            "'Originalkarton']. Ergänze NICHTS, was üblicherweise dabei ist, aber "
+            "auf keinem Bild zu sehen ist — kein Ladekabel, kein Netzteil, keine "
+            "Anleitung. Nur was du tatsächlich siehst."
+        )
+    )
     price: PriceEstimate
     price_type: PriceType = Field(
         description="'VB' wenn Verhandlungsspielraum sinnvoll ist, sonst 'Festpreis'."
