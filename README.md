@@ -133,7 +133,23 @@ kleinanzeigen models --provider gemini
 
 ## Verwendung
 
-### Inserat erzeugen
+### Mit Oberfläche (kein Terminal nötig)
+
+```bash
+kleinanzeigen ui
+```
+
+Startet einen Server auf deinem eigenen Rechner und öffnet den Browser.
+Dort ziehst du die Fotos hinein, trägst optional Zusatzinfos ein und bekommst
+den Entwurf zum Gegenlesen — mit Zeichenzählern für Titel und Beschreibung
+sowie einem Kopieren-Knopf pro Feld.
+
+Der Server bindet ausschließlich an `127.0.0.1`. Er ist also nur von deinem
+Rechner erreichbar und nicht aus dem WLAN — sonst könnten andere auf deine
+API-Kosten Anfragen stellen. Beenden mit Strg+C, anderer Port mit
+`--port 8790`.
+
+### Inserat erzeugen (Terminal)
 
 ```bash
 # Alle Bilder eines Ordners gehören zu einem Artikel
@@ -224,6 +240,8 @@ src/kleinanzeigen_tool/
   models.py      Datenmodell des Inserats, zugleich JSON-Schema fürs Modell
   export.py      Ausgabe als JSON, Markdown und Terminal
   browser.py     Playwright: Formular vorausfüllen (ohne Veröffentlichen)
+  ui.py          Lokale Web-Oberfläche (Standardbibliothek, kein Framework)
+  web/page.html  Die Oberfläche: eine Datei, kein Build-Schritt
 ```
 
 ## Entwicklung

@@ -26,5 +26,8 @@ kleinanzeigen = "kleinanzeigen_tool.cli:main"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+kleinanzeigen_tool = ["web/*.html"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]

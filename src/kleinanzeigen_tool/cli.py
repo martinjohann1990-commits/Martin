@@ -1,4 +1,4 @@
-"""Kommandozeile: `kleinanzeigen create`, `fill` und `models`."""
+"""Kommandozeile: `kleinanzeigen create`, `ui`, `fill` und `models`."""
 
 from __future__ import annotations
 
@@ -12,6 +12,7 @@ from kleinanzeigen_tool.images import DEFAULT_IMAGE_SIZE, IMAGE_SIZE_PRESETS
 
 EPILOG = """\
 Beispiele:
+  kleinanzeigen ui                                         # Oberflaeche im Browser
   kleinanzeigen create ./fotos/
   kleinanzeigen create ./fotos/ --provider gemini          # kostenloses Kontingent
   kleinanzeigen create ./fotos/ --image-size klein         # ~4x guenstiger
@@ -136,6 +137,18 @@ def build_parser() -> argparse.ArgumentParser:
         help="JSON-Datei mit eigenen CSS-Selektoren, falls sich die Seite geändert hat.",
     )
 
+    ui = subparsers.add_parser(
+        "ui", help="Startet die lokale Oberfläche im Browser."
+    )
+    ui.add_argument(
+        "--port", type=int, default=8765, help="Port (Standard: 8765)."
+    )
+    ui.add_argument(
+        "--no-browser",
+        action="store_true",
+        help="Browser nicht automatisch öffnen.",
+    )
+
     models = subparsers.add_parser(
         "models", help="Zeigt die Modelle, die der hinterlegte Schlüssel freischaltet."
     )
@@ -252,6 +265,21 @@ def cmd_models(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_ui(args: argparse.Namespace) -> int:
+    from kleinanzeigen_tool.ui import serve
+
+    try:
+        serve(port=args.port, open_browser=not args.no_browser)
+    except OSError as exc:
+        print(
+            f"Fehler: Port {args.port} ist nicht verfügbar ({exc}). "
+            "Anderen Port wählen: kleinanzeigen ui --port 8790",
+            file=sys.stderr,
+        )
+        return 7
+    return 0
+
+
 def _run_fill(listing, image_paths, profile_dir, selectors) -> int:
     from kleinanzeigen_tool.browser import BrowserUnavailable, fill_listing
 
@@ -276,6 +304,8 @@ def main(argv: list[str] | None = None) -> int:
         return cmd_create(args)
     if args.command == "fill":
         return cmd_fill(args)
+    if args.command == "ui":
+        return cmd_ui(args)
     if args.command == "models":
         return cmd_models(args)
 

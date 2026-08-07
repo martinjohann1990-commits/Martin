@@ -104,13 +104,28 @@ def collect_image_paths(
     return unique[:max_images]
 
 
+def prepare_image_bytes(
+    name: str, data: bytes, max_edge: int = MAX_EDGE_PX
+) -> PreparedImage:
+    """Wie `prepare_image`, aber aus dem Speicher statt von der Platte.
+
+    Die Web-UI nutzt das, damit hochgeladene Fotos nie im Dateisystem
+    zwischengespeichert werden.
+    """
+    return _prepare(Image.open(io.BytesIO(data)), Path(name), max_edge)
+
+
 def prepare_image(path: Path, max_edge: int = MAX_EDGE_PX) -> PreparedImage:
     """Lädt ein Bild, dreht es nach EXIF, skaliert und kodiert es als JPEG.
 
     Die Neukodierung entfernt nebenbei die EXIF-Daten — inklusive
     GPS-Koordinaten, die sonst mit dem Foto die eigene Wohnadresse verraten.
     """
-    with Image.open(path) as img:
+    return _prepare(Image.open(path), path, max_edge)
+
+
+def _prepare(opened: Image.Image, source: Path, max_edge: int) -> PreparedImage:
+    with opened as img:
         # EXIF-Orientierung anwenden, sonst liegen Handyfotos quer.
         img = ImageOps.exif_transpose(img)
         img = img.convert("RGB")
@@ -126,7 +141,7 @@ def prepare_image(path: Path, max_edge: int = MAX_EDGE_PX) -> PreparedImage:
         width, height = img.size
 
     return PreparedImage(
-        source_path=path,
+        source_path=source,
         media_type="image/jpeg",
         data_b64=base64.standard_b64encode(buffer.getvalue()).decode("ascii"),
         width=width,

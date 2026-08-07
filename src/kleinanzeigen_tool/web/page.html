@@ -1,0 +1,345 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kleinanzeigen-Tool</title>
+<style>
+  :root {
+    --bg: #f5f4f1; --card: #fff; --ink: #1c1b19; --muted: #6b6862;
+    --line: #dedbd4; --accent: #2f6f4e; --accent-ink: #fff;
+    --warn-bg: #fdf3e3; --warn-line: #e0b769; --err-bg: #fdeceb; --err-line: #d98a84;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #17181a; --card: #1f2124; --ink: #ecebe8; --muted: #9c9a95;
+      --line: #34373b; --accent: #4c9b74; --accent-ink: #10120f;
+      --warn-bg: #33291a; --warn-line: #8a6d33; --err-bg: #3a2422; --err-line: #96524c;
+    }
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 24px 16px 64px; background: var(--bg); color: var(--ink);
+    font: 16px/1.55 system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  .wrap { max-width: 940px; margin: 0 auto; }
+  h1 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color: var(--muted); margin: 0 0 24px; font-size: 14px; }
+  .card {
+    background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+    padding: 20px; margin-bottom: 18px;
+  }
+  #drop {
+    border: 2px dashed var(--line); border-radius: 10px; padding: 34px 20px;
+    text-align: center; cursor: pointer; color: var(--muted); transition: .15s;
+  }
+  #drop.hot { border-color: var(--accent); color: var(--ink); }
+  #thumbs { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+  .thumb { position: relative; width: 88px; height: 88px; }
+  .thumb img {
+    width: 100%; height: 100%; object-fit: cover;
+    border-radius: 7px; border: 1px solid var(--line);
+  }
+  .thumb button {
+    position: absolute; top: -7px; right: -7px; width: 22px; height: 22px;
+    border-radius: 50%; border: 1px solid var(--line); background: var(--card);
+    color: var(--ink); cursor: pointer; line-height: 1; font-size: 14px; padding: 0;
+  }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 14px; }
+  label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 5px; }
+  input, select, textarea {
+    width: 100%; padding: 9px 11px; border: 1px solid var(--line); border-radius: 7px;
+    background: var(--bg); color: var(--ink); font: inherit; font-size: 15px;
+  }
+  textarea { resize: vertical; line-height: 1.5; }
+  button.go {
+    background: var(--accent); color: var(--accent-ink); border: 0; border-radius: 8px;
+    padding: 13px 26px; font: inherit; font-weight: 600; cursor: pointer;
+  }
+  button.go[disabled] { opacity: .5; cursor: default; }
+  button.copy {
+    background: transparent; border: 1px solid var(--line); border-radius: 6px;
+    padding: 4px 10px; font-size: 12px; color: var(--muted); cursor: pointer;
+  }
+  button.copy:hover { color: var(--ink); }
+  .row { display: flex; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 5px; }
+  .field { margin-bottom: 18px; }
+  .count { font-size: 12px; color: var(--muted); font-variant-numeric: tabular-nums; }
+  .count.over { color: #c0392b; font-weight: 600; }
+  .note { border-radius: 8px; padding: 11px 14px; margin-bottom: 10px; font-size: 14px; }
+  .note.warn { background: var(--warn-bg); border: 1px solid var(--warn-line); }
+  .note.err { background: var(--err-bg); border: 1px solid var(--err-line); }
+  ul.q { margin: 0; padding-left: 20px; }
+  ul.q li { margin-bottom: 5px; }
+  .hide { display: none; }
+  .meta { font-size: 12px; color: var(--muted); margin-top: 18px; }
+  .spinner {
+    width: 15px; height: 15px; border: 2px solid var(--accent-ink);
+    border-top-color: transparent; border-radius: 50%;
+    display: inline-block; vertical-align: -2px; margin-right: 8px;
+    animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  h2 { font-size: 15px; margin: 24px 0 10px; padding-top: 16px; border-top: 1px solid var(--line); }
+  h2:first-of-type { border-top: 0; padding-top: 0; margin-top: 0; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Kleinanzeigen-Tool</h1>
+  <p class="sub">Fotos hineinziehen, Entwurf gegenlesen, Felder kopieren. Läuft lokal auf deinem Rechner.</p>
+
+  <div class="card">
+    <div id="drop">
+      <strong>Fotos hierher ziehen</strong><br>
+      <span id="dropHint">oder klicken zum Auswählen — alle Bilder eines Artikels</span>
+    </div>
+    <div id="thumbs"></div>
+  </div>
+
+  <div class="card">
+    <div class="field">
+      <label for="notes">Zusatzinfos (was man den Bildern nicht ansieht)</label>
+      <textarea id="notes" rows="3" placeholder="z.B. Series 8, 45mm, Akku 89 %, zweimal getragen, Ladekabel liegt bei"></textarea>
+    </div>
+    <div class="grid">
+      <div><label for="price">Preisvorstellung (€)</label><input id="price" type="number" min="0" placeholder="optional"></div>
+      <div><label for="condition">Zustand</label>
+        <select id="condition">
+          <option value="">automatisch schätzen</option>
+          <option>Neu</option><option>Sehr Gut</option><option>Gut</option>
+          <option>In Ordnung</option><option>Defekt</option>
+        </select></div>
+      <div><label for="location">Standort</label><input id="location" placeholder="z.B. 10115 Berlin"></div>
+      <div><label for="provider">Anbieter</label>
+        <select id="provider"><option value="auto">automatisch</option><option value="gemini">Gemini</option><option value="claude">Claude</option></select></div>
+      <div><label for="imageSize">Bildgröße (Kosten)</label>
+        <select id="imageSize">
+          <option value="winzig">winzig — günstigst</option>
+          <option value="klein">klein</option>
+          <option value="mittel" selected>mittel — Standard</option>
+          <option value="hoch">hoch — für kleine Schrift</option>
+        </select></div>
+      <div><label for="model">Modell (optional)</label><input id="model" placeholder="Standard des Anbieters"></div>
+    </div>
+    <div style="margin-top:18px">
+      <button class="go" id="go" disabled>Inserat erstellen</button>
+    </div>
+  </div>
+
+  <div id="err" class="note err hide"></div>
+  <div id="result" class="card hide"></div>
+</div>
+
+<script>
+const state = { files: [] };
+const $ = id => document.getElementById(id);
+const esc = s => String(s).replace(/[&<>"']/g, c =>
+  ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+
+// --- Dateiauswahl -----------------------------------------------------
+const drop = $('drop');
+const picker = document.createElement('input');
+picker.type = 'file'; picker.accept = 'image/*'; picker.multiple = true;
+picker.style.display = 'none';
+document.body.appendChild(picker);
+
+drop.onclick = () => picker.click();
+picker.onchange = () => addFiles(picker.files);
+['dragenter','dragover'].forEach(e => drop.addEventListener(e, ev => {
+  ev.preventDefault(); drop.classList.add('hot');
+}));
+['dragleave','drop'].forEach(e => drop.addEventListener(e, ev => {
+  ev.preventDefault(); drop.classList.remove('hot');
+}));
+drop.addEventListener('drop', ev => addFiles(ev.dataTransfer.files));
+
+function addFiles(list) {
+  for (const f of list) {
+    // Die Objekt-URL lebt genauso lange wie der Eintrag. Sie direkt nach dem
+    // ersten onload freizugeben wirkt sparsam, macht die Vorschau aber
+    // kaputt, sobald der Browser das Bild neu zeichnen muss.
+    if (f.type.startsWith('image/') && state.files.length < 12) {
+      state.files.push({ file: f, url: URL.createObjectURL(f) });
+    }
+  }
+  renderThumbs();
+}
+
+function removeFile(i) {
+  URL.revokeObjectURL(state.files[i].url);
+  state.files.splice(i, 1);
+  renderThumbs();
+}
+
+function renderThumbs() {
+  const box = $('thumbs');
+  box.innerHTML = '';
+  state.files.forEach((entry, i) => {
+    const d = document.createElement('div');
+    d.className = 'thumb';
+    const img = document.createElement('img');
+    img.src = entry.url;
+    img.alt = entry.file.name;
+    const x = document.createElement('button');
+    x.textContent = '×';
+    x.title = 'Entfernen';
+    x.onclick = ev => { ev.stopPropagation(); removeFile(i); };
+    d.append(img, x);
+    box.appendChild(d);
+  });
+  $('go').disabled = state.files.length === 0;
+  $('dropHint').textContent = state.files.length
+    ? state.files.length + ' Bild(er) ausgewählt — weitere hinzufügen'
+    : 'oder klicken zum Auswählen — alle Bilder eines Artikels';
+}
+
+const toB64 = f => new Promise((res, rej) => {
+  const r = new FileReader();
+  r.onload = () => res(r.result.split(',')[1]);
+  r.onerror = rej;
+  r.readAsDataURL(f);
+});
+
+// --- Analyse ----------------------------------------------------------
+$('go').onclick = async () => {
+  const btn = $('go');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Analysiere …';
+  $('err').classList.add('hide');
+  $('result').classList.add('hide');
+
+  try {
+    const images = await Promise.all(state.files.map(async e => ({
+      name: e.file.name, data: await toB64(e.file)
+    })));
+    const res = await fetch('/api/create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        images,
+        notes: $('notes').value,
+        price: $('price').value ? Number($('price').value) : null,
+        condition: $('condition').value,
+        location: $('location').value,
+        provider: $('provider').value,
+        model: $('model').value,
+        image_size: $('imageSize').value
+      })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Unbekannter Fehler');
+    render(data);
+  } catch (e) {
+    $('err').textContent = 'Fehler: ' + e.message;
+    $('err').classList.remove('hide');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Inserat erstellen';
+  }
+};
+
+// --- Ergebnis ---------------------------------------------------------
+function render(data) {
+  const l = data.listing;
+  const box = $('result');
+  box.innerHTML = '';
+
+  (data.warnings || []).forEach(w => {
+    const n = document.createElement('div');
+    n.className = 'note warn';
+    n.textContent = '⚠ ' + w;
+    box.appendChild(n);
+  });
+
+  box.appendChild(field('Titel', l.title, 65));
+  box.appendChild(field('Beschreibung', l.description, 4000, true));
+
+  const preis = l.price_type === 'Zu verschenken'
+    ? 'Zu verschenken'
+    : l.price.recommended_eur + ' € ' + l.price_type;
+  box.appendChild(readonly('Preis', preis,
+    'Spanne ' + l.price.range_low_eur + '–' + l.price.range_high_eur + ' € · ' + l.price.reasoning));
+  box.appendChild(readonly('Kategorie', l.category_path.join(' → '), ''));
+  box.appendChild(readonly('Zustand', l.condition, l.condition_notes));
+  box.appendChild(readonly('Versand', l.shipping, ''));
+
+  if (l.included_items?.length)
+    box.appendChild(readonly('Lieferumfang (laut Fotos)', l.included_items.join(', '), ''));
+  if (l.tags?.length)
+    box.appendChild(field('Suchbegriffe', l.tags.join(', '), 0));
+
+  if (l.open_questions?.length) {
+    const h = document.createElement('h2');
+    h.textContent = 'Vor dem Einstellen klären';
+    box.appendChild(h);
+    const ul = document.createElement('ul');
+    ul.className = 'q';
+    l.open_questions.forEach(q => {
+      const li = document.createElement('li');
+      li.textContent = q;
+      ul.appendChild(li);
+    });
+    box.appendChild(ul);
+  }
+
+  const m = document.createElement('div');
+  m.className = 'meta';
+  m.textContent = 'Erkennungssicherheit: ' + l.confidence
+    + ' · ' + data.usage.provider + '/' + data.usage.model
+    + ' · Tokens: ' + data.usage.input_tokens + ' in / ' + data.usage.output_tokens + ' out';
+  box.appendChild(m);
+
+  box.classList.remove('hide');
+  box.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function field(label, value, limit, big) {
+  const w = document.createElement('div');
+  w.className = 'field';
+  const row = document.createElement('div');
+  row.className = 'row';
+  const lab = document.createElement('label');
+  lab.textContent = label;
+  lab.style.margin = '0';
+  const right = document.createElement('div');
+  const count = document.createElement('span');
+  count.className = 'count';
+  const btn = document.createElement('button');
+  btn.className = 'copy';
+  btn.textContent = 'Kopieren';
+  right.append(count, ' ', btn);
+  row.append(lab, right);
+
+  const ta = document.createElement('textarea');
+  ta.value = value;
+  ta.rows = big ? 12 : 2;
+  const upd = () => {
+    if (!limit) { count.textContent = ''; return; }
+    count.textContent = ta.value.length + '/' + limit;
+    count.classList.toggle('over', ta.value.length > limit);
+  };
+  ta.oninput = upd; upd();
+  btn.onclick = async () => {
+    await navigator.clipboard.writeText(ta.value);
+    btn.textContent = 'Kopiert ✓';
+    setTimeout(() => btn.textContent = 'Kopieren', 1400);
+  };
+  w.append(row, ta);
+  return w;
+}
+
+function readonly(label, value, hint) {
+  const w = document.createElement('div');
+  w.className = 'field';
+  const lab = document.createElement('label');
+  lab.textContent = label;
+  const v = document.createElement('div');
+  v.innerHTML = '<strong>' + esc(value) + '</strong>'
+    + (hint ? '<br><span class="count">' + esc(hint) + '</span>' : '');
+  w.append(lab, v);
+  return w;
+}
+</script>
+</body>
+</html>
