@@ -60,11 +60,25 @@ export GEMINI_API_KEY="..."
 kleinanzeigen create ./fotos/ --provider gemini
 ```
 
-Die kostenlose Stufe hat Limits pro Minute und pro Tag; für ein paar Inserate
-am Tag reicht sie locker. **Wichtig:** Auf der kostenlosen Stufe darf Google
-die übermittelten Daten zur Produktverbesserung verwenden — bei Fotos aus der
-eigenen Wohnung ist das eine bewusste Entscheidung. Wer das nicht will,
-aktiviert die kostenpflichtige Stufe oder nutzt Claude.
+Die kostenlose Stufe hat Limits pro Minute und pro Tag. Für ein paar Inserate
+reicht sie, aber mehrere Läufe kurz hintereinander laufen ins Minutenlimit —
+dann meldet das Tool „Kontingent erschöpft" und du wartest kurz.
+
+**Wichtig:** Auf der kostenlosen Stufe darf Google die übermittelten Daten zur
+Produktverbesserung verwenden — bei Fotos aus der eigenen Wohnung ist das eine
+bewusste Entscheidung. Wer das nicht will, aktiviert die kostenpflichtige Stufe
+oder nutzt Claude.
+
+**Zum Standardmodell:** Gemini nimmt ältere Modelle für neue Nutzer vom Netz
+(`gemini-2.5-flash` etwa ist nicht mehr erreichbar, taucht in der Modellliste
+aber weiterhin auf). Deshalb steht der Standard auf dem mitlaufenden Alias
+`gemini-flash-latest`. Wer eine feste Version braucht, pinnt sie mit `--model`.
+
+**`--research` funktioniert auf der kostenlosen Stufe nicht.** Die Google-Suche
+zählt gegen ein eigenes, sehr knappes Kontingent und liefert dort sofort einen
+429-Fehler — die Bildanalyse selbst läuft dagegen problemlos. Getestet und
+bestätigt. Wenn du Preisrecherche willst: `--research --provider claude`, oder
+Gemini auf die kostenpflichtige Stufe heben.
 
 ### Claude — kostenpflichtig, bessere Erkennung
 
@@ -134,13 +148,13 @@ Nützliche Optionen:
 | Option | Wirkung |
 | --- | --- |
 | `--provider gemini` | Anbieter erzwingen (`auto`, `claude`, `gemini`). |
-| `--model …` | Konkretes Modell, z.B. `claude-haiku-4-5` oder `gemini-2.5-flash`. |
+| `--model …` | Konkretes Modell, z.B. `claude-haiku-4-5` oder `gemini-3.6-flash`. |
 | `--image-size klein` | Bildauflösung und damit die Kosten senken (siehe Tabelle oben). |
 | `--notes "…"` | Infos, die man den Bildern nicht ansieht (Alter, Zubehör, Defekte). Diese Angaben gelten als verlässlich und ergänzen die Bildanalyse. |
 | `--price 120` | Eigene Preisvorstellung. Wird berücksichtigt; weicht sie stark vom Marktpreis ab, steht das in der Begründung. |
 | `--condition Gut` | Zustand vorgeben statt schätzen lassen (`Neu`, `Sehr Gut`, `Gut`, `In Ordnung`, `Defekt`). |
 | `--location "10115 Berlin"` | Standort, fließt in den Versandhinweis ein. |
-| `--research` | Sucht vorab im Web nach aktuellen Gebrauchtpreisen. Deutlich bessere Preise, kostet einen zusätzlichen API-Aufruf. |
+| `--research` | Sucht vorab im Web nach aktuellen Gebrauchtpreisen. Kostet einen zusätzlichen API-Aufruf. **Auf Gemini nur mit kostenpflichtiger Stufe** — siehe unten. |
 | `--out anzeige` | Schreibt `anzeige.json` (maschinenlesbar) und `anzeige.md` (zum Gegenlesen). |
 | `--max-images 12` | Obergrenze der analysierten Bilder. |
 | `--fill` | Öffnet direkt im Anschluss den Browser. |

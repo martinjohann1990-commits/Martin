@@ -59,7 +59,7 @@ def build_parser() -> argparse.ArgumentParser:
     create.add_argument(
         "--model",
         default=None,
-        help="Konkretes Modell, z.B. claude-haiku-4-5 oder gemini-2.5-flash.",
+        help="Konkretes Modell, z.B. claude-haiku-4-5 oder gemini-3.6-flash.",
     )
     create.add_argument(
         "--image-size",

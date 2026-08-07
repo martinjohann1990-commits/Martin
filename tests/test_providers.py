@@ -187,3 +187,64 @@ def test_beide_anbieter_erzeugen_dieselbe_anweisung(request_obj, monkeypatch):
     gemini_text = gemini._contents(request_obj)[0].parts[-1].text
 
     assert claude_text == expected == gemini_text
+
+
+def _raise_quota(monkeypatch, provider, message):
+    """Lässt den SDK-Aufruf mit einer bestimmten API-Meldung scheitern."""
+
+    class FakeModels:
+        def generate_content(self, **kwargs):
+            raise RuntimeError(message)
+
+    class FakeClient:
+        models = FakeModels()
+
+    monkeypatch.setattr(provider, "_client", lambda: FakeClient())
+    return provider
+
+
+def test_gemini_kontingent_bei_suche_nennt_den_ausweg(monkeypatch, request_obj):
+    monkeypatch.setenv("GEMINI_API_KEY", "test-dummy")
+    provider = GeminiProvider()
+    provider._client()  # setzt provider._types
+    _raise_quota(monkeypatch, provider, "429 RESOURCE_EXHAUSTED. quota exceeded")
+
+    with pytest.raises(ProviderError) as exc:
+        provider.research(request_obj)
+    text = str(exc.value)
+    assert "--research weg" in text
+    assert "--provider claude" in text
+
+
+def test_gemini_kontingent_ohne_suche_ist_nur_ein_wartehinweis(monkeypatch, request_obj):
+    monkeypatch.setenv("GEMINI_API_KEY", "test-dummy")
+    provider = GeminiProvider()
+    provider._client()
+    _raise_quota(monkeypatch, provider, "429 RESOURCE_EXHAUSTED. quota exceeded")
+
+    with pytest.raises(ProviderError) as exc:
+        provider.analyze(request_obj)
+    text = str(exc.value)
+    assert "kurz warten" in text
+    assert "--research" not in text
+
+
+def test_gemini_modellfehler_gibt_googles_begruendung_weiter(monkeypatch, request_obj):
+    monkeypatch.setenv("GEMINI_API_KEY", "test-dummy")
+    provider = GeminiProvider()
+    provider._client()
+    _raise_quota(
+        monkeypatch,
+        provider,
+        "404 NOT_FOUND. {'error': {'message': 'This model is no longer available "
+        "to new users.'}}".replace("'", '"'),
+    )
+
+    with pytest.raises(ProviderError) as exc:
+        provider.analyze(request_obj)
+    assert "no longer available to new users" in str(exc.value)
+
+
+def test_gemini_standardmodell_ist_ein_mitlaufender_alias():
+    # Feste Versionen werden von Google fuer neue Nutzer abgeschaltet.
+    assert GeminiProvider.default_model.endswith("latest")

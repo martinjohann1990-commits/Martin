@@ -40,7 +40,11 @@ class GeminiProvider(Provider):
     """Nutzt die Gemini-API; mit kostenlosem Kontingent verfügbar."""
 
     name = "gemini"
-    default_model = "gemini-2.5-flash"
+    # Bewusst ein mitlaufender Alias statt einer festen Version: Google nimmt
+    # ältere Modelle für neue Nutzer vom Netz ("no longer available to new
+    # users"), und ein fest verdrahteter Standard wäre dann sofort kaputt.
+    # Wer Reproduzierbarkeit braucht, pinnt eine Version über --model.
+    default_model = "gemini-flash-latest"
     api_key_env = "GEMINI_API_KEY"
 
     def _client(self):
@@ -132,11 +136,13 @@ class GeminiProvider(Provider):
             max_output_tokens=RESEARCH_MAX_OUTPUT_TOKENS,
         )
 
-        response = self._generate(client, self._contents(request), config)
+        response = self._generate(
+            client, self._contents(request), config, uses_search=True
+        )
         self._raise_on_block(response)
         return (response.text or "").strip()
 
-    def _generate(self, client, contents, config):
+    def _generate(self, client, contents, config, *, uses_search: bool = False):
         try:
             return client.models.generate_content(
                 model=self.model, contents=contents, config=config
@@ -148,14 +154,31 @@ class GeminiProvider(Provider):
                     f"Gemini hat den Schlüssel abgelehnt: {message}"
                 ) from exc
             if "not found" in message.lower() or "404" in message:
+                # Googles eigene Begründung mitgeben — sie nennt oft den Grund
+                # (z.B. "no longer available to new users"), den die Modellliste
+                # nicht verrät: dort taucht das Modell weiterhin auf.
                 raise ProviderError(
-                    f"Modell '{self.model}' nicht verfügbar. Verfügbare Modelle: "
-                    "kleinanzeigen models --provider gemini"
+                    f"Modell '{self.model}' nicht verfügbar.\n"
+                    f"  Google meldet: {_api_message(message)}\n"
+                    "  Verfügbare Modelle: kleinanzeigen models --provider gemini"
                 ) from exc
             if "RESOURCE_EXHAUSTED" in message or "429" in message:
+                if uses_search:
+                    # Die Google-Suche zählt gegen ein eigenes, deutlich
+                    # knapperes Kontingent als die normale Generierung. Auf der
+                    # kostenlosen Stufe schlägt sie oft sofort fehl, obwohl
+                    # Inserate ohne --research problemlos durchlaufen.
+                    raise ProviderError(
+                        "Die Google-Suche ist mit diesem Schlüssel nicht nutzbar "
+                        "(eigenes Kontingent, auf der kostenlosen Stufe meist "
+                        "gesperrt).\n"
+                        "  → Lass --research weg; die Analyse selbst funktioniert.\n"
+                        "  → Oder nutze für die Recherche --provider claude."
+                    ) from exc
                 raise ProviderError(
                     "Gemini-Kontingent erschöpft. Auf der kostenlosen Stufe gelten "
-                    "Limits pro Minute und pro Tag — später erneut versuchen."
+                    "Limits pro Minute und pro Tag — kurz warten und erneut "
+                    "versuchen."
                 ) from exc
             raise ProviderError(f"Gemini-Fehler: {message}") from exc
 
@@ -193,3 +216,20 @@ class GeminiProvider(Provider):
         return bool(
             os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
         )
+
+
+def _api_message(raw: str) -> str:
+    """Zieht den lesbaren Teil aus Googles verschachtelter Fehlermeldung."""
+    import json
+    import re
+
+    match = re.search(r"\{.*\}", raw, re.DOTALL)
+    if match:
+        try:
+            payload = json.loads(match.group(0))
+            message = payload.get("error", {}).get("message")
+            if message:
+                return message
+        except (json.JSONDecodeError, AttributeError):
+            pass
+    return raw.strip()
