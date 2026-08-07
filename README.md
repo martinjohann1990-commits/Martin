@@ -33,16 +33,43 @@ dir. Das ist Absicht:
 - Preis, Zustand und Mängelangaben sind rechtlich verbindliche Aussagen. Ein
   KI-Entwurf gehört gegengelesen, bevor er online geht.
 
-## Installation
+## Schnellstart
+
+Voraussetzung ist **Python 3.10 oder neuer** ([Download](https://www.python.org/downloads/) —
+unter Windows beim Installieren „Add Python to PATH" ankreuzen).
 
 ```bash
-git clone <repo> && cd kleinanzeigen-tool
+git clone <repo>
+cd kleinanzeigen-tool
+```
+
+Dann:
+
+| System | Befehl |
+| --- | --- |
+| macOS / Linux | `./start.sh` |
+| Windows | Doppelklick auf `start.bat` |
+
+Beim ersten Aufruf richtet das Skript die Umgebung ein und fragt nach dem
+API-Schlüssel (den kostenlosen bekommst du unter
+[aistudio.google.com/apikey](https://aistudio.google.com/apikey)). Danach
+öffnet sich die Oberfläche im Browser. Ab dem zweiten Start geht es direkt los.
+
+Der Schlüssel landet in `.env` im Projektordner und wird nicht mit ins Repo
+übertragen. Alternativ geht auch `~/.kleinanzeigen-tool/.env` oder eine
+gesetzte Umgebungsvariable — die gewinnt gegen die Datei.
+
+## Installation von Hand
+
+```bash
 python3 -m venv .venv && source .venv/bin/activate
 
-pip install -e .                    # Analyse mit Claude
-pip install -e ".[gemini]"          # zusätzlich Gemini als Anbieter
+pip install -e ".[gemini]"          # Analyse mit Gemini und Claude
 pip install -e ".[browser]"         # zusätzlich das Vorausfüllen
 playwright install chromium         # einmalig, nur für [browser]
+
+kleinanzeigen ui                    # Oberfläche
+kleinanzeigen create ./fotos/       # oder direkt im Terminal
 ```
 
 ## API-Schlüssel: woher, und was kostet das?
@@ -55,9 +82,11 @@ Das Tool arbeitet mit zwei Anbietern. Ein Schlüssel genügt.
 2. Mit einem Google-Konto anmelden, „Create API key" klicken
 3. Keine Kreditkarte nötig
 
+Den Schlüssel entweder beim ersten `./start.sh` eintragen, in `.env` schreiben
+(`cp .env.example .env`) oder exportieren:
+
 ```bash
 export GEMINI_API_KEY="..."
-kleinanzeigen create ./fotos/ --provider gemini
 ```
 
 Die kostenlose Stufe hat Limits pro Minute und pro Tag. Für ein paar Inserate
@@ -241,6 +270,7 @@ src/kleinanzeigen_tool/
   export.py      Ausgabe als JSON, Markdown und Terminal
   browser.py     Playwright: Formular vorausfüllen (ohne Veröffentlichen)
   ui.py          Lokale Web-Oberfläche (Standardbibliothek, kein Framework)
+  config.py      Schlüssel aus .env laden
   web/page.html  Die Oberfläche: eine Datei, kein Build-Schritt
 ```
 
