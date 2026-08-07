@@ -1,0 +1,11 @@
+{
+  "_hinweis": "Kopiere diese Datei und passe die Selektoren an, falls kleinanzeigen.de sein HTML geändert hat. Werte können ein String oder eine Liste von Kandidaten sein. Die eingebauten Standardwerte bleiben als Rückfallebene erhalten.",
+
+  "title": "#postad-title",
+  "description": "#pstad-descrptn",
+  "price": "#pstad-price",
+  "price_type_fixed": "#priceType-FIXED",
+  "price_type_negotiable": "#priceType-NEGOTIABLE",
+  "price_type_giveaway": "#priceType-GIVE_AWAY",
+  "image_upload": "input[type='file']"
+}
