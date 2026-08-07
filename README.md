@@ -59,6 +59,49 @@ Der Schlüssel landet in `.env` im Projektordner und wird nicht mit ins Repo
 übertragen. Alternativ geht auch `~/.kleinanzeigen-tool/.env` oder eine
 gesetzte Umgebungsvariable — die gewinnt gegen die Datei.
 
+## Auf dem Android-Handy (Termux)
+
+Naheliegend, weil die Fotos schon dort liegen — kein Übertragen nötig.
+
+1. **Termux** installieren, am besten aus [F-Droid](https://f-droid.org/packages/com.termux/)
+   oder von [GitHub](https://github.com/termux/termux-packages/releases).
+   Die Version aus dem Play Store ist veraltet und macht Probleme.
+2. In Termux:
+
+```bash
+pkg update && pkg install git
+git clone <repo>
+cd kleinanzeigen-tool
+./start.sh
+```
+
+Das Skript erkennt Termux und übernimmt die Besonderheiten selbst: es holt
+`python` und `python-pillow` aus der Paketverwaltung (Fertigpakete von PyPI
+passen auf Android nicht), fragt die Berechtigung für den Fotospeicher ab und
+legt die Umgebung so an, dass sie diese Pakete auch sieht.
+
+Danach steht im Terminal eine Adresse wie `http://127.0.0.1:8765/`. Die in
+Chrome eintippen (oder `pkg install termux-api`, dann öffnet sie sich von
+selbst). **Termux dabei im Hintergrund laufen lassen** — schließt du die App,
+stoppt der Server.
+
+Deine Fotos liegen nach `termux-setup-storage` unter `~/storage/dcim`. In der
+Oberfläche wählst du sie ohnehin über den normalen Android-Dateidialog aus.
+
+**Wenn die Installation abbricht:** Ursache ist fast immer `pydantic-core` —
+eine Rust-Komponente, für die es kein Android-Fertigpaket gibt. Dann:
+
+```bash
+pkg install rust binutils
+./start.sh
+```
+
+Der erste Übersetzungsvorgang dauert auf dem Handy einige Minuten, danach nie
+wieder. Das Skript nennt diesen Hinweis von sich aus, wenn es soweit ist.
+
+Empfehlenswert auf dem Handy: **Bildgröße „klein" oder „winzig"** — das spart
+Upload über Mobilfunk und Rechenzeit beim Skalieren.
+
 ## Installation von Hand
 
 ```bash

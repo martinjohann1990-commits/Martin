@@ -218,3 +218,60 @@ def test_csp_erlaubt_blob_bilder(server):
     # Fremde Quellen bleiben ausgeschlossen.
     assert "default-src 'self'" in csp
     assert "http://" not in csp
+
+
+# --- Termux (Android) ---------------------------------------------------
+
+
+def test_termux_wird_an_prefix_erkannt(monkeypatch):
+    monkeypatch.setenv("PREFIX", "/data/data/com.termux/files/usr")
+    assert ui.is_termux() is True
+
+
+def test_kein_termux_auf_dem_pc(monkeypatch):
+    monkeypatch.delenv("PREFIX", raising=False)
+    assert ui.is_termux() is False
+    monkeypatch.setenv("PREFIX", "/usr/local")
+    assert ui.is_termux() is False
+
+
+def test_termux_nutzt_termux_open_url(monkeypatch):
+    """Unter Termux gibt es keinen Desktop-Browser, den webbrowser findet."""
+    monkeypatch.setenv("PREFIX", "/data/data/com.termux/files/usr")
+    aufrufe = []
+
+    class Ergebnis:
+        returncode = 0
+
+    monkeypatch.setattr(
+        ui.subprocess, "run", lambda cmd, **kw: aufrufe.append(cmd) or Ergebnis()
+    )
+    monkeypatch.setattr(
+        ui.webbrowser, "open", lambda *_: pytest.fail("webbrowser darf nicht laufen")
+    )
+
+    assert ui.open_in_browser("http://127.0.0.1:8765/") is True
+    assert aufrufe == [["termux-open-url", "http://127.0.0.1:8765/"]]
+
+
+def test_fehlendes_termux_open_url_stuerzt_nicht_ab(monkeypatch):
+    # termux-api ist ein separates Paket und oft nicht installiert.
+    monkeypatch.setenv("PREFIX", "/data/data/com.termux/files/usr")
+    monkeypatch.setattr(
+        ui.subprocess, "run", lambda *a, **k: (_ for _ in ()).throw(FileNotFoundError())
+    )
+    assert ui.open_in_browser("http://127.0.0.1:8765/") is False
+
+
+def test_auf_dem_pc_weiter_ueber_webbrowser(monkeypatch):
+    monkeypatch.delenv("PREFIX", raising=False)
+    monkeypatch.setattr(ui.webbrowser, "open", lambda url: True)
+    assert ui.open_in_browser("http://127.0.0.1:8765/") is True
+
+
+def test_kaputter_browser_wird_abgefangen(monkeypatch):
+    monkeypatch.delenv("PREFIX", raising=False)
+    monkeypatch.setattr(
+        ui.webbrowser, "open", lambda url: (_ for _ in ()).throw(RuntimeError("kaputt"))
+    )
+    assert ui.open_in_browser("http://127.0.0.1:8765/") is False

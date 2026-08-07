@@ -14,6 +14,8 @@ from __future__ import annotations
 import base64
 import binascii
 import json
+import os
+import subprocess
 import threading
 import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
@@ -192,15 +194,57 @@ class Handler(BaseHTTPRequestHandler):
             self._json(500, {"error": f"Unerwarteter Fehler: {exc}"})
 
 
+def is_termux() -> bool:
+    """Läuft das hier in Termux auf einem Android-Gerät?
+
+    Termux setzt PREFIX auf sein eigenes Verzeichnis unterhalb des
+    App-Datenordners — das ist das verlässlichste Merkmal.
+    """
+    return "com.termux" in os.environ.get("PREFIX", "")
+
+
+def open_in_browser(url: str) -> bool:
+    """Öffnet die Seite. Gibt zurück, ob das geklappt hat.
+
+    Unter Termux gibt es keinen Desktop-Browser, den `webbrowser` finden
+    könnte; dort übernimmt `termux-open-url` (aus dem Paket termux-api) und
+    reicht die Adresse an den Android-Browser weiter.
+    """
+    if is_termux():
+        try:
+            return (
+                subprocess.run(
+                    ["termux-open-url", url], timeout=10, check=False
+                ).returncode
+                == 0
+            )
+        except (FileNotFoundError, OSError, subprocess.TimeoutExpired):
+            return False
+    try:
+        return webbrowser.open(url)
+    except Exception:
+        return False
+
+
 def serve(port: int = 8765, open_browser: bool = True) -> None:
     """Startet die Oberfläche und blockiert bis Strg+C."""
     httpd = ThreadingHTTPServer((HOST, port), Handler)
     url = f"http://{HOST}:{httpd.server_address[1]}/"
 
-    print(f"Oberfläche läuft auf {url}")
-    print("Beenden mit Strg+C.")
+    print(f"\n  Oberfläche läuft auf:  {url}\n")
+    if is_termux():
+        # Auf dem Handy ist das Terminal im Vordergrund — der Hinweis, wie
+        # man von hier in den Browser kommt, ist wichtiger als auf dem PC.
+        print("  Falls sich der Browser nicht öffnet: Adresse oben in Chrome")
+        print("  eintippen. Termux dabei im Hintergrund laufen lassen.\n")
+    print("  Beenden mit Strg+C.\n")
+
     if open_browser:
-        threading.Timer(0.4, lambda: webbrowser.open(url)).start()
+        def spaeter() -> None:
+            if not open_in_browser(url):
+                print(f"  Browser ließ sich nicht öffnen — bitte {url} aufrufen.\n")
+
+        threading.Timer(0.4, spaeter).start()
 
     try:
         httpd.serve_forever()
