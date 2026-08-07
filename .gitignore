@@ -1,3 +1,4 @@
 dist/
+!dist/etsy-anleitung.html
 node_modules/
 .video-roh/

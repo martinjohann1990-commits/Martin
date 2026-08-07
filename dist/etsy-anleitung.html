@@ -1,0 +1,1329 @@
+<title>Etsy-Listing anlegen — Klickstrecke</title>
+<style>
+  :root{
+    color-scheme:light dark;
+    --tinte:#121826; --grund:#E8ECF3; --papier:#FFFFFF;
+    --akzent:#2F6FEB; --siegel:#0F7B4F; --warn:#A35B00;
+    --linie:#C2CBDA; --gedaempft:#5A6478;
+    --schatten:0 1px 3px rgba(18,24,38,.07), 0 10px 26px rgba(18,24,38,.06);
+  }
+  @media (prefers-color-scheme:dark){
+    :root{ --tinte:#E7ECF4; --grund:#0E141F; --papier:#161E2B; --akzent:#7BA5FF;
+           --siegel:#46B98A; --warn:#D79A4A; --linie:#2A3546; --gedaempft:#8E9BB0;
+           --schatten:0 1px 3px rgba(0,0,0,.4), 0 10px 26px rgba(0,0,0,.3); }
+  }
+  :root[data-theme="dark"]{ --tinte:#E7ECF4; --grund:#0E141F; --papier:#161E2B; --akzent:#7BA5FF;
+    --siegel:#46B98A; --warn:#D79A4A; --linie:#2A3546; --gedaempft:#8E9BB0;
+    --schatten:0 1px 3px rgba(0,0,0,.4), 0 10px 26px rgba(0,0,0,.3); }
+  :root[data-theme="light"]{ --tinte:#121826; --grund:#E8ECF3; --papier:#FFFFFF; --akzent:#2F6FEB;
+    --siegel:#0F7B4F; --warn:#A35B00; --linie:#C2CBDA; --gedaempft:#5A6478;
+    --schatten:0 1px 3px rgba(18,24,38,.07), 0 10px 26px rgba(18,24,38,.06); }
+
+  *{box-sizing:border-box}
+  body{margin:0; background:var(--grund); color:var(--tinte);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    font-size:16px; line-height:1.55;}
+  h1,h2{font-family:Georgia,"Times New Roman",serif; font-weight:700}
+  .blatt{max-width:780px; margin:0 auto; padding:0 18px 90px}
+
+  header{padding:58px 0 26px}
+  .augenbraue{font-size:12px; letter-spacing:.18em; text-transform:uppercase; color:var(--gedaempft); font-weight:700}
+  h1{font-size:clamp(30px,5.4vw,44px); line-height:1.06; margin:14px 0 0; letter-spacing:-.02em; text-wrap:balance}
+  .vorspann{color:var(--gedaempft); margin:14px 0 0; max-width:58ch}
+
+  .fortschritt{position:sticky; top:0; z-index:10; background:var(--grund);
+    padding:14px 0 12px; margin-top:22px; border-bottom:1px solid var(--linie);
+    display:flex; align-items:center; gap:14px; flex-wrap:wrap}
+  .balken{flex:1 1 180px; height:7px; background:var(--linie); border-radius:99px; overflow:hidden; min-width:120px}
+  .balken i{display:block; height:100%; width:0; background:var(--siegel); transition:width .3s}
+  .stand{font-size:14px; color:var(--gedaempft); font-variant-numeric:tabular-nums; white-space:nowrap}
+  .zuruecksetzen{font:inherit; font-size:13px; background:none; border:1px solid var(--linie);
+    color:var(--gedaempft); padding:5px 11px; border-radius:7px; cursor:pointer}
+  .zuruecksetzen:hover{color:var(--tinte)}
+
+  section{margin-top:44px}
+  h2{font-size:clamp(21px,3.2vw,27px); margin:0 0 4px; padding-top:20px; border-top:3px solid var(--tinte)}
+  .lead{color:var(--gedaempft); margin:0 0 20px; font-size:15px; max-width:62ch}
+
+  .schritt{background:var(--papier); border:1px solid var(--linie); border-radius:11px;
+    margin-bottom:12px; box-shadow:var(--schatten); overflow:hidden}
+  .schritt.fertig{opacity:.58}
+  .kopf{display:flex; gap:13px; align-items:flex-start; padding:16px 18px; cursor:pointer; user-select:none}
+  .kopf input{width:21px; height:21px; margin:1px 0 0; flex:0 0 auto; accent-color:var(--siegel); cursor:pointer}
+  .nr{font-variant-numeric:tabular-nums; color:var(--gedaempft); font-size:14px; font-weight:700; min-width:20px; margin-top:1px}
+  .kopf .titel{font-weight:600; line-height:1.4}
+  .schritt.fertig .titel{text-decoration:line-through; text-decoration-color:var(--gedaempft)}
+  .koerper{padding:0 18px 18px 70px}
+  @media (max-width:560px){ .koerper{padding-left:18px} }
+  .koerper p{margin:0 0 12px; font-size:15px; color:var(--gedaempft)}
+  .koerper p strong{color:var(--tinte)}
+  .warnung{border-left:3px solid var(--warn); padding-left:13px; color:var(--warn) !important}
+  .nebenbei{border-left:3px solid var(--linie); padding-left:13px; font-size:14px !important}
+  .warnung strong{color:var(--warn) !important}
+
+  .dateien{list-style:none; padding:0; margin:0 0 12px; display:flex; flex-direction:column; gap:7px}
+  .dateien li{display:flex; gap:12px; align-items:baseline; flex-wrap:wrap; font-size:14px}
+  .dateien span{color:var(--gedaempft)}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace; font-size:.87em;
+    background:color-mix(in srgb, var(--gedaempft) 15%, transparent); padding:2px 6px; border-radius:5px}
+
+  .etiketten{display:flex; flex-wrap:wrap; gap:7px; margin-bottom:12px}
+  .etikett{font:inherit; font-size:13.5px; background:var(--grund); border:1px solid var(--linie);
+    color:var(--tinte); padding:6px 11px; border-radius:7px; cursor:pointer}
+  .etikett:hover{border-color:var(--akzent); color:var(--akzent)}
+  .etikett.kopiert{background:var(--siegel); border-color:var(--siegel); color:#fff}
+
+  .feld{border:1px solid var(--linie); border-radius:9px; overflow:hidden; margin-bottom:12px}
+  .feld-kopf{display:flex; justify-content:space-between; align-items:center; gap:10px;
+    padding:9px 12px; background:var(--grund); font-size:13px; font-weight:600; color:var(--gedaempft)}
+  .kopieren{font:inherit; font-size:13px; font-weight:600; background:var(--akzent); color:#fff;
+    border:none; padding:6px 13px; border-radius:7px; cursor:pointer; white-space:nowrap}
+  .kopieren.fertig{background:var(--siegel)}
+  pre.text{margin:0; padding:13px; font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:12.5px; line-height:1.5; white-space:pre-wrap; word-break:break-word;
+    max-height:200px; overflow:auto; background:var(--papier)}
+
+  button:focus-visible, input:focus-visible{outline:2px solid var(--akzent); outline-offset:2px}
+  footer{margin-top:56px; padding-top:22px; border-top:1px solid var(--linie); font-size:13.5px; color:var(--gedaempft)}
+  @media (prefers-reduced-motion:reduce){ *{transition:none !important} }
+</style>
+
+<div class="blatt">
+<header>
+  <div class="augenbraue">Papierkramerei · Etsy</div>
+  <h1>Listing anlegen — Schritt für Schritt</h1>
+  <p class="vorspann">39 Schritte in der Reihenfolge, in der Etsy danach fragt.
+     Jeder Text hat einen Kopierknopf. Am besten neben dem Etsy-Fenster offen halten.</p>
+  <div class="fortschritt">
+    <div class="balken"><i id="balken"></i></div>
+    <span class="stand" id="stand">0 von 39 erledigt</span>
+    <button class="zuruecksetzen" id="zuruecksetzen">Zurücksetzen</button>
+  </div>
+</header>
+
+  <section>
+    <h2>Vorbereitung</h2>
+    <p class="lead">Bevor du Etsy überhaupt öffnest. Dauert zehn Minuten und erspart dir, mitten im Anlegen abbrechen zu müssen.</p>
+    
+      <div class="schritt" data-nr="1">
+        <label class="kopf">
+          <input type="checkbox" data-hak="1">
+          <span class="nr">1</span>
+          <span class="titel">Verkaufsdatei bereitlegen</span>
+        </label>
+        <div class="koerper">
+          <p><strong>Kein Terminal nötig.</strong> Die fertige Datei <code>rechnungsgenerator-kleinunternehmer-v1.0.0.zip</code> (22 kB) liegt bereits vor — herunterladen und auf den Schreibtisch legen. <strong>Das ist die Datei, die der Käufer bekommt.</strong></p>
+          
+          <p class="nebenbei">Nur wenn du am Produkt etwas geändert hast, muss die ZIP neu gebaut werden: Repository klonen, im Ordner <code>./bauen.sh</code> ausführen (Mac und Linux im Terminal, Windows in Git Bash oder WSL). Solange sich nichts ändert, ist das nicht nötig.</p>
+          
+          
+          
+        </div>
+      </div>
+      <div class="schritt" data-nr="2">
+        <label class="kopf">
+          <input type="checkbox" data-hak="2">
+          <span class="nr">2</span>
+          <span class="titel">Paket selbst testen</span>
+        </label>
+        <div class="koerper">
+          <p>ZIP entpacken und per Doppelklick auf <code>rechnungsgenerator.html</code> öffnen — am besten in einem <strong>privaten Fenster</strong>, damit du es so erlebst wie ein Käufer beim ersten Mal. Einmal eine Rechnung schreiben und als PDF speichern.</p>
+          
+          
+          
+          
+          
+        </div>
+      </div>
+      <div class="schritt" data-nr="3">
+        <label class="kopf">
+          <input type="checkbox" data-hak="3">
+          <span class="nr">3</span>
+          <span class="titel">Alle Dateien griffbereit legen</span>
+        </label>
+        <div class="koerper">
+          <p>Kopiere dir diese Dateien in einen Ordner auf den Schreibtisch — du brauchst sie gleich alle:</p>
+          
+          
+          <ul class="dateien"><li><code>assets/etsy/01-hero.png</code><span>Listing-Bild 1</span></li><li><code>assets/etsy/02-funktionen.png</code><span>Listing-Bild 2</span></li><li><code>assets/etsy/03-paragraf19.png</code><span>Listing-Bild 3</span></li><li><code>assets/etsy/04-so-gehts.png</code><span>Listing-Bild 4</span></li><li><code>assets/etsy/05-editor.png</code><span>Listing-Bild 5</span></li><li><code>assets/etsy/06-lieferumfang.png</code><span>Listing-Bild 6</span></li><li><code>assets/etsy/listing-video.mp4</code><span>Listing-Video</span></li><li><code>rechnungsgenerator-…-v1.0.0.zip</code><span>die Datei zum Verkaufen</span></li><li><code>assets/etsy/shop-icon.png</code><span>Shop-Bild</span></li><li><code>assets/etsy/shop-banner.png</code><span>Shop-Banner</span></li></ul>
+          
+          
+        </div>
+      </div>
+      <div class="schritt" data-nr="4">
+        <label class="kopf">
+          <input type="checkbox" data-hak="4">
+          <span class="nr">4</span>
+          <span class="titel">Shopnamen auf Verfügbarkeit prüfen</span>
+        </label>
+        <div class="koerper">
+          <p>Rufe <code>etsy.com/shop/Papierkramerei</code> auf. Eine Fehlerseite bedeutet: frei. Erscheint ein Shop, brauchst du einen anderen Namen.</p>
+          
+          
+          
+          
+          
+        </div>
+      </div>
+      <div class="schritt" data-nr="5">
+        <label class="kopf">
+          <input type="checkbox" data-hak="5">
+          <span class="nr">5</span>
+          <span class="titel">Rechtliches klären</span>
+        </label>
+        <div class="koerper">
+          <p>Gewerbe angemeldet oder als Freiberufler beim Finanzamt geführt? Impressumsangaben (Name, Anschrift, E-Mail) bereitgelegt? Beides brauchst du gleich.</p>
+          <p class="warnung">Regelmäßiger Verkauf digitaler Produkte ist gewerblich — auch nebenbei. Ein fehlendes Impressum ist der häufigste Abmahngrund bei kleinen Shops.</p>
+          
+          
+          
+          
+        </div>
+      </div>
+  </section>
+  <section>
+    <h2>Konto und Shop anlegen</h2>
+    <p class="lead">Etsy führt dich durch einen Assistenten. Er verlangt mitten im Ablauf das erste Listing — deshalb kommen Teil 2 und Teil 3 hier durcheinander vor. Das ist normal.</p>
+    
+      <div class="schritt" data-nr="6">
+        <label class="kopf">
+          <input type="checkbox" data-hak="6">
+          <span class="nr">6</span>
+          <span class="titel">Verkäuferkonto eröffnen</span>
+        </label>
+        <div class="koerper">
+          <p>Auf <code>etsy.com/sell</code> gehen und dem Assistenten folgen. Ein bestehendes Käuferkonto kann man weiterverwenden.</p>
+          
+          
+          
+          
+          
+        </div>
+      </div>
+      <div class="schritt" data-nr="7">
+        <label class="kopf">
+          <input type="checkbox" data-hak="7">
+          <span class="nr">7</span>
+          <span class="titel">Shop-Einstellungen setzen</span>
+        </label>
+        <div class="koerper">
+          <p>Sprache <strong>Deutsch</strong>, Land <strong>Deutschland</strong>, Währung <strong>Euro (EUR)</strong>.</p>
+          <p class="warnung">Die Sprache lässt sich später nur mühsam ändern. Jetzt richtig setzen.</p>
+          
+          
+          
+          
+        </div>
+      </div>
+      <div class="schritt" data-nr="8">
+        <label class="kopf">
+          <input type="checkbox" data-hak="8">
+          <span class="nr">8</span>
+          <span class="titel">Shopnamen eingeben</span>
+        </label>
+        <div class="koerper">
+          <p>Der Name, den du eben geprüft hast:</p>
+          
+          
+          
+          
+          
+            <div class="feld">
+              <div class="feld-kopf">
+                <span>Shopname</span>
+                <button class="kopieren" data-wert="Papierkramerei">Kopieren</button>
+              </div>
+              <pre class="text">Papierkramerei</pre>
+            </div>
+        </div>
+      </div>
+  </section>
+  <section>
+    <h2>Das Listing anlegen</h2>
+    <p class="lead">Die Felder in der Reihenfolge, in der Etsy sie abfragt. Jeder Text hat einen Kopierknopf.</p>
+    
+      <div class="schritt" data-nr="9">
+        <label class="kopf">
+          <input type="checkbox" data-hak="9">
+          <span class="nr">9</span>
+          <span class="titel">Fotos hochladen — in dieser Reihenfolge</span>
+        </label>
+        <div class="koerper">
+          <p>Die Reihenfolge ist nicht beliebig: Bild 1 entscheidet, ob jemand aus der Suchergebnisliste überhaupt klickt.</p>
+          
+          
+          <ul class="dateien"><li><code>01-hero.png</code><span>Platz 1 — die Behauptung plus fertige Rechnung</span></li><li><code>02-funktionen.png</code><span>Platz 2 — kann es, was ich brauche?</span></li><li><code>03-paragraf19.png</code><span>Platz 3 — das Kaufargument der Zielgruppe</span></li><li><code>04-so-gehts.png</code><span>Platz 4 — nimmt die Angst vor der Einrichtung</span></li><li><code>05-editor.png</code><span>Platz 5 — die Bedienung</span></li><li><code>06-lieferumfang.png</code><span>Platz 6 — räumt letzte Zweifel aus</span></li></ul>
+          
+          
+        </div>
+      </div>
+      <div class="schritt" data-nr="10">
+        <label class="kopf">
+          <input type="checkbox" data-hak="10">
+          <span class="nr">10</span>
+          <span class="titel">Video hochladen</span>
+        </label>
+        <div class="koerper">
+          <p>Im selben Bereich wie die Fotos, eigener Platz. <code>listing-video.mp4</code> — 10,5 Sekunden, ohne Ton. Etsy bevorzugt Listings mit Video in der Suche.</p>
+          
+          
+          
+          
+          
+        </div>
+      </div>
+      <div class="schritt" data-nr="11">
+        <label class="kopf">
+          <input type="checkbox" data-hak="11">
+          <span class="nr">11</span>
+          <span class="titel">Titel eintragen</span>
+        </label>
+        <div class="koerper">
+          <p>118 von 140 erlaubten Zeichen. Die vorderen Wörter wiegen bei Etsy am schwersten, deshalb steht die Suchanfrage vorn und das Verkaufsargument hinten.</p>
+          
+          
+          
+          
+          
+            <div class="feld">
+              <div class="feld-kopf">
+                <span>Titel</span>
+                <button class="kopieren" data-wert="Rechnungsvorlage Kleinunternehmer § 19 UStG | Rechnung &amp; Angebot als PDF | Ohne Abo, offline nutzbar | Sofort-Download">Kopieren</button>
+              </div>
+              <pre class="text">Rechnungsvorlage Kleinunternehmer § 19 UStG | Rechnung &amp; Angebot als PDF | Ohne Abo, offline nutzbar | Sofort-Download</pre>
+            </div>
+        </div>
+      </div>
+      <div class="schritt" data-nr="12">
+        <label class="kopf">
+          <input type="checkbox" data-hak="12">
+          <span class="nr">12</span>
+          <span class="titel">„Über dieses Produkt&quot; — drei Auswahlfelder</span>
+        </label>
+        <div class="koerper">
+          <p><strong>Wer hat es gemacht?</strong> Ich selbst · <strong>Was ist es?</strong> Ein fertiges Produkt · <strong>Wann?</strong> 2020 – 2026</p>
+          
+          
+          
+          
+          
+        </div>
+      </div>
+      <div class="schritt" data-nr="13">
+        <label class="kopf">
+          <input type="checkbox" data-hak="13">
+          <span class="nr">13</span>
+          <span class="titel">„Wie wird dieser digitale Inhalt erstellt?“</span>
+        </label>
+        <div class="koerper">
+          <p><strong>Mit einem KI-Generator</strong> auswählen. Code, Listing-Texte, Bilder und Video sind von einer KI erzeugt worden — Etsys Formulierung lautet „mit Hilfe eines KI-Generators", und genau das trifft zu.</p>
+          <p class="warnung">„Von mir geschaffen" wäre eine Falschangabe. Etsy sanktioniert nicht die Offenlegung, sondern das Verschweigen — und im schlimmsten Fall trifft es nicht das Listing, sondern den Shop.</p>
+          <p class="nebenbei">Praktisch wirkt die Kennzeichnung dort, wo Käufer Handarbeit erwarten — bei Kunstdrucken, Illustrationen, Schmuck. Bei einem Werkzeug zählt, ob es rechnet und ob das PDF sauber aussieht. Optional kannst du es offen in die Beschreibung schreiben („entwickelt mit KI-Unterstützung, geprüft mit 85 automatischen Tests im echten Browser"); bei Software ist das eher ein Vertrauenspunkt.</p>
+          
+          
+          
+        </div>
+      </div>
+      <div class="schritt" data-nr="14">
+        <label class="kopf">
+          <input type="checkbox" data-hak="14">
+          <span class="nr">14</span>
+          <span class="titel">Kategorie wählen</span>
+        </label>
+        <div class="koerper">
+          <p>Papier &amp; Party → Papier → Kalender &amp; Planer → Vorlagen. Falls Etsy die Pfade umbenannt hat: Hauptsache eine Vorlagen-Kategorie.</p>
+          
+          
+          
+          
+          
+        </div>
+      </div>
+      <div class="schritt" data-nr="15">
+        <label class="kopf">
+          <input type="checkbox" data-hak="15">
+          <span class="nr">15</span>
+          <span class="titel">Art des Angebots: Digitaler Download</span>
+        </label>
+        <div class="koerper">
+          <p>Unbedingt <strong>„Digitaler Download"</strong> wählen, nicht „Physischer Artikel".</p>
+          <p class="warnung">Nur mit dieser Einstellung liefert Etsy die Datei automatisch aus, und nur dann greift der Ausschluss vom Widerrufsrecht.</p>
+          
+          
+          
+          
+        </div>
+      </div>
+      <div class="schritt" data-nr="16">
+        <label class="kopf">
+          <input type="checkbox" data-hak="16">
+          <span class="nr">16</span>
+          <span class="titel">Beschreibung einfügen</span>
+        </label>
+        <div class="koerper">
+          <p>Der komplette Text. Etsy nimmt keine Formatierung — Absätze und Großbuchstaben tragen die Gliederung.</p>
+          
+          
+          
+          
+          
+            <div class="feld">
+              <div class="feld-kopf">
+                <span>Beschreibung</span>
+                <button class="kopieren" data-wert="Rechnungen schreiben, ohne jeden Monat dafür zu zahlen.
+
+Das hier ist keine Word-Vorlage, in der du Beträge selbst ausrechnest. Es ist ein fertiges kleines Programm in einer einzigen Datei: Du trägst deine Positionen ein, alles wird automatisch berechnet, und du speicherst das Ergebnis als PDF.
+
+Doppelklick auf die Datei — sie öffnet sich in deinem Browser. Keine Installation, kein Konto, keine Internetverbindung nötig.
+
+
+WARUM ES DAS GIBT
+
+Buchhaltungs-Abos kosten 9 bis 15 Euro im Monat. Wer fünf Rechnungen im Monat schreibt, zahlt dafür über 100 Euro im Jahr — für Funktionen, die er nie benutzt. Die Alternative war bisher eine Vorlage, in der man alles von Hand rechnet und hofft, dass die Nummer noch stimmt.
+
+Das hier ist der Mittelweg: rechnet automatisch, kennt die deutschen Steuerregeln, kostet einmalig.
+
+
+DAS KANN ES
+
+✓ Rechnung, Angebot und Stornorechnung — die Beschriftungen wechseln mit
+✓ Kleinunternehmerregelung § 19 UStG per Häkchen, Hinweistext erscheint automatisch
+✓ Umsatzsteuer 19 % und 7 %, auch gemischt in einer Rechnung, sauber gruppiert
+✓ Reverse-Charge für Kunden im EU-Ausland
+✓ Rabatt auf die Nettosumme
+✓ Prüfung der Pflichtangaben nach § 14 UStG — sagt dir, was noch fehlt
+✓ Fortlaufende Rechnungsnummern (RE-2026-001, RE-2026-002 …)
+✓ Kundenliste: wiederkehrende Kunden einmal speichern, dann auswählen
+✓ Eigenes Logo auf dem Beleg
+✓ Eigene Mengeneinheiten, falls Std. und Stück nicht reichen
+✓ Live-Vorschau — du siehst sofort, wie die Rechnung aussieht
+✓ Speichern als PDF über den Druckdialog des Browsers
+✓ Sichern und Laden als Datei, für Backup und als Vorlage im Folgemonat
+
+
+DAS BEKOMMST DU
+
+• rechnungsgenerator.html — das komplette Werkzeug, eine einzige Datei
+• ANLEITUNG — Einrichtung, PDF-Export, häufige Fragen
+• Beispielbeleg — ausgefüllt zum Ausprobieren
+• LIZENZ — dauerhafte Nutzung für dich und dein Unternehmen
+• START HIER — die Kurzfassung für den Einstieg
+
+
+SO GEHT&#39;S
+
+1. Nach dem Kauf die ZIP-Datei herunterladen und entpacken
+2. Doppelklick auf rechnungsgenerator.html
+3. Einmal deine Daten eintragen — Anschrift, Steuernummer, Bankverbindung
+4. Positionen eintippen, auf &quot;PDF / Drucken&quot; klicken, als PDF speichern
+
+
+DEINE DATEN BLEIBEN BEI DIR
+
+Alles wird ausschließlich in deinem Browser gespeichert. Es gibt keinen Server, keine Cloud und keine Anmeldung. Die Datei enthält keine einzige Verbindung nach außen — kein Tracking, keine Schriftarten von fremden Servern, nichts.
+
+Deine Umsätze, Kundennamen und Kontodaten verlassen deinen Rechner nicht.
+
+
+FÜR WEN
+
+Freiberufler, Solo-Selbstständige, nebenberuflich Selbstständige, Kleinunternehmer nach § 19 UStG. Handwerk, Fotografie, Coaching, Nachhilfe, Design, IT, Übersetzung, Pflege, Kosmetik — überall dort, wo im Monat ein paar Rechnungen anfallen und ein Abo sich einfach nicht lohnt.
+
+Auch für Vereine und Ehrenamtliche, die gelegentlich abrechnen müssen.
+
+
+WAS ES NICHT KANN
+
+Damit es keine Enttäuschung gibt, sage ich das lieber vorher:
+
+• Kein Mahnwesen, keine Zeiterfassung, kein DATEV-Export
+• Keine E-Rechnung im XML-Format (XRechnung / ZUGFeRD) — es erzeugt PDF
+• Keine Synchronisierung zwischen mehreren Geräten
+• Es ist eine Arbeitshilfe, keine Steuerberatung
+
+Wenn du eines davon brauchst, ist echte Buchhaltungssoftware die bessere Wahl.
+
+
+TECHNISCHE VORAUSSETZUNGEN
+
+Ein Computer oder Tablet mit einem aktuellen Browser (Chrome, Firefox, Edge oder Safari). Windows, Mac und Linux funktionieren gleichermaßen. Auf dem Handy läuft es, ist aber unbequem.
+
+
+SOFORT-DOWNLOAD
+
+Die Dateien stehen direkt nach dem Kauf zum Herunterladen bereit.
+
+Es handelt sich um einen digitalen Inhalt. Ihr Widerrufsrecht erlischt, sobald Sie ausdrücklich zugestimmt haben, dass mit der Bereitstellung vor Ablauf der Widerrufsfrist begonnen wird, Sie Ihre Kenntnis vom Verlust des Widerrufsrechts bestätigt haben und die Bereitstellung begonnen hat. Die vollständige Widerrufsbelehrung finden Sie in den Shop-Richtlinien.
+
+Unabhängig davon: Wenn eine Datei nicht funktioniert oder etwas nicht wie beschrieben ist, melden Sie sich bitte. Ich helfe weiter oder erstatte den Kaufpreis.">Kopieren</button>
+              </div>
+              <pre class="text">Rechnungen schreiben, ohne jeden Monat dafür zu zahlen.
+
+Das hier ist keine Word-Vorlage, in der du Beträge selbst ausrechnest. Es ist ein fertiges kleines Programm in einer einzigen Datei: Du trägst deine Positionen ein, alles wird automatisch berechnet, und du speicherst das Ergebnis als PDF.
+
+Doppelklick auf die Datei — sie öffnet sich in deinem Browser. Keine Installation, kein Konto, keine Internetverbindung nötig.
+
+
+WARUM ES DAS GIBT
+
+Buchhaltungs-Abos kosten 9 bis 15 Euro im Monat. Wer fünf Rechnungen im Monat schreibt, zahlt dafür über 100 Euro im Jahr — für Funktionen, die er nie benutzt. Die Alternative war bisher eine Vorlage, in der man alles von Hand rechnet und hofft, dass die Nummer noch stimmt.
+
+Das hier ist der Mittelweg: rechnet automatisch, kennt die deutschen Steuerregeln, kostet einmalig.
+
+
+DAS KANN ES
+
+✓ Rechnung, Angebot und Stornorechnung — die Beschriftungen wechseln mit
+✓ Kleinunternehmerregelung § 19 UStG per Häkchen, Hinweistext erscheint automatisch
+✓ Umsatzsteuer 19 % und 7 %, auch gemischt in einer Rechnung, sauber gruppiert
+✓ Reverse-Charge für Kunden im EU-Ausland
+✓ Rabatt auf die Nettosumme
+✓ Prüfung der Pflichtangaben nach § 14 UStG — sagt dir, was noch fehlt
+✓ Fortlaufende Rechnungsnummern (RE-2026-001, RE-2026-002 …)
+✓ Kundenliste: wiederkehrende Kunden einmal speichern, dann auswählen
+✓ Eigenes Logo auf dem Beleg
+✓ Eigene Mengeneinheiten, falls Std. und Stück nicht reichen
+✓ Live-Vorschau — du siehst sofort, wie die Rechnung aussieht
+✓ Speichern als PDF über den Druckdialog des Browsers
+✓ Sichern und Laden als Datei, für Backup und als Vorlage im Folgemonat
+
+
+DAS BEKOMMST DU
+
+• rechnungsgenerator.html — das komplette Werkzeug, eine einzige Datei
+• ANLEITUNG — Einrichtung, PDF-Export, häufige Fragen
+• Beispielbeleg — ausgefüllt zum Ausprobieren
+• LIZENZ — dauerhafte Nutzung für dich und dein Unternehmen
+• START HIER — die Kurzfassung für den Einstieg
+
+
+SO GEHT&#39;S
+
+1. Nach dem Kauf die ZIP-Datei herunterladen und entpacken
+2. Doppelklick auf rechnungsgenerator.html
+3. Einmal deine Daten eintragen — Anschrift, Steuernummer, Bankverbindung
+4. Positionen eintippen, auf &quot;PDF / Drucken&quot; klicken, als PDF speichern
+
+
+DEINE DATEN BLEIBEN BEI DIR
+
+Alles wird ausschließlich in deinem Browser gespeichert. Es gibt keinen Server, keine Cloud und keine Anmeldung. Die Datei enthält keine einzige Verbindung nach außen — kein Tracking, keine Schriftarten von fremden Servern, nichts.
+
+Deine Umsätze, Kundennamen und Kontodaten verlassen deinen Rechner nicht.
+
+
+FÜR WEN
+
+Freiberufler, Solo-Selbstständige, nebenberuflich Selbstständige, Kleinunternehmer nach § 19 UStG. Handwerk, Fotografie, Coaching, Nachhilfe, Design, IT, Übersetzung, Pflege, Kosmetik — überall dort, wo im Monat ein paar Rechnungen anfallen und ein Abo sich einfach nicht lohnt.
+
+Auch für Vereine und Ehrenamtliche, die gelegentlich abrechnen müssen.
+
+
+WAS ES NICHT KANN
+
+Damit es keine Enttäuschung gibt, sage ich das lieber vorher:
+
+• Kein Mahnwesen, keine Zeiterfassung, kein DATEV-Export
+• Keine E-Rechnung im XML-Format (XRechnung / ZUGFeRD) — es erzeugt PDF
+• Keine Synchronisierung zwischen mehreren Geräten
+• Es ist eine Arbeitshilfe, keine Steuerberatung
+
+Wenn du eines davon brauchst, ist echte Buchhaltungssoftware die bessere Wahl.
+
+
+TECHNISCHE VORAUSSETZUNGEN
+
+Ein Computer oder Tablet mit einem aktuellen Browser (Chrome, Firefox, Edge oder Safari). Windows, Mac und Linux funktionieren gleichermaßen. Auf dem Handy läuft es, ist aber unbequem.
+
+
+SOFORT-DOWNLOAD
+
+Die Dateien stehen direkt nach dem Kauf zum Herunterladen bereit.
+
+Es handelt sich um einen digitalen Inhalt. Ihr Widerrufsrecht erlischt, sobald Sie ausdrücklich zugestimmt haben, dass mit der Bereitstellung vor Ablauf der Widerrufsfrist begonnen wird, Sie Ihre Kenntnis vom Verlust des Widerrufsrechts bestätigt haben und die Bereitstellung begonnen hat. Die vollständige Widerrufsbelehrung finden Sie in den Shop-Richtlinien.
+
+Unabhängig davon: Wenn eine Datei nicht funktioniert oder etwas nicht wie beschrieben ist, melden Sie sich bitte. Ich helfe weiter oder erstatte den Kaufpreis.</pre>
+            </div>
+        </div>
+      </div>
+      <div class="schritt" data-nr="17">
+        <label class="kopf">
+          <input type="checkbox" data-hak="17">
+          <span class="nr">17</span>
+          <span class="titel">Warenkorb-Zusammenfassung</span>
+        </label>
+        <div class="koerper">
+          <p>Ein bis zwei Sätze, höchstens 200 Zeichen. Etsy zeigt diese Zeile im <strong>Warenkorb und beim Bezahlen</strong> — oft das Letzte, was jemand vor dem Kauf liest. Deshalb steht darin, was man bekommt und in welcher Form, nicht warum es gut ist.</p>
+          
+          <p class="nebenbei">Falls du es sachlicher magst: „Digitaler Sofort-Download: Rechnungsgenerator als einzelne HTML-Datei für Windows, Mac und Linux. Rechnung, Angebot und Storno als PDF, § 19 UStG inklusive. Einmal zahlen, kein Abo." (181 Zeichen)</p>
+          
+          
+          
+            <div class="feld">
+              <div class="feld-kopf">
+                <span>Warenkorb-Zusammenfassung (188 Zeichen)</span>
+                <button class="kopieren" data-wert="Rechnungen, Angebote und Stornos als PDF – erstellt mit einer einzigen HTML-Datei, die offline im Browser läuft. Mit § 19 UStG, 19 % und 7 %. Sofort-Download, kein Abo, keine Installation.">Kopieren</button>
+              </div>
+              <pre class="text">Rechnungen, Angebote und Stornos als PDF – erstellt mit einer einzigen HTML-Datei, die offline im Browser läuft. Mit § 19 UStG, 19 % und 7 %. Sofort-Download, kein Abo, keine Installation.</pre>
+            </div>
+        </div>
+      </div>
+      <div class="schritt" data-nr="18">
+        <label class="kopf">
+          <input type="checkbox" data-hak="18">
+          <span class="nr">18</span>
+          <span class="titel">Preis und Anzahl</span>
+        </label>
+        <div class="koerper">
+          <p><strong>Preis: 9,90 €</strong> als Einführungspreis für die ersten zwei Wochen oder zehn Verkäufe. Danach auf 14,90 € anheben. <strong>Anzahl: 999.</strong></p>
+          
+          
+          
+          
+          
+            <div class="feld">
+              <div class="feld-kopf">
+                <span>Preis</span>
+                <button class="kopieren" data-wert="9,90">Kopieren</button>
+              </div>
+              <pre class="text">9,90</pre>
+            </div>
+            <div class="feld">
+              <div class="feld-kopf">
+                <span>Anzahl</span>
+                <button class="kopieren" data-wert="999">Kopieren</button>
+              </div>
+              <pre class="text">999</pre>
+            </div>
+        </div>
+      </div>
+      <div class="schritt" data-nr="19">
+        <label class="kopf">
+          <input type="checkbox" data-hak="19">
+          <span class="nr">19</span>
+          <span class="titel">Alle 13 Schlagwörter setzen</span>
+        </label>
+        <div class="koerper">
+          <p>Ungenutzte Plätze sind verschenkte Sichtbarkeit. Einzeln eintragen — Etsy nimmt keine Liste auf einmal. Drei stehen bewusst ohne Umlaut, weil Etsys Suche „ä" und „ae" nicht zuverlässig gleich behandelt.</p>
+          
+          
+          
+          <div class="etiketten"><button class="etikett" data-wert="Rechnungsvorlage">Rechnungsvorlage</button><button class="etikett" data-wert="Kleinunternehmer">Kleinunternehmer</button><button class="etikett" data-wert="Rechnung erstellen">Rechnung erstellen</button><button class="etikett" data-wert="Angebot Vorlage">Angebot Vorlage</button><button class="etikett" data-wert="Selbststaendig">Selbststaendig</button><button class="etikett" data-wert="Freelancer Tool">Freelancer Tool</button><button class="etikett" data-wert="Buchhaltung Hilfe">Buchhaltung Hilfe</button><button class="etikett" data-wert="Umsatzsteuer">Umsatzsteuer</button><button class="etikett" data-wert="Existenzgruendung">Existenzgruendung</button><button class="etikett" data-wert="Rechnung PDF">Rechnung PDF</button><button class="etikett" data-wert="Nebengewerbe">Nebengewerbe</button><button class="etikett" data-wert="Gruendung Set">Gruendung Set</button><button class="etikett" data-wert="Paragraph 19 UStG">Paragraph 19 UStG</button></div>
+          
+        </div>
+      </div>
+      <div class="schritt" data-nr="20">
+        <label class="kopf">
+          <input type="checkbox" data-hak="20">
+          <span class="nr">20</span>
+          <span class="titel">Materialien angeben</span>
+        </label>
+        <div class="koerper">
+          <p>Vier Einträge, ebenfalls einzeln:</p>
+          
+          
+          
+          <div class="etiketten"><button class="etikett" data-wert="HTML-Datei">HTML-Datei</button><button class="etikett" data-wert="Digitaler Download">Digitaler Download</button><button class="etikett" data-wert="PDF-Ausgabe">PDF-Ausgabe</button><button class="etikett" data-wert="Vorlage">Vorlage</button></div>
+          
+        </div>
+      </div>
+      <div class="schritt" data-nr="21">
+        <label class="kopf">
+          <input type="checkbox" data-hak="21">
+          <span class="nr">21</span>
+          <span class="titel">Die Verkaufsdatei hochladen</span>
+        </label>
+        <div class="koerper">
+          <p><strong>Die ZIP-Datei, nicht die einzelnen Dateien.</strong> So bleibt die Anleitung beim Werkzeug. Etsy erlaubt bis zu fünf Dateien à 20 MB — das Paket liegt bei rund 22 kB.</p>
+          
+          
+          <ul class="dateien"><li><code>rechnungsgenerator-kleinunternehmer-v1.0.0.zip</code><span>aus dem Ordner dist/</span></li></ul>
+          
+          
+        </div>
+      </div>
+      <div class="schritt" data-nr="22">
+        <label class="kopf">
+          <input type="checkbox" data-hak="22">
+          <span class="nr">22</span>
+          <span class="titel">Shop-Abteilung: „Keine“</span>
+        </label>
+        <div class="koerper">
+          <p>Abteilungen sind eine Navigationshilfe — mit einem einzigen Artikel gibt es nichts zu navigieren. Eine Abteilung „Rechnungen (1)“ wirkt dünner als gar keine.</p>
+          
+          <p class="nebenbei">Sobald das zweite Produkt online ist, lohnt sich die Einteilung: <strong>Rechnung &amp; Angebot</strong> (Rechnungsgenerator), <strong>Mahnung &amp; Nachweise</strong> (Vorlagenpaket), <strong>Sparpakete</strong> (Bundle). Benannt nach der Aufgabe, nicht nach dem Dateiformat — so suchen Leute. Anlegen unter Shop-Manager → Einträge → Abteilungen; bestehende Listings lassen sich jederzeit zuordnen.</p>
+          
+          
+          
+        </div>
+      </div>
+      <div class="schritt" data-nr="23">
+        <label class="kopf">
+          <input type="checkbox" data-hak="23">
+          <span class="nr">23</span>
+          <span class="titel">Personalisierung ausschalten</span>
+        </label>
+        <div class="koerper">
+          <p>Nicht aktivieren. Es gibt nichts zu personalisieren, und aktiviert erzeugt es nur Rückfragen.</p>
+          
+          
+          
+          
+          
+        </div>
+      </div>
+      <div class="schritt" data-nr="24">
+        <label class="kopf">
+          <input type="checkbox" data-hak="24">
+          <span class="nr">24</span>
+          <span class="titel">Ins Schaufenster stellen: an</span>
+        </label>
+        <div class="koerper">
+          <p>Das Schaufenster ist die hervorgehobene Reihe oben auf der Shop-Seite, mit größeren Kacheln als im Raster darunter. Ein leeres Schaufenster wirkt unfertig.</p>
+          
+          <p class="nebenbei">Bei einem einzigen Artikel entsteht eine kleine Doppelung — er steht oben im Schaufenster und nochmal im Raster. Das wiegt weniger als der prominente Platz. Ab dem zweiten Produkt löst es sich auf; Etsy erlaubt bis zu vier Artikel im Schaufenster, das geplante Sortiment passt vollständig hinein.</p>
+          
+          
+          
+        </div>
+      </div>
+      <div class="schritt" data-nr="25">
+        <label class="kopf">
+          <input type="checkbox" data-hak="25">
+          <span class="nr">25</span>
+          <span class="titel">Vorschau ansehen, dann veröffentlichen</span>
+        </label>
+        <div class="koerper">
+          <p>Vor dem Klick auf „Veröffentlichen" einmal die Vorschau prüfen: Steht das richtige Bild auf Platz 1? Ist die Beschreibung vollständig? Sind alle 13 Tags gesetzt?</p>
+          
+          
+          
+          
+          
+        </div>
+      </div>
+  </section>
+  <section>
+    <h2>Shop-Profil vervollständigen</h2>
+    <p class="lead">Geht erst, wenn der Shop existiert. Unter Shop-Manager → Shop-Einstellungen. Zwanzig Minuten, die sich unmittelbar auszahlen — ein leeres Profil kostet Vertrauen.</p>
+    
+      <div class="schritt" data-nr="26">
+        <label class="kopf">
+          <input type="checkbox" data-hak="26">
+          <span class="nr">26</span>
+          <span class="titel">Shop-Bild und Banner hochladen</span>
+        </label>
+        <div class="koerper">
+          <p>Unter „Shop-Darstellung" bzw. „Design".</p>
+          
+          
+          <ul class="dateien"><li><code>shop-icon.png</code><span>Shop-Bild — wird als kleiner Kreis gezeigt</span></li><li><code>shop-banner.png</code><span>Banner — die breite Fläche oben</span></li></ul>
+          
+          
+        </div>
+      </div>
+      <div class="schritt" data-nr="27">
+        <label class="kopf">
+          <input type="checkbox" data-hak="27">
+          <span class="nr">27</span>
+          <span class="titel">Shop-Titel eintragen</span>
+        </label>
+        <div class="koerper">
+          <p>Die Zeile direkt unter dem Namen, 49 von 55 erlaubten Zeichen. Sie sagt, für wen der Shop ist — nicht, was gerade darin liegt.</p>
+          
+          
+          
+          
+          
+            <div class="feld">
+              <div class="feld-kopf">
+                <span>Shop-Titel</span>
+                <button class="kopieren" data-wert="Werkzeuge gegen den Papierkram für Selbstständige">Kopieren</button>
+              </div>
+              <pre class="text">Werkzeuge gegen den Papierkram für Selbstständige</pre>
+            </div>
+        </div>
+      </div>
+      <div class="schritt" data-nr="28">
+        <label class="kopf">
+          <input type="checkbox" data-hak="28">
+          <span class="nr">28</span>
+          <span class="titel">Ankündigung setzen</span>
+        </label>
+        <div class="koerper">
+          <p>Erscheint oben im Shop. Während des Einführungspreises die zweite Fassung nehmen und das Datum eintragen.</p>
+          
+          
+          
+          
+          
+            <div class="feld">
+              <div class="feld-kopf">
+                <span>Ankündigung (regulär)</span>
+                <button class="kopieren" data-wert="Digitale Werkzeuge für alle, die nebenbei oder hauptberuflich selbstständig sind: Rechnungen und Angebote schreiben, ohne dafür monatlich zu zahlen. Einmal kaufen, dauerhaft nutzen. Bei Fragen schreib mir einfach — ich antworte normalerweise am selben Tag.">Kopieren</button>
+              </div>
+              <pre class="text">Digitale Werkzeuge für alle, die nebenbei oder hauptberuflich selbstständig sind: Rechnungen und Angebote schreiben, ohne dafür monatlich zu zahlen. Einmal kaufen, dauerhaft nutzen. Bei Fragen schreib mir einfach — ich antworte normalerweise am selben Tag.</pre>
+            </div>
+            <div class="feld">
+              <div class="feld-kopf">
+                <span>Ankündigung (Einführungspreis)</span>
+                <button class="kopieren" data-wert="Einführungspreis bis [Datum]: Der Rechnungsgenerator kostet 9,90 € statt 14,90 €. Danach gilt der reguläre Preis. Bei Fragen schreib mir einfach.">Kopieren</button>
+              </div>
+              <pre class="text">Einführungspreis bis [Datum]: Der Rechnungsgenerator kostet 9,90 € statt 14,90 €. Danach gilt der reguläre Preis. Bei Fragen schreib mir einfach.</pre>
+            </div>
+        </div>
+      </div>
+      <div class="schritt" data-nr="29">
+        <label class="kopf">
+          <input type="checkbox" data-hak="29">
+          <span class="nr">29</span>
+          <span class="titel">Shop-Story schreiben</span>
+        </label>
+        <div class="koerper">
+          <p>Der Text, der aus einem anonymen Download einen Menschen macht.</p>
+          <p class="warnung">Diesen Text vor dem Einfügen an deine Lage anpassen. Er ist als Gerüst gedacht — Etsy-Käufer merken, ob eine Geschichte stimmt, und eine erfundene schadet mehr als gar keine.</p>
+          
+          
+          
+          
+            <div class="feld">
+              <div class="feld-kopf">
+                <span>Über den Shop</span>
+                <button class="kopieren" data-wert="Angefangen hat das mit einer Word-Vorlage.
+
+Ich bin selbst selbstständig und schreibe im Monat eine Handvoll Rechnungen. Für ein Buchhaltungs-Abo mit Mahnwesen, Dashboard und Zeiterfassung war das immer zu wenig — für die Word-Vorlage, in der ich jeden Betrag selbst ausgerechnet habe, war es zu viel. Jedes Mal dieselbe Rechnerei, jedes Mal die Frage, ob die Umsatzsteuer stimmt und ob ich eine Nummer doppelt vergeben habe.
+
+Irgendwann habe ich mir das Werkzeug gebaut, das ich haben wollte: eine einzige Datei, die sich per Doppelklick im Browser öffnet, alles ausrechnet und ein sauberes PDF ausgibt. Ohne Installation, ohne Konto, ohne Abo — und ohne dass meine Umsätze und Kundendaten irgendwo auf einem fremden Server landen.
+
+Weil es mir seitdem jeden Monat Zeit spart, gibt es das hier zu kaufen.
+
+Was du bekommst, ist bewusst klein: kein Alleskönner, sondern ein Werkzeug für genau eine Aufgabe. Was es nicht kann, steht in jeder Produktbeschreibung ausdrücklich dabei — mir ist lieber, du kaufst es nicht, als dass du dich hinterher ärgerst.
+
+Wenn etwas nicht funktioniert oder du eine Frage hast: Schreib mir. Hinter diesem Shop steckt kein Support-Team, sondern eine Person, die selbst Rechnungen schreibt.">Kopieren</button>
+              </div>
+              <pre class="text">Angefangen hat das mit einer Word-Vorlage.
+
+Ich bin selbst selbstständig und schreibe im Monat eine Handvoll Rechnungen. Für ein Buchhaltungs-Abo mit Mahnwesen, Dashboard und Zeiterfassung war das immer zu wenig — für die Word-Vorlage, in der ich jeden Betrag selbst ausgerechnet habe, war es zu viel. Jedes Mal dieselbe Rechnerei, jedes Mal die Frage, ob die Umsatzsteuer stimmt und ob ich eine Nummer doppelt vergeben habe.
+
+Irgendwann habe ich mir das Werkzeug gebaut, das ich haben wollte: eine einzige Datei, die sich per Doppelklick im Browser öffnet, alles ausrechnet und ein sauberes PDF ausgibt. Ohne Installation, ohne Konto, ohne Abo — und ohne dass meine Umsätze und Kundendaten irgendwo auf einem fremden Server landen.
+
+Weil es mir seitdem jeden Monat Zeit spart, gibt es das hier zu kaufen.
+
+Was du bekommst, ist bewusst klein: kein Alleskönner, sondern ein Werkzeug für genau eine Aufgabe. Was es nicht kann, steht in jeder Produktbeschreibung ausdrücklich dabei — mir ist lieber, du kaufst es nicht, als dass du dich hinterher ärgerst.
+
+Wenn etwas nicht funktioniert oder du eine Frage hast: Schreib mir. Hinter diesem Shop steckt kein Support-Team, sondern eine Person, die selbst Rechnungen schreibt.</pre>
+            </div>
+        </div>
+      </div>
+      <div class="schritt" data-nr="30">
+        <label class="kopf">
+          <input type="checkbox" data-hak="30">
+          <span class="nr">30</span>
+          <span class="titel">Verkäuferstatus in der EU: „Händler“</span>
+        </label>
+        <div class="koerper">
+          <p>Etsy stellt standardmäßig auf <strong>Privatperson</strong> — das ist hier falsch. Wer planmäßig und mit Gewinnerzielungsabsicht ein Produkt anbietet, ist gewerblicher Verkäufer. Nicht die Umsatzhöhe entscheidet, sondern wofür du handelst.</p>
+          <p class="warnung">Als vermeintliche Privatperson entfallen Impressumspflicht und Widerrufsbelehrung — genau die Rechte, die dem Käufer zustehen. Das ist der klassische Abmahngrund im deutschen Onlinehandel, und abgemahnt wird von Mitbewerbern und Verbraucherschutzverbänden, nicht von Etsy.</p>
+          <p class="nebenbei">Danach fragt Etsy die Impressumsangaben ab: vollständiger Name (kein Fantasiename — „Papierkramerei" ist der Shop, nicht der Verkäufer), ladungsfähige Anschrift ohne Postfach, E-Mail, USt-IdNr. falls vorhanden. Die Anschrift ist öffentlich sichtbar; wer von zu Hause arbeitet, veröffentlicht damit die Privatadresse. Fehlt noch die Gewerbeanmeldung, gehört sie hierhin — nicht die Wahl von „Privatperson".</p>
+          
+          
+          
+        </div>
+      </div>
+      <div class="schritt" data-nr="31">
+        <label class="kopf">
+          <input type="checkbox" data-hak="31">
+          <span class="nr">31</span>
+          <span class="titel">Impressum eintragen</span>
+        </label>
+        <div class="koerper">
+          <p>Unter „Shop-Richtlinien" → <strong>„Rechtliche Informationen des Verkäufers"</strong>. Platzhalter in eckigen Klammern ersetzen.</p>
+          <p class="warnung">Nicht „TMG“ schreiben — die Impressumspflicht steht seit Mai 2024 in § 5 DDG. Und keinen Link zur EU-Streitbeilegungsplattform aufnehmen: Die wurde zum 20. Juli 2025 eingestellt, viele kursierende Vorlagen enthalten ihn noch.</p>
+          
+          
+          
+          
+            <div class="feld">
+              <div class="feld-kopf">
+                <span>Impressum</span>
+                <button class="kopieren" data-wert="Angaben gemäß § 5 DDG
+
+[Vorname Nachname]
+[Straße und Hausnummer]
+[PLZ] [Ort]
+Deutschland
+
+Kontakt
+E-Mail: [E-Mail-Adresse]
+Telefon: [Telefonnummer]
+
+Umsatzsteuer
+Kleinunternehmer gemäß § 19 UStG. Es wird keine Umsatzsteuer ausgewiesen.
+
+Verantwortlich für den Inhalt
+[Vorname Nachname], Anschrift wie oben
+
+Verbraucherstreitbeilegung
+Ich bin nicht bereit und nicht verpflichtet, an Streitbeilegungsverfahren vor
+einer Verbraucherschlichtungsstelle teilzunehmen.">Kopieren</button>
+              </div>
+              <pre class="text">Angaben gemäß § 5 DDG
+
+[Vorname Nachname]
+[Straße und Hausnummer]
+[PLZ] [Ort]
+Deutschland
+
+Kontakt
+E-Mail: [E-Mail-Adresse]
+Telefon: [Telefonnummer]
+
+Umsatzsteuer
+Kleinunternehmer gemäß § 19 UStG. Es wird keine Umsatzsteuer ausgewiesen.
+
+Verantwortlich für den Inhalt
+[Vorname Nachname], Anschrift wie oben
+
+Verbraucherstreitbeilegung
+Ich bin nicht bereit und nicht verpflichtet, an Streitbeilegungsverfahren vor
+einer Verbraucherschlichtungsstelle teilzunehmen.</pre>
+            </div>
+        </div>
+      </div>
+      <div class="schritt" data-nr="32">
+        <label class="kopf">
+          <input type="checkbox" data-hak="32">
+          <span class="nr">32</span>
+          <span class="titel">Widerrufsbelehrung eintragen</span>
+        </label>
+        <div class="koerper">
+          <p>Unter <em>Einstellungen → AGB-Einstellungen → Reiter „Rückgaben &amp; Umtausch"</em>. Die Belehrungspflicht besteht <strong>unabhängig davon</strong>, ob das Widerrufsrecht später erlischt. Fehlt sie, verlängert sich die Frist auf bis zu zwölf Monate und 14 Tage. Das Muster-Widerrufsformular gehört dazu.</p>
+          <p class="warnung">Der frühere Text „keine Rückgabe möglich“ ist unhaltbar. Das Widerrufsrecht erlischt nur, wenn alle vier Voraussetzungen des § 356 Abs. 5 BGB erfüllt sind — unter anderem die ausdrückliche Zustimmung des Käufers und dessen Bestätigung, dass er dadurch sein Widerrufsrecht verliert.</p>
+          <p class="nebenbei">Prüfe an einer Testbestellung, ob Etsys Kasse diese Zustimmung überhaupt einholt. Tut sie es nicht, bleibt das Widerrufsrecht bestehen — dann ist eine gegenteilige Klausel unwirksam und selbst abmahnfähig.</p>
+          
+          
+          
+            <div class="feld">
+              <div class="feld-kopf">
+                <span>Widerrufsbelehrung mit Muster-Formular</span>
+                <button class="kopieren" data-wert="WIDERRUFSBELEHRUNG
+
+Widerrufsrecht
+
+Sie haben das Recht, binnen vierzehn Tagen ohne Angabe von Gründen diesen Vertrag zu widerrufen. Die Widerrufsfrist beträgt vierzehn Tage ab dem Tag des Vertragsschlusses.
+
+Um Ihr Widerrufsrecht auszuüben, müssen Sie mir
+
+  [Vorname Nachname]
+  [Straße und Hausnummer]
+  [PLZ] [Ort]
+  E-Mail: [E-Mail-Adresse]
+
+mittels einer eindeutigen Erklärung (z. B. ein mit der Post versandter Brief oder eine E-Mail) über Ihren Entschluss, diesen Vertrag zu widerrufen, informieren. Sie können dafür das beigefügte Muster-Widerrufsformular verwenden, das jedoch nicht vorgeschrieben ist.
+
+Zur Wahrung der Widerrufsfrist reicht es aus, dass Sie die Mitteilung über die Ausübung des Widerrufsrechts vor Ablauf der Widerrufsfrist absenden.
+
+Folgen des Widerrufs
+
+Wenn Sie diesen Vertrag widerrufen, habe ich Ihnen alle Zahlungen, die ich von Ihnen erhalten habe, unverzüglich und spätestens binnen vierzehn Tagen ab dem Tag zurückzuzahlen, an dem die Mitteilung über Ihren Widerruf dieses Vertrags bei mir eingegangen ist. Für diese Rückzahlung verwende ich dasselbe Zahlungsmittel, das Sie bei der ursprünglichen Transaktion eingesetzt haben, es sei denn, mit Ihnen wurde ausdrücklich etwas anderes vereinbart; in keinem Fall werden Ihnen wegen dieser Rückzahlung Entgelte berechnet.
+
+Vorzeitiges Erlöschen des Widerrufsrechts
+
+Ihr Widerrufsrecht erlischt vorzeitig, wenn ich mit der Ausführung des Vertrags begonnen habe, nachdem Sie ausdrücklich zugestimmt haben, dass ich mit der Ausführung vor Ablauf der Widerrufsfrist beginne, und Sie Ihre Kenntnis davon bestätigt haben, dass Sie durch Ihre Zustimmung mit Beginn der Ausführung des Vertrags Ihr Widerrufsrecht verlieren.
+
+Ende der Widerrufsbelehrung
+
+
+MUSTER-WIDERRUFSFORMULAR
+
+(Wenn Sie den Vertrag widerrufen wollen, füllen Sie bitte dieses Formular aus und senden Sie es zurück.)
+
+An
+[Vorname Nachname]
+[Straße und Hausnummer]
+[PLZ] [Ort]
+E-Mail: [E-Mail-Adresse]
+
+Hiermit widerrufe(n) ich/wir (*) den von mir/uns (*) abgeschlossenen Vertrag über den Kauf der folgenden Waren (*) / die Erbringung der folgenden Dienstleistung (*)
+
+Bestellt am (*) / erhalten am (*)
+
+Name des/der Verbraucher(s)
+
+Anschrift des/der Verbraucher(s)
+
+Unterschrift des/der Verbraucher(s) (nur bei Mitteilung auf Papier)
+
+Datum
+
+(*) Unzutreffendes streichen.">Kopieren</button>
+              </div>
+              <pre class="text">WIDERRUFSBELEHRUNG
+
+Widerrufsrecht
+
+Sie haben das Recht, binnen vierzehn Tagen ohne Angabe von Gründen diesen Vertrag zu widerrufen. Die Widerrufsfrist beträgt vierzehn Tage ab dem Tag des Vertragsschlusses.
+
+Um Ihr Widerrufsrecht auszuüben, müssen Sie mir
+
+  [Vorname Nachname]
+  [Straße und Hausnummer]
+  [PLZ] [Ort]
+  E-Mail: [E-Mail-Adresse]
+
+mittels einer eindeutigen Erklärung (z. B. ein mit der Post versandter Brief oder eine E-Mail) über Ihren Entschluss, diesen Vertrag zu widerrufen, informieren. Sie können dafür das beigefügte Muster-Widerrufsformular verwenden, das jedoch nicht vorgeschrieben ist.
+
+Zur Wahrung der Widerrufsfrist reicht es aus, dass Sie die Mitteilung über die Ausübung des Widerrufsrechts vor Ablauf der Widerrufsfrist absenden.
+
+Folgen des Widerrufs
+
+Wenn Sie diesen Vertrag widerrufen, habe ich Ihnen alle Zahlungen, die ich von Ihnen erhalten habe, unverzüglich und spätestens binnen vierzehn Tagen ab dem Tag zurückzuzahlen, an dem die Mitteilung über Ihren Widerruf dieses Vertrags bei mir eingegangen ist. Für diese Rückzahlung verwende ich dasselbe Zahlungsmittel, das Sie bei der ursprünglichen Transaktion eingesetzt haben, es sei denn, mit Ihnen wurde ausdrücklich etwas anderes vereinbart; in keinem Fall werden Ihnen wegen dieser Rückzahlung Entgelte berechnet.
+
+Vorzeitiges Erlöschen des Widerrufsrechts
+
+Ihr Widerrufsrecht erlischt vorzeitig, wenn ich mit der Ausführung des Vertrags begonnen habe, nachdem Sie ausdrücklich zugestimmt haben, dass ich mit der Ausführung vor Ablauf der Widerrufsfrist beginne, und Sie Ihre Kenntnis davon bestätigt haben, dass Sie durch Ihre Zustimmung mit Beginn der Ausführung des Vertrags Ihr Widerrufsrecht verlieren.
+
+Ende der Widerrufsbelehrung
+
+
+MUSTER-WIDERRUFSFORMULAR
+
+(Wenn Sie den Vertrag widerrufen wollen, füllen Sie bitte dieses Formular aus und senden Sie es zurück.)
+
+An
+[Vorname Nachname]
+[Straße und Hausnummer]
+[PLZ] [Ort]
+E-Mail: [E-Mail-Adresse]
+
+Hiermit widerrufe(n) ich/wir (*) den von mir/uns (*) abgeschlossenen Vertrag über den Kauf der folgenden Waren (*) / die Erbringung der folgenden Dienstleistung (*)
+
+Bestellt am (*) / erhalten am (*)
+
+Name des/der Verbraucher(s)
+
+Anschrift des/der Verbraucher(s)
+
+Unterschrift des/der Verbraucher(s) (nur bei Mitteilung auf Papier)
+
+Datum
+
+(*) Unzutreffendes streichen.</pre>
+            </div>
+        </div>
+      </div>
+      <div class="schritt" data-nr="33">
+        <label class="kopf">
+          <input type="checkbox" data-hak="33">
+          <span class="nr">33</span>
+          <span class="titel">Reiter „Stornierungen“</span>
+        </label>
+        <div class="koerper">
+          <p>Unter <em>Einstellungen → AGB-Einstellungen</em>. Stornierungen sind bei sofort bereitgestellten Dateien praktisch nur vor dem Herunterladen möglich — das Widerrufsrecht bleibt davon unberührt.</p>
+          
+          
+          
+          
+          
+            <div class="feld">
+              <div class="feld-kopf">
+                <span>Stornierungen</span>
+                <button class="kopieren" data-wert="Eine Stornierung ist möglich, solange die Datei noch nicht heruntergeladen wurde. Melden Sie sich in diesem Fall bitte über die Nachrichtenfunktion — ich storniere die Bestellung und erstatte den Kaufpreis.
+
+Davon unberührt bleibt Ihr gesetzliches Widerrufsrecht; die Widerrufsbelehrung finden Sie unter „Rückgaben &amp; Umtausch&quot;.">Kopieren</button>
+              </div>
+              <pre class="text">Eine Stornierung ist möglich, solange die Datei noch nicht heruntergeladen wurde. Melden Sie sich in diesem Fall bitte über die Nachrichtenfunktion — ich storniere die Bestellung und erstatte den Kaufpreis.
+
+Davon unberührt bleibt Ihr gesetzliches Widerrufsrecht; die Widerrufsbelehrung finden Sie unter „Rückgaben &amp; Umtausch&quot;.</pre>
+            </div>
+        </div>
+      </div>
+      <div class="schritt" data-nr="34">
+        <label class="kopf">
+          <input type="checkbox" data-hak="34">
+          <span class="nr">34</span>
+          <span class="titel">Reiter „Datenschutz“</span>
+        </label>
+        <div class="koerper">
+          <p>Ebenfalls unter <em>AGB-Einstellungen</em>.</p>
+          
+          <p class="nebenbei">Der Reiter <strong>„Feste AGB“</strong> daneben ist schreibgeschützt und enthält Etsys Liefer- und Zollbedingungen. Für einen Shop mit ausschließlich digitalen Downloads ist er gegenstandslos — dort ist nichts einzutragen.</p>
+          
+          
+          
+            <div class="feld">
+              <div class="feld-kopf">
+                <span>Datenschutz</span>
+                <button class="kopieren" data-wert="Für die Abwicklung des Kaufs werden nur die Daten verarbeitet, die Etsy mir zu diesem Zweck bereitstellt — insbesondere Name, Rechnungsanschrift und Bestelldaten. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO. Die Daten werden für die Dauer der gesetzlichen Aufbewahrungsfristen gespeichert und nicht an Dritte weitergegeben.
+
+Das verkaufte Produkt selbst verarbeitet keine Daten: Es läuft ausschließlich lokal im Browser des Käufers und überträgt nichts ins Internet.
+
+Verantwortlich im Sinne der DSGVO: [Vorname Nachname], Anschrift wie im Impressum. Für die Verarbeitung auf der Plattform ist Etsy verantwortlich; es gilt deren Datenschutzerklärung.">Kopieren</button>
+              </div>
+              <pre class="text">Für die Abwicklung des Kaufs werden nur die Daten verarbeitet, die Etsy mir zu diesem Zweck bereitstellt — insbesondere Name, Rechnungsanschrift und Bestelldaten. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO. Die Daten werden für die Dauer der gesetzlichen Aufbewahrungsfristen gespeichert und nicht an Dritte weitergegeben.
+
+Das verkaufte Produkt selbst verarbeitet keine Daten: Es läuft ausschließlich lokal im Browser des Käufers und überträgt nichts ins Internet.
+
+Verantwortlich im Sinne der DSGVO: [Vorname Nachname], Anschrift wie im Impressum. Für die Verarbeitung auf der Plattform ist Etsy verantwortlich; es gilt deren Datenschutzerklärung.</pre>
+            </div>
+        </div>
+      </div>
+      <div class="schritt" data-nr="35">
+        <label class="kopf">
+          <input type="checkbox" data-hak="35">
+          <span class="nr">35</span>
+          <span class="titel">Lieferung, Gewährleistung und Zahlung ergänzen</span>
+        </label>
+        <div class="koerper">
+          <p>Diese Angaben haben bei Etsy kein eigenes Feld. Trag sie unter <em>„Füge mehr Infos für Käufer:innen hinzu"</em> ein oder häng sie an den Rückgabetext an.</p>
+          
+          
+          
+          
+          
+            <div class="feld">
+              <div class="feld-kopf">
+                <span>Lieferung / Bereitstellung</span>
+                <button class="kopieren" data-wert="Alle Artikel in diesem Shop sind digitale Downloads. Nach Zahlungseingang stehen die Dateien sofort in Ihrem Etsy-Konto unter „Käufe und Bewertungen&quot; bereit. Es erfolgt kein Versand.">Kopieren</button>
+              </div>
+              <pre class="text">Alle Artikel in diesem Shop sind digitale Downloads. Nach Zahlungseingang stehen die Dateien sofort in Ihrem Etsy-Konto unter „Käufe und Bewertungen&quot; bereit. Es erfolgt kein Versand.</pre>
+            </div>
+            <div class="feld">
+              <div class="feld-kopf">
+                <span>Gewährleistung</span>
+                <button class="kopieren" data-wert="Es gelten die gesetzlichen Regelungen zur Vertragsmäßigkeit digitaler Produkte (§§ 327 ff. BGB). Sollte das Produkt nicht wie beschrieben funktionieren, melden Sie sich bitte — ich stelle eine korrigierte Fassung bereit oder erstatte den Kaufpreis.">Kopieren</button>
+              </div>
+              <pre class="text">Es gelten die gesetzlichen Regelungen zur Vertragsmäßigkeit digitaler Produkte (§§ 327 ff. BGB). Sollte das Produkt nicht wie beschrieben funktionieren, melden Sie sich bitte — ich stelle eine korrigierte Fassung bereit oder erstatte den Kaufpreis.</pre>
+            </div>
+            <div class="feld">
+              <div class="feld-kopf">
+                <span>Zahlung</span>
+                <button class="kopieren" data-wert="Die Zahlung wird über Etsy Payments abgewickelt. Der angegebene Preis ist der Endpreis. Als Kleinunternehmer gemäß § 19 UStG weise ich keine Umsatzsteuer aus.">Kopieren</button>
+              </div>
+              <pre class="text">Die Zahlung wird über Etsy Payments abgewickelt. Der angegebene Preis ist der Endpreis. Als Kleinunternehmer gemäß § 19 UStG weise ich keine Umsatzsteuer aus.</pre>
+            </div>
+        </div>
+      </div>
+      <div class="schritt" data-nr="36">
+        <label class="kopf">
+          <input type="checkbox" data-hak="36">
+          <span class="nr">36</span>
+          <span class="titel">Nachricht nach dem Kauf hinterlegen</span>
+        </label>
+        <div class="koerper">
+          <p>Unter „Info &amp; Darstellung" → „Nachricht an Käufer". Wer sofort loslegt, bewertet eher.</p>
+          
+          
+          
+          
+          
+            <div class="feld">
+              <div class="feld-kopf">
+                <span>Nachricht nach dem Kauf</span>
+                <button class="kopieren" data-wert="Vielen Dank für deinen Kauf.
+
+Deine Dateien stehen sofort unter &quot;Käufe und Bewertungen&quot; in deinem Etsy-Konto bereit.
+
+So startest du:
+1. ZIP-Datei herunterladen und entpacken
+2. Doppelklick auf rechnungsgenerator.html
+3. Im Abschnitt &quot;Absender &amp; Stammdaten&quot; einmal deine Daten eintragen
+
+Beim Speichern als PDF: Im Druckdialog &quot;Hintergrundgrafiken&quot; aktivieren, sonst fehlt der Rahmen um die Zahlungshinweise.
+
+Falls etwas nicht läuft oder du eine Frage hast, schreib mir einfach — ich antworte normalerweise am selben Tag.
+
+Viele Grüße
+Papierkramerei">Kopieren</button>
+              </div>
+              <pre class="text">Vielen Dank für deinen Kauf.
+
+Deine Dateien stehen sofort unter &quot;Käufe und Bewertungen&quot; in deinem Etsy-Konto bereit.
+
+So startest du:
+1. ZIP-Datei herunterladen und entpacken
+2. Doppelklick auf rechnungsgenerator.html
+3. Im Abschnitt &quot;Absender &amp; Stammdaten&quot; einmal deine Daten eintragen
+
+Beim Speichern als PDF: Im Druckdialog &quot;Hintergrundgrafiken&quot; aktivieren, sonst fehlt der Rahmen um die Zahlungshinweise.
+
+Falls etwas nicht läuft oder du eine Frage hast, schreib mir einfach — ich antworte normalerweise am selben Tag.
+
+Viele Grüße
+Papierkramerei</pre>
+            </div>
+        </div>
+      </div>
+  </section>
+  <section>
+    <h2>Zum Schluss</h2>
+    <p class="lead">Zwei Einstellungen und der eigentlich wichtigste Schritt.</p>
+    
+      <div class="schritt" data-nr="37">
+        <label class="kopf">
+          <input type="checkbox" data-hak="37">
+          <span class="nr">37</span>
+          <span class="titel">Offsite Ads eingeschaltet lassen</span>
+        </label>
+        <div class="koerper">
+          <p>Sie kosten <strong>Provision nur bei Verkauf</strong> (15 %). Ohne Verkauf keine Kosten — bezahlt aus dem Erlös eines Verkaufs, den es sonst nicht gegeben hätte.</p>
+          
+          
+          
+          
+          
+        </div>
+      </div>
+      <div class="schritt" data-nr="38">
+        <label class="kopf">
+          <input type="checkbox" data-hak="38">
+          <span class="nr">38</span>
+          <span class="titel">Etsy Ads (Onsite) ausgeschaltet lassen</span>
+        </label>
+        <div class="koerper">
+          <p>Die kosten <strong>pro Klick</strong>, auch ohne Verkauf. Ein Listing ohne Bewertungen konvertiert unter 1 % — ein Verkauf würde 25 bis 35 € kosten und 12,84 € einbringen.</p>
+          <p class="warnung">Erst testen, wenn drei Punkte stimmen: fünf Bewertungen, Konversion über 2 %, und das Listing verkauft sich schon organisch.</p>
+          
+          
+          
+          
+        </div>
+      </div>
+      <div class="schritt" data-nr="39">
+        <label class="kopf">
+          <input type="checkbox" data-hak="39">
+          <span class="nr">39</span>
+          <span class="titel">Die ersten fünf Nutzer holen</span>
+        </label>
+        <div class="koerper">
+          <p>Der wichtigste Schritt im ganzen Plan. Ein Listing ohne Bewertungen wird von Etsy kaum ausgespielt. Fünf Selbstständige aus deinem Umfeld anschreiben, die ZIP schenken, um eine ehrliche Rückmeldung bitten.</p>
+          <p class="warnung">Keine Bewertungen kaufen, niemanden aus dem eigenen Haushalt bestellen lassen, nie um eine gute Bewertung bitten. Etsy erkennt das und sperrt Shops dafür — dann ist nicht das Listing weg, sondern der Shop.</p>
+          
+          
+          
+          
+        </div>
+      </div>
+  </section>
+<footer id="fuss">
+  Die Feldinhalte im Einzelnen stehen in <code>marketing/etsy-listing.md</code> und
+  <code>marketing/etsy-shop.md</code>. Diese Seite entsteht mit
+  <code>node marketing/etsy-anleitung.mjs</code>.
+</footer>
+</div>
+
+<script>
+"use strict";
+(function(){
+  var GESAMT = 39;
+
+  /* Speicher kapseln: In privaten Fenstern und eingebetteten Rahmen wirft
+     bereits der Zugriff auf localStorage. Dann wird ohne Merken gearbeitet,
+     statt die Seite abstürzen zu lassen. */
+  var Speicher = (function(){
+    try{
+      window.localStorage.setItem("ea.probe","1");
+      window.localStorage.removeItem("ea.probe");
+      return {
+        dauerhaft:true,
+        lesen:function(k){ try{ return localStorage.getItem(k); }catch(e){ return null; } },
+        schreiben:function(k,v){ try{ localStorage.setItem(k,v); }catch(e){} }
+      };
+    }catch(e){
+      var m = {};
+      return { dauerhaft:false,
+        lesen:function(k){ return k in m ? m[k] : null; },
+        schreiben:function(k,v){ m[k] = String(v); } };
+    }
+  })();
+
+  var SCHLUESSEL = "ea.erledigt.v1";
+  var erledigt = {};
+  try{ erledigt = JSON.parse(Speicher.lesen(SCHLUESSEL) || "{}") || {}; }catch(e){ erledigt = {}; }
+
+  var kaesten = [].slice.call(document.querySelectorAll("[data-hak]"));
+
+  function stand(){
+    var n = kaesten.filter(function(k){ return k.checked; }).length;
+    document.getElementById("balken").style.width = (n / GESAMT * 100) + "%";
+    document.getElementById("stand").textContent = n + " von " + GESAMT + " erledigt";
+  }
+
+  kaesten.forEach(function(k){
+    var nr = k.getAttribute("data-hak");
+    k.checked = !!erledigt[nr];
+    k.closest(".schritt").classList.toggle("fertig", k.checked);
+    k.addEventListener("change", function(){
+      erledigt[nr] = k.checked;
+      k.closest(".schritt").classList.toggle("fertig", k.checked);
+      Speicher.schreiben(SCHLUESSEL, JSON.stringify(erledigt));
+      stand();
+    });
+  });
+  stand();
+
+  document.getElementById("zuruecksetzen").addEventListener("click", function(){
+    kaesten.forEach(function(k){
+      k.checked = false;
+      k.closest(".schritt").classList.remove("fertig");
+    });
+    erledigt = {};
+    Speicher.schreiben(SCHLUESSEL, "{}");
+    stand();
+  });
+
+  /* Kopieren mit Rückfallebene: Ist die Zwischenablage gesperrt — in
+     eingebetteten Seiten häufig —, wird der Text markiert, sodass Strg+C reicht. */
+  function melden(knopf, text, gut){
+    var alt = knopf.dataset.alt || knopf.textContent;
+    knopf.dataset.alt = alt;
+    knopf.textContent = text;
+    knopf.classList.toggle(gut ? "fertig" : "kopiert", true);
+    setTimeout(function(){
+      knopf.textContent = alt;
+      knopf.classList.remove("fertig","kopiert");
+    }, 1800);
+  }
+
+  function markieren(knopf){
+    var feld = knopf.closest(".feld");
+    var bereich = feld && feld.querySelector(".text");
+    if(!bereich) return false;
+    var auswahl = window.getSelection();
+    var r = document.createRange();
+    r.selectNodeContents(bereich);
+    auswahl.removeAllRanges();
+    auswahl.addRange(r);
+    return true;
+  }
+
+  document.addEventListener("click", function(e){
+    var knopf = e.target.closest(".kopieren, .etikett");
+    if(!knopf) return;
+    var wert = knopf.getAttribute("data-wert");
+    var istEtikett = knopf.classList.contains("etikett");
+
+    function fehlschlag(){
+      if(!istEtikett && markieren(knopf)) melden(knopf, "markiert — Strg+C", false);
+      else melden(knopf, "Text bitte markieren", false);
+    }
+
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(wert).then(function(){
+        melden(knopf, istEtikett ? knopf.textContent + " ✓" : "kopiert ✓", true);
+      })["catch"](fehlschlag);
+    } else {
+      fehlschlag();
+    }
+  });
+
+  if(!Speicher.dauerhaft){
+    var f = document.getElementById("fuss");
+    var p = document.createElement("p");
+    p.style.cssText = "margin:0 0 12px; color:var(--warn)";
+    p.textContent = "Hinweis: Dieser Browser erlaubt kein dauerhaftes Speichern — " +
+      "die Haken gehen beim Neuladen verloren.";
+    f.insertBefore(p, f.firstChild);
+  }
+})();
+</script>
