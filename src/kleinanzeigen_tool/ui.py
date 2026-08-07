@@ -26,7 +26,11 @@ from kleinanzeigen_tool.images import (
     prepare_image_bytes,
     resolve_max_edge,
 )
-from kleinanzeigen_tool.providers import ProviderError, get_provider
+from kleinanzeigen_tool.providers import (
+    MissingCredentials,
+    ProviderError,
+    get_provider,
+)
 
 HOST = "127.0.0.1"
 PAGE = Path(__file__).parent / "web" / "page.html"
@@ -178,7 +182,9 @@ class Handler(BaseHTTPRequestHandler):
 
         try:
             self._json(200, run_analysis(payload))
-        except BadRequest as exc:
+        except (BadRequest, MissingCredentials) as exc:
+            # Fehlender Schlüssel ist ein Einrichtungsproblem, kein Ausfall
+            # des Anbieters — deshalb 400 und nicht 502.
             self._json(400, {"error": str(exc)})
         except (AnalysisFailed, ProviderError) as exc:
             self._json(502, {"error": str(exc)})

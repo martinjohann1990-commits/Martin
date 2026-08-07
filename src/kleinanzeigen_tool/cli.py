@@ -297,6 +297,11 @@ def _run_fill(listing, image_paths, profile_dir, selectors) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
+    from kleinanzeigen_tool.config import load_local_env
+
+    # Vor dem Parsen, damit jedes Unterkommando den Schlüssel aus .env sieht.
+    load_local_env()
+
     parser = build_parser()
     args = parser.parse_args(argv)
 

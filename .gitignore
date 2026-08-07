@@ -13,3 +13,6 @@ htmlcov/
 /fotos/
 /anzeigen/
 *.local.json
+
+# API-Schluessel gehoeren nicht ins Repo
+.env
