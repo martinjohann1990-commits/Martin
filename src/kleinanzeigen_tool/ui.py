@@ -17,6 +17,7 @@ import json
 import os
 import subprocess
 import threading
+import traceback
 import webbrowser
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
@@ -191,6 +192,10 @@ class Handler(BaseHTTPRequestHandler):
         except (AnalysisFailed, ProviderError) as exc:
             self._json(502, {"error": str(exc)})
         except Exception as exc:  # pragma: no cover - unerwartete Fehler
+            # Das Zugriffslog ist stumm, damit die Konsole ruhig bleibt — ein
+            # unerwarteter Fehler muss aber sichtbar sein, sonst steht am Handy
+            # nur eine Meldung im Browser und nirgends ihre Ursache.
+            traceback.print_exc()
             self._json(500, {"error": f"Unerwarteter Fehler: {exc}"})
 
 

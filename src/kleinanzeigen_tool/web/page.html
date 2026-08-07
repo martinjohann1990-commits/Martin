@@ -154,16 +154,35 @@ picker.onchange = () => addFiles(picker.files);
 }));
 drop.addEventListener('drop', ev => addFiles(ev.dataTransfer.files));
 
+// Android-Dateiauswahlen (Google Fotos, „Dateien", manche Kameras) liefern
+// regelmäßig einen leeren type. Nur auf den MIME-Typ zu hören hieße: das Foto
+// verschwindet wortlos, und der Knopf bleibt grau. Also zusätzlich die Endung
+// befragen — und im Zweifel annehmen, dass ein über `accept="image/*"`
+// ausgewähltes Objekt ein Bild ist.
+const BILD_ENDUNGEN = /\.(jpe?g|png|gif|webp|bmp|heic|heif|avif|tiff?)$/i;
+
+function istBild(f) {
+  if (f.type) return f.type.startsWith('image/');
+  return BILD_ENDUNGEN.test(f.name || '');
+}
+
 function addFiles(list) {
+  let abgelehnt = 0, zuviele = 0;
   for (const f of list) {
+    if (!istBild(f)) { abgelehnt++; continue; }
+    if (state.files.length >= 12) { zuviele++; continue; }
     // Die Objekt-URL lebt genauso lange wie der Eintrag. Sie direkt nach dem
     // ersten onload freizugeben wirkt sparsam, macht die Vorschau aber
     // kaputt, sobald der Browser das Bild neu zeichnen muss.
-    if (f.type.startsWith('image/') && state.files.length < 12) {
-      state.files.push({ file: f, url: URL.createObjectURL(f) });
-    }
+    state.files.push({ file: f, url: URL.createObjectURL(f) });
   }
   renderThumbs();
+
+  const meldungen = [];
+  if (abgelehnt) meldungen.push(abgelehnt + ' Datei(en) waren keine Bilder.');
+  if (zuviele) meldungen.push(zuviele + ' Bild(er) übersprungen — mehr als 12 gehen nicht.');
+  if (meldungen.length) zeigeFehler(meldungen.join(' '));
+  else $('err').classList.add('hide');
 }
 
 function removeFile(i) {
@@ -194,12 +213,47 @@ function renderThumbs() {
     : 'oder klicken zum Auswählen — alle Bilder eines Artikels';
 }
 
+// Wichtig: mit einem echten Error ablehnen. `r.onerror = rej` übergibt ein
+// ProgressEvent — das hat kein .message, und die Anzeige lautete dann
+// wortwörtlich „Fehler: undefined". Ein Grund ist auf Android häufig: die
+// Datei liegt in der Cloud oder wurde nach der Auswahl verschoben.
 const toB64 = f => new Promise((res, rej) => {
+  const lesefehler = () => rej(new Error(
+    '„' + (f.name || 'Bild') + '" konnte nicht gelesen werden. ' +
+    'Liegt das Foto nur in der Cloud, lade es zuerst auf das Gerät.'
+  ));
   const r = new FileReader();
-  r.onload = () => res(r.result.split(',')[1]);
-  r.onerror = rej;
+  r.onload = () => {
+    const teile = String(r.result || '').split(',');
+    if (teile.length < 2 || !teile[1]) { lesefehler(); return; }
+    res(teile[1]);
+  };
+  r.onerror = lesefehler;
+  r.onabort = lesefehler;
   r.readAsDataURL(f);
 });
+
+// Nimmt alles entgegen, was ein `catch` liefern kann — Error, String,
+// ProgressEvent, null — und macht daraus einen lesbaren Satz.
+function fehlertext(e) {
+  if (e && typeof e.message === 'string' && e.message) return e.message;
+  if (typeof e === 'string' && e) return e;
+  if (e && e.target && e.target.error && e.target.error.message) {
+    return e.target.error.message;
+  }
+  try {
+    const s = String(e);
+    // „[object ProgressEvent]" hilft niemandem weiter — solche Rohformen
+    // gelten hier als unbrauchbar.
+    if (s && s !== 'undefined' && s !== 'null' && !/^\[object .*\]$/.test(s)) return s;
+  } catch (_) { /* String() kann bei exotischen Objekten werfen */ }
+  return 'Unbekannter Fehler — die Konsole des Browsers zeigt mehr.';
+}
+
+function zeigeFehler(text) {
+  $('err').textContent = 'Fehler: ' + text;
+  $('err').classList.remove('hide');
+}
 
 // --- Analyse ----------------------------------------------------------
 $('go').onclick = async () => {
@@ -227,12 +281,21 @@ $('go').onclick = async () => {
         image_size: $('imageSize').value
       })
     });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.error || 'Unbekannter Fehler');
+    // Antwortet der Server nicht mit JSON (Absturz, Zwischenserver, leere
+    // Antwort), darf das nicht als nichtssagender Parser-Fehler enden.
+    let data;
+    try {
+      data = await res.json();
+    } catch (_) {
+      throw new Error(
+        'Der Server hat mit Status ' + res.status + ' geantwortet, aber ohne ' +
+        'auswertbaren Inhalt. Die Meldungen im Terminal nennen den Grund.'
+      );
+    }
+    if (!res.ok) throw new Error(data.error || ('Serverfehler ' + res.status));
     render(data);
   } catch (e) {
-    $('err').textContent = 'Fehler: ' + e.message;
-    $('err').classList.remove('hide');
+    zeigeFehler(fehlertext(e));
   } finally {
     btn.disabled = false;
     btn.textContent = 'Inserat erstellen';

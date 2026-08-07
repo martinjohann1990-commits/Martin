@@ -220,6 +220,34 @@ def test_csp_erlaubt_blob_bilder(server):
     assert "http://" not in csp
 
 
+# --- Seite: statische Zusicherungen -------------------------------------
+#
+# Das JavaScript wird mit Playwright gegen einen echten Browser geprüft; das
+# gehört nicht in diese Testreihe (kein Netz, keine Browser-Binärdatei). Die
+# folgenden Prüfungen halten wenigstens die Fehler fest, die schon einmal
+# beim Nutzer gelandet sind.
+
+
+def seite() -> str:
+    return ui.PAGE.read_text(encoding="utf-8")
+
+
+def test_lesefehler_wird_als_echter_error_abgelehnt():
+    """`r.onerror = rej` übergibt ein ProgressEvent ohne .message — die
+    Oberfläche zeigte daraufhin wörtlich „Fehler: undefined"."""
+    text = seite()
+    assert "r.onerror = lesefehler" in text   # nicht mehr direkt `rej`
+    assert "fehlertext(" in text
+
+
+def test_dateien_ohne_mime_typ_werden_akzeptiert():
+    """Android-Fotoauswahlen liefern oft einen leeren type. Wer nur
+    `type.startsWith('image/')` prüft, verwirft das Foto wortlos."""
+    text = seite()
+    assert "f.type.startsWith('image/') && state.files.length < 12" not in text
+    assert "BILD_ENDUNGEN" in text
+
+
 # --- Termux (Android) ---------------------------------------------------
 
 
