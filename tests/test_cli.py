@@ -69,3 +69,34 @@ def test_fill_report_summary():
     assert "Eingetragen: Titel" in report.summary()
     assert "Nicht gefunden: Preis" in report.summary()
     assert browser.FillReport([], []).summary() == "Nichts eingetragen."
+
+
+def test_parser_create_provider_und_bildgroesse():
+    args = build_parser().parse_args(
+        ["create", "fotos", "--provider", "gemini", "--image-size", "klein"]
+    )
+    assert args.provider == "gemini"
+    assert args.image_size == "klein"
+
+
+def test_parser_create_standard_ist_auto():
+    args = build_parser().parse_args(["create", "fotos"])
+    assert args.provider == "auto"
+    assert args.image_size == "mittel"
+    assert args.model is None
+
+
+def test_parser_lehnt_unbekannten_provider_ab():
+    with pytest.raises(SystemExit):
+        build_parser().parse_args(["create", "a.jpg", "--provider", "chatgpt"])
+
+
+def test_parser_lehnt_unbekannte_bildgroesse_ab():
+    with pytest.raises(SystemExit):
+        build_parser().parse_args(["create", "a.jpg", "--image-size", "riesig"])
+
+
+def test_parser_models_kommando():
+    args = build_parser().parse_args(["models", "--provider", "claude"])
+    assert args.command == "models"
+    assert args.provider == "claude"

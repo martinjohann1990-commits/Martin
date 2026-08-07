@@ -39,19 +39,83 @@ dir. Das ist Absicht:
 git clone <repo> && cd kleinanzeigen-tool
 python3 -m venv .venv && source .venv/bin/activate
 
-pip install -e .                    # nur Analyse
+pip install -e .                    # Analyse mit Claude
+pip install -e ".[gemini]"          # zusätzlich Gemini als Anbieter
 pip install -e ".[browser]"         # zusätzlich das Vorausfüllen
 playwright install chromium         # einmalig, nur für [browser]
 ```
 
-Zugangsdaten für die Claude API:
+## API-Schlüssel: woher, und was kostet das?
+
+Das Tool arbeitet mit zwei Anbietern. Ein Schlüssel genügt.
+
+### Gemini — kostenloses Kontingent
+
+1. [aistudio.google.com/apikey](https://aistudio.google.com/apikey) öffnen
+2. Mit einem Google-Konto anmelden, „Create API key" klicken
+3. Keine Kreditkarte nötig
+
+```bash
+export GEMINI_API_KEY="..."
+kleinanzeigen create ./fotos/ --provider gemini
+```
+
+Die kostenlose Stufe hat Limits pro Minute und pro Tag; für ein paar Inserate
+am Tag reicht sie locker. **Wichtig:** Auf der kostenlosen Stufe darf Google
+die übermittelten Daten zur Produktverbesserung verwenden — bei Fotos aus der
+eigenen Wohnung ist das eine bewusste Entscheidung. Wer das nicht will,
+aktiviert die kostenpflichtige Stufe oder nutzt Claude.
+
+### Claude — kostenpflichtig, bessere Erkennung
+
+1. [console.anthropic.com](https://console.anthropic.com) → Konto anlegen
+2. Unter *Billing* Guthaben aufladen (Vorkasse, kleinster Betrag üblicherweise 5 $)
+3. Unter *API Keys* → *Create Key*
 
 ```bash
 export ANTHROPIC_API_KEY="sk-ant-..."
 ```
 
+Es gibt **kein kostenloses Kontingent** — jeder Aufruf zieht vom Guthaben ab.
 Alternativ funktioniert eine per `ant auth login` angelegte Anmeldung ohne
 gesetzte Umgebungsvariable.
+
+### Ohne `--provider`
+
+wählt das Tool automatisch: Claude, wenn ein Anthropic-Schlüssel da ist, sonst
+Gemini. Fehlt beides, erklärt die Fehlermeldung beide Wege.
+
+## Was ein Inserat kostet
+
+Die Kosten werden fast vollständig von den **Bildern** bestimmt, nicht vom
+Text — und die Tokenzahl wächst quadratisch mit der Kantenlänge. Deshalb ist
+`--image-size` der wirksamste Hebel, noch vor der Wahl des Modells:
+
+| `--image-size` | Lange Kante | Tokens/Bild | 5 Bilder mit Claude Opus | 5 Bilder mit Claude Haiku |
+| --- | --- | --- | --- | --- |
+| `hoch` | 2576 px | ~4800 | ~0,17 € | ~0,03 € |
+| `mittel` (Standard) | 1568 px | ~2500 | ~0,10 € | ~0,02 € |
+| `klein` | 1024 px | ~1050 | ~0,05 € | ~0,01 € |
+| `winzig` | 768 px | ~590 | ~0,04 € | ~0,01 € |
+
+Mit **Gemini auf der kostenlosen Stufe: 0 €**, unabhängig von der Bildgröße.
+
+Ein paar Faustregeln:
+
+- `mittel` reicht, um „was ist das für ein Gegenstand" zuverlässig zu
+  beantworten. `hoch` lohnt sich nur bei kleiner Schrift auf Typenschildern
+  oder feinen Kratzern.
+- Für Alltagsartikel liefert `--model claude-haiku-4-5` brauchbare Ergebnisse
+  zu einem Bruchteil des Preises.
+- `--research` ist ein zusätzlicher Aufruf und schlägt nochmal ähnlich zu Buche.
+
+Die tatsächlich verbrauchten Tokens stehen am Ende jeder Ausgabe und in der
+JSON-Datei — verlass dich darauf, nicht auf die Schätzungen oben.
+
+```bash
+kleinanzeigen models                    # welche Modelle schaltet mein Schlüssel frei?
+kleinanzeigen models --provider gemini
+```
 
 ## Verwendung
 
@@ -69,6 +133,9 @@ Nützliche Optionen:
 
 | Option | Wirkung |
 | --- | --- |
+| `--provider gemini` | Anbieter erzwingen (`auto`, `claude`, `gemini`). |
+| `--model …` | Konkretes Modell, z.B. `claude-haiku-4-5` oder `gemini-2.5-flash`. |
+| `--image-size klein` | Bildauflösung und damit die Kosten senken (siehe Tabelle oben). |
 | `--notes "…"` | Infos, die man den Bildern nicht ansieht (Alter, Zubehör, Defekte). Diese Angaben gelten als verlässlich und ergänzen die Bildanalyse. |
 | `--price 120` | Eigene Preisvorstellung. Wird berücksichtigt; weicht sie stark vom Marktpreis ab, steht das in der Begründung. |
 | `--condition Gut` | Zustand vorgeben statt schätzen lassen (`Neu`, `Sehr Gut`, `Gut`, `In Ordnung`, `Defekt`). |
@@ -102,20 +169,14 @@ einmal einloggen. Das Tool selbst sieht deine Zugangsdaten nie.
   Metadaten weg — inklusive der GPS-Koordinaten, die dein Handy ins Foto
   schreibt und die sonst deine Wohnadresse mit veröffentlichen.
 - **Bilder werden gedreht und skaliert.** Querliegende Handyfotos werden nach
-  EXIF-Orientierung gerade gerückt, große Bilder auf 2576px lange Kante
-  gerechnet (spart Upload und Tokens ohne Qualitätsverlust für die Analyse).
+  EXIF-Orientierung gerade gerückt und auf die gewählte `--image-size`-Stufe
+  gerechnet (Standard 1568px lange Kante) — das spart Upload und Tokens, ohne
+  dass die Erkennung darunter leidet.
 - **Plattform-Limits werden erzwungen.** Titel max. 65 Zeichen, Beschreibung
   max. 4000, höchstens 10 Suchbegriffe — an der Wortgrenze gekürzt, statt die
   Antwort zu verwerfen.
 - **Es wird gewarnt, wenn etwas unsicher ist**: unklar erkannter Artikel,
   fehlende Marke, sehr breite Preisspanne.
-
-## Kosten
-
-Ein `create`-Lauf mit 5 Bildern liegt grob bei 0,05–0,15 €
-(Claude Opus 5, ~5k–20k Input-Tokens je nach Bildanzahl und -größe).
-`--research` kommt als zweiter Aufruf obendrauf. Die tatsächlich verbrauchten
-Tokens stehen am Ende jeder Ausgabe und in der JSON-Datei.
 
 ## Wenn das Vorausfüllen nicht mehr klappt
 
@@ -144,7 +205,8 @@ Browser.
 src/kleinanzeigen_tool/
   cli.py         Kommandozeile (create / fill)
   images.py      Bilder sammeln, drehen, skalieren, kodieren
-  analyzer.py    Claude-Aufrufe: Preisrecherche + strukturierte Analyse
+  analyzer.py    Anbieterunabhängige Prompts und Orchestrierung
+  providers/     Austauschbare Backends (claude.py, gemini.py)
   models.py      Datenmodell des Inserats, zugleich JSON-Schema fürs Modell
   export.py      Ausgabe als JSON, Markdown und Terminal
   browser.py     Playwright: Formular vorausfüllen (ohne Veröffentlichen)
@@ -169,6 +231,12 @@ bewusst nicht Teil der Testsuite.
   nicht ausgefüllt — die Felder unterscheiden sich je Kategorie zu stark.
 - Die Preisschätzung ohne `--research` beruht auf dem Modellwissen und kann
   bei Nischenartikeln oder frischen Produkten danebenliegen.
+- Die Kostenangaben oben sind gerundete Schätzungen auf Basis der
+  Listenpreise. Maßgeblich ist die Abrechnung deines Anbieters — die real
+  verbrauchten Tokens stehen nach jedem Lauf in der Ausgabe.
+- Gemini und Claude erkennen unterschiedlich gut. Bei unklaren Ergebnissen
+  lohnt der Quervergleich: derselbe Ordner einmal mit `--provider gemini`,
+  einmal mit `--provider claude`.
 
 ## Lizenz
 

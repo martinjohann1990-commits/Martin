@@ -17,7 +17,8 @@ dependencies = [
 
 [project.optional-dependencies]
 browser = ["playwright>=1.44"]
-dev = ["pytest>=8.0"]
+gemini = ["google-genai>=1.0"]
+dev = ["pytest>=8.0", "google-genai>=1.0"]
 
 [project.scripts]
 kleinanzeigen = "kleinanzeigen_tool.cli:main"

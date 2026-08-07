@@ -16,6 +16,18 @@ MAX_EDGE_PX = 2576
 DEFAULT_MAX_IMAGES = 12
 JPEG_QUALITY = 85
 
+#: Auflösungsstufen. Die Bildgröße ist der mit Abstand größte Kostenfaktor —
+#: die Tokenzahl wächst quadratisch mit der Kantenlänge. Für "was ist das für
+#: ein Gegenstand" reicht meist 'mittel'; 'hoch' lohnt sich bei kleiner
+#: Schrift auf Typenschildern oder feinen Kratzern.
+IMAGE_SIZE_PRESETS: dict[str, int] = {
+    "hoch": 2576,    # ~4800 Tokens/Bild
+    "mittel": 1568,  # ~2500 Tokens/Bild
+    "klein": 1024,   # ~1050 Tokens/Bild
+    "winzig": 768,   # ~590 Tokens/Bild
+}
+DEFAULT_IMAGE_SIZE = "mittel"
+
 SUPPORTED_SUFFIXES = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".bmp", ".tif", ".tiff"}
 
 
@@ -122,8 +134,26 @@ def prepare_image(path: Path, max_edge: int = MAX_EDGE_PX) -> PreparedImage:
     )
 
 
+def resolve_max_edge(size: str | int) -> int:
+    """Übersetzt eine Auflösungsstufe ('mittel') oder Pixelzahl in Pixel."""
+    if isinstance(size, int):
+        return max(256, min(size, MAX_EDGE_PX))
+    if size in IMAGE_SIZE_PRESETS:
+        return IMAGE_SIZE_PRESETS[size]
+    raise ValueError(
+        f"Unbekannte Bildgröße '{size}'. Möglich: "
+        + ", ".join(IMAGE_SIZE_PRESETS)
+    )
+
+
 def prepare_images(
-    inputs: list[Path], max_images: int = DEFAULT_MAX_IMAGES
+    inputs: list[Path],
+    max_images: int = DEFAULT_MAX_IMAGES,
+    size: str | int = DEFAULT_IMAGE_SIZE,
 ) -> list[PreparedImage]:
     """Sammelt und bereitet alle Bilder auf."""
-    return [prepare_image(p) for p in collect_image_paths(inputs, max_images)]
+    max_edge = resolve_max_edge(size)
+    return [
+        prepare_image(p, max_edge=max_edge)
+        for p in collect_image_paths(inputs, max_images)
+    ]

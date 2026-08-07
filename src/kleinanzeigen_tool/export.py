@@ -24,6 +24,8 @@ def to_json(result: AnalysisResult, image_paths: list[Path] | None = None) -> st
         "usage": {
             "input_tokens": result.input_tokens,
             "output_tokens": result.output_tokens,
+            "provider": result.provider,
+            "model": result.model,
         },
     }
     return json.dumps(payload, ensure_ascii=False, indent=2)
@@ -136,12 +138,10 @@ def to_terminal(result: AnalysisResult, color: bool = True) -> str:
         out += ["", bold("HINWEISE")]
         out += [f"  ! {w}" for w in result.warnings]
 
-    out += [
-        "",
-        dim(
-            f"Erkennungssicherheit: {listing.confidence} · "
-            f"Tokens: {result.input_tokens} in / {result.output_tokens} out"
-        ),
-        "",
-    ]
+    footer = f"Erkennungssicherheit: {listing.confidence}"
+    if result.provider:
+        footer += f" · {result.provider}/{result.model}"
+    footer += f" · Tokens: {result.input_tokens} in / {result.output_tokens} out"
+
+    out += ["", dim(footer), ""]
     return "\n".join(out)

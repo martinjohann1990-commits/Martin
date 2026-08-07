@@ -89,3 +89,40 @@ def test_prepare_images_verarbeitet_ordner(tmp_path):
     make_image(tmp_path / "a.jpg")
     make_image(tmp_path / "b.jpg")
     assert len(prepare_images([tmp_path])) == 2
+
+
+def test_bildgroessen_stufen_sind_absteigend():
+    from kleinanzeigen_tool.images import IMAGE_SIZE_PRESETS
+
+    werte = list(IMAGE_SIZE_PRESETS.values())
+    assert werte == sorted(werte, reverse=True)
+
+
+def test_resolve_max_edge_kennt_stufen():
+    from kleinanzeigen_tool.images import resolve_max_edge
+
+    assert resolve_max_edge("klein") == 1024
+    assert resolve_max_edge("hoch") == MAX_EDGE_PX
+
+
+def test_resolve_max_edge_deckelt_pixelangaben():
+    from kleinanzeigen_tool.images import resolve_max_edge
+
+    assert resolve_max_edge(99999) == MAX_EDGE_PX
+    assert resolve_max_edge(10) == 256
+    assert resolve_max_edge(1200) == 1200
+
+
+def test_resolve_max_edge_meldet_unbekannte_stufe():
+    from kleinanzeigen_tool.images import resolve_max_edge
+
+    with pytest.raises(ValueError, match="Unbekannte Bildgröße"):
+        resolve_max_edge("riesig")
+
+
+def test_kleinere_stufe_erzeugt_kleinere_dateien(tmp_path):
+    path = make_image(tmp_path / "gross.jpg", size=(3000, 2000))
+    gross = prepare_images([path], size="hoch")[0]
+    klein = prepare_images([path], size="klein")[0]
+    assert klein.width < gross.width
+    assert klein.size_kb < gross.size_kb
