@@ -388,7 +388,7 @@ Etsy stellt standardmäßig auf **Privatperson** — das ist hier falsch. Wer pl
 
 ### 31. Impressum eintragen
 
-Unter „Shop-Richtlinien" → **„Rechtliche Informationen des Verkäufers"**. Platzhalter in eckigen Klammern ersetzen.
+Unter <em>Einstellungen → Info und Ansicht → Abschnitt „Impressum"</em>. Platzhalter in eckigen Klammern ersetzen.
 
 > **Achtung:** Nicht „TMG“ schreiben — die Impressumspflicht steht seit Mai 2024 in § 5 DDG. Und keinen Link zur EU-Streitbeilegungsplattform aufnehmen: Die wurde zum 20. Juli 2025 eingestellt, viele kursierende Vorlagen enthalten ihn noch.
 
@@ -419,11 +419,11 @@ einer Verbraucherschlichtungsstelle teilzunehmen.
 
 ### 32. Widerrufsbelehrung eintragen
 
-Unter <em>Einstellungen → AGB-Einstellungen → Reiter „Rückgaben & Umtausch"</em>. Die Belehrungspflicht besteht **unabhängig davon**, ob das Widerrufsrecht später erlischt. Fehlt sie, verlängert sich die Frist auf bis zu zwölf Monate und 14 Tage. Das Muster-Widerrufsformular gehört dazu.
+Im **Impressum-Bereich** unter <em>„Füge mehr Infos für Käufer:innen hinzu"</em> — das ist der einzige Ort im Shop, an dem längere Rechtstexte hineinpassen. Die Belehrungspflicht besteht **unabhängig davon**, ob das Widerrufsrecht später erlischt. Fehlt sie, verlängert sich die Frist auf bis zu zwölf Monate und 14 Tage. Das Muster-Widerrufsformular gehört dazu.
 
-> **Achtung:** Der frühere Text „keine Rückgabe möglich“ ist unhaltbar. Das Widerrufsrecht erlischt nur, wenn alle vier Voraussetzungen des § 356 Abs. 5 BGB erfüllt sind — unter anderem die ausdrückliche Zustimmung des Käufers und dessen Bestätigung, dass er dadurch sein Widerrufsrecht verliert.
+> **Achtung:** Nicht unter „AGB-Einstellungen → Rückgaben & Umtausch“ suchen. Dahinter liegt kein Textfeld, sondern ein Formular mit Schaltern (nächster Schritt).
 
-> Prüfe an einer Testbestellung, ob Etsys Kasse diese Zustimmung überhaupt einholt. Tut sie es nicht, bleibt das Widerrufsrecht bestehen — dann ist eine gegenteilige Klausel unwirksam und selbst abmahnfähig.
+> Prüfe an einer Testbestellung, ob Etsys Kasse die Zustimmung nach § 356 Abs. 5 BGB überhaupt einholt — also die ausdrückliche Zustimmung zum sofortigen Beginn <em>und</em> die Bestätigung, dass der Käufer dadurch sein Widerrufsrecht verliert. Tut sie es nicht, bleibt das Widerrufsrecht bestehen; eine gegenteilige Klausel wäre dann unwirksam und selbst abmahnfähig.
 
 **Widerrufsbelehrung mit Muster-Formular:**
 
@@ -481,37 +481,9 @@ Datum
 (*) Unzutreffendes streichen.
 ```
 
-### 33. Reiter „Stornierungen“
+### 33. Lieferung, Gewährleistung und Zahlung ergänzen
 
-Unter <em>Einstellungen → AGB-Einstellungen</em>. Stornierungen sind bei sofort bereitgestellten Dateien praktisch nur vor dem Herunterladen möglich — das Widerrufsrecht bleibt davon unberührt.
-
-**Stornierungen:**
-
-```
-Eine Stornierung ist möglich, solange die Datei noch nicht heruntergeladen wurde. Melden Sie sich in diesem Fall bitte über die Nachrichtenfunktion — ich storniere die Bestellung und erstatte den Kaufpreis.
-
-Davon unberührt bleibt Ihr gesetzliches Widerrufsrecht; die Widerrufsbelehrung finden Sie unter „Rückgaben & Umtausch".
-```
-
-### 34. Reiter „Datenschutz“
-
-Ebenfalls unter <em>AGB-Einstellungen</em>.
-
-> Der Reiter **„Feste AGB“** daneben ist schreibgeschützt und enthält Etsys Liefer- und Zollbedingungen. Für einen Shop mit ausschließlich digitalen Downloads ist er gegenstandslos — dort ist nichts einzutragen.
-
-**Datenschutz:**
-
-```
-Für die Abwicklung des Kaufs werden nur die Daten verarbeitet, die Etsy mir zu diesem Zweck bereitstellt — insbesondere Name, Rechnungsanschrift und Bestelldaten. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO. Die Daten werden für die Dauer der gesetzlichen Aufbewahrungsfristen gespeichert und nicht an Dritte weitergegeben.
-
-Das verkaufte Produkt selbst verarbeitet keine Daten: Es läuft ausschließlich lokal im Browser des Käufers und überträgt nichts ins Internet.
-
-Verantwortlich im Sinne der DSGVO: [Vorname Nachname], Anschrift wie im Impressum. Für die Verarbeitung auf der Plattform ist Etsy verantwortlich; es gilt deren Datenschutzerklärung.
-```
-
-### 35. Lieferung, Gewährleistung und Zahlung ergänzen
-
-Diese Angaben haben bei Etsy kein eigenes Feld. Trag sie unter <em>„Füge mehr Infos für Käufer:innen hinzu"</em> ein oder häng sie an den Rückgabetext an.
+Dasselbe Freitextfeld, direkt im Anschluss an die Widerrufsbelehrung. Auch für diese drei Angaben hat Etsy kein eigenes Feld — vorvertragliche Informationspflicht besteht trotzdem.
 
 **Lieferung / Bereitstellung:**
 
@@ -531,7 +503,49 @@ Es gelten die gesetzlichen Regelungen zur Vertragsmäßigkeit digitaler Produkte
 Die Zahlung wird über Etsy Payments abgewickelt. Der angegebene Preis ist der Endpreis. Als Kleinunternehmer gemäß § 19 UStG weise ich keine Umsatzsteuer aus.
 ```
 
-### 36. Nachricht nach dem Kauf hinterlegen
+### 34. Reiter „Rückgaben &amp; Umtausch“ — Schalter setzen
+
+Unter <em>Einstellungen → AGB-Einstellungen</em>. Hier gibt es **nichts einzutragen**: Das Formular ist für Pakete gebaut und kennt nur Schalter. **Rückgaben an**, **Umtausch aus**, Zeitrahmen **30 Tage nach der Lieferung**, dann „Speichern und anwenden“.
+
+> **Achtung:** Beide Schalter aus wäre der schlechteste Fall: Etsy zeigt dann „Keine Rückgaben oder Umtausch“ auf der Artikelseite — genau die Aussage, die als pauschaler Ausschluss gelesen wird.
+
+> Rückgaben an, weil das der freiwilligen Erstattungszusage entspricht — großzügiger als das Gesetz ist nie abmahnfähig. Umtausch aus, weil ein Tausch gegen einen anderen Artikel bei einer Datei nicht erfüllbar ist. Der automatisch erscheinende Punkt „Käufer trägt die Rücksendekosten“ läuft bei einem Download ins Leere.
+
+```
+Rückgaben: an
+Umtausch: aus
+30 Tage
+```
+
+### 35. Reiter „Stornierungen“
+
+Unter <em>Einstellungen → AGB-Einstellungen</em>. Stornierungen sind bei sofort bereitgestellten Dateien praktisch nur vor dem Herunterladen möglich — das Widerrufsrecht bleibt davon unberührt.
+
+**Stornierungen:**
+
+```
+Eine Stornierung ist möglich, solange die Datei noch nicht heruntergeladen wurde. Melden Sie sich in diesem Fall bitte über die Nachrichtenfunktion — ich storniere die Bestellung und erstatte den Kaufpreis.
+
+Davon unberührt bleibt Ihr gesetzliches Widerrufsrecht; die vollständige Widerrufsbelehrung finden Sie in den Verkäuferinformationen dieses Shops.
+```
+
+### 36. Reiter „Datenschutz“
+
+Ebenfalls unter <em>AGB-Einstellungen</em>.
+
+> Der Reiter **„Feste AGB“** daneben ist schreibgeschützt und enthält Etsys Liefer- und Zollbedingungen. Für einen Shop mit ausschließlich digitalen Downloads ist er gegenstandslos — dort ist nichts einzutragen.
+
+**Datenschutz:**
+
+```
+Für die Abwicklung des Kaufs werden nur die Daten verarbeitet, die Etsy mir zu diesem Zweck bereitstellt — insbesondere Name, Rechnungsanschrift und Bestelldaten. Rechtsgrundlage ist Art. 6 Abs. 1 lit. b DSGVO. Die Daten werden für die Dauer der gesetzlichen Aufbewahrungsfristen gespeichert und nicht an Dritte weitergegeben.
+
+Das verkaufte Produkt selbst verarbeitet keine Daten: Es läuft ausschließlich lokal im Browser des Käufers und überträgt nichts ins Internet.
+
+Verantwortlich im Sinne der DSGVO: [Vorname Nachname], Anschrift wie im Impressum. Für die Verarbeitung auf der Plattform ist Etsy verantwortlich; es gilt deren Datenschutzerklärung.
+```
+
+### 37. Nachricht nach dem Kauf hinterlegen
 
 Unter „Info & Darstellung" → „Nachricht an Käufer". Wer sofort loslegt, bewertet eher.
 
@@ -562,17 +576,17 @@ Papierkramerei
 
 Zwei Einstellungen und der eigentlich wichtigste Schritt.
 
-### 37. Offsite Ads eingeschaltet lassen
+### 38. Offsite Ads eingeschaltet lassen
 
 Sie kosten **Provision nur bei Verkauf** (15 %). Ohne Verkauf keine Kosten — bezahlt aus dem Erlös eines Verkaufs, den es sonst nicht gegeben hätte.
 
-### 38. Etsy Ads (Onsite) ausgeschaltet lassen
+### 39. Etsy Ads (Onsite) ausgeschaltet lassen
 
 Die kosten **pro Klick**, auch ohne Verkauf. Ein Listing ohne Bewertungen konvertiert unter 1 % — ein Verkauf würde 25 bis 35 € kosten und 12,84 € einbringen.
 
 > **Achtung:** Erst testen, wenn drei Punkte stimmen: fünf Bewertungen, Konversion über 2 %, und das Listing verkauft sich schon organisch.
 
-### 39. Die ersten fünf Nutzer holen
+### 40. Die ersten fünf Nutzer holen
 
 Der wichtigste Schritt im ganzen Plan. Ein Listing ohne Bewertungen wird von Etsy kaum ausgespielt. Fünf Selbstständige aus deinem Umfeld anschreiben, die ZIP schenken, um eine ehrliche Rückmeldung bitten.
 

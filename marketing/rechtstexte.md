@@ -27,10 +27,11 @@ vollständige Zuordnung.
 | Text | Ort bei Etsy |
 |---|---|
 | **Impressum** | Einstellungen → **Info und Ansicht** → Abschnitt *Impressum* |
-| **Widerrufsbelehrung + Muster-Widerrufsformular** | Einstellungen → **AGB-Einstellungen** → Reiter *Rückgaben & Umtausch* |
+| **Widerrufsbelehrung + Muster-Widerrufsformular** | Impressum-Bereich → *„Füge mehr Infos für Käufer:innen hinzu"* — **nicht** unter *Rückgaben & Umtausch*, siehe unten |
+| **Lieferung, Gewährleistung, Zahlung** | ebenda |
 | **Stornierungen** | Einstellungen → **AGB-Einstellungen** → Reiter *Stornierungen* |
 | **Datenschutz** | Einstellungen → **AGB-Einstellungen** → Reiter *Datenschutz* |
-| **Lieferung, Gewährleistung, Zahlung** | Impressum-Bereich → *„Füge mehr Infos für Käufer:innen hinzu"* |
+| *Rückgaben & Umtausch* | **kein Textfeld** — nur Schalter, Einstellung siehe unten |
 | **Widerrufs-Kurzhinweis** | im **Listing**, am Ende der Beschreibung |
 | **Funktionsweise und Kompatibilität** | im **Listing**, Abschnitt *Technische Voraussetzungen* |
 | **Lizenzbedingungen** | liegen als `LIZENZ.txt` **in der ZIP** — bei Etsy nichts einzutragen |
@@ -43,22 +44,48 @@ Dort steht der Abschnitt **Impressum**, in dem auch der Verkäuferstatus
 
 1. Verkäuferstatus auf **Händler** stellen und speichern
 2. Impressumsangaben eintragen (Text in Teil 2 A)
-3. Über **„Füge mehr Infos für Käufer:innen hinzu"** die drei Zusatztexte
-   ergänzen: Lieferung, Gewährleistung, Zahlung (Teil 2 D)
+3. Über **„Füge mehr Infos für Käufer:innen hinzu"** die restlichen Texte
+   ergänzen: **Widerrufsbelehrung mit Muster-Formular** (Teil 2 B), Lieferung,
+   Gewährleistung, Zahlung (Teil 2 D)
 
-Warum die drei Zusatztexte hierhin: Etsy hat für sie kein eigenes Feld. Sie
-gehören trotzdem zu den vorvertraglichen Informationspflichten.
+Dieses Freitextfeld ist der einzige Ort im Shop, an dem längere Rechtstexte
+überhaupt hineinpassen. Etsy hat für sie kein eigenes Feld vorgesehen —
+vorvertragliche Informationspflichten bestehen trotzdem.
 
 ## Bereich 2 — AGB-Einstellungen
 
-Vier Reiter, drei davon füllst du:
+Vier Reiter. Nur zwei davon nehmen Text auf:
 
 | Reiter | Inhalt |
 |---|---|
-| *Rückgaben & Umtausch* | **Widerrufsbelehrung** + Muster-Widerrufsformular (Teil 2 B) |
+| *Rückgaben & Umtausch* | **kein Textfeld** — nur Schalter, siehe unten |
 | *Stornierungen* | Kurztext zur Stornierung vor dem Download |
 | *Datenschutz* | Datenschutztext (Teil 2 F) |
 | *Feste AGB* | **nichts** — schreibgeschützt |
+
+**Zum Reiter „Rückgaben & Umtausch":** Dahinter liegt kein Textfeld, sondern
+ein Formular mit zwei Schaltern und einer Fristauswahl. Es ist für Pakete
+gebaut — die erzeugten Bedingungen sprechen vom „Zurückschicken", von
+„Rücksendekosten" und vom „Originalzustand". Für eine Datei ist davon nichts
+sinnvoll, und die **Widerrufsbelehrung passt dort nicht hinein.**
+
+Empfohlene Einstellung:
+
+| Feld | Wert | Warum |
+|---|---|---|
+| Rückgaben | **an** | deckt die freiwillige Erstattungszusage ab; großzügiger als das Gesetz ist nie abmahnfähig |
+| Umtausch | **aus** | ein Tausch gegen einen anderen Artikel ist bei einer Datei nicht erfüllbar — nichts zusagen, was du nicht leisten kannst |
+| Zeitrahmen | **30 Tage nach der Lieferung** | längste Auswahl, passt zur Zusage im Listing |
+
+Der Punkt „Käufer trägt die Rücksendekosten" erscheint dabei automatisch und
+lässt sich nicht abwählen. Er läuft bei einem Download ins Leere — es gibt
+nichts zurückzusenden und damit keine Kosten. Er schafft keine Zahlungspflicht.
+
+**Warum nicht beide Schalter aus:** Etsy zeigt dann „Keine Rückgaben oder
+Umtausch" auf der Artikelseite. Das ist genau die Aussage, die in Befund 1 als
+unhaltbar benannt ist — juristisch geht es zwar um die Rückgabe der Ware und
+nicht um den Widerruf, aber der Käufer liest den Ausschluss seines Rechts. Der
+Vertrauensverlust kommt gratis dazu.
 
 **Zum Reiter „Feste AGB":** Er enthält Etsys eigene Liefer- und
 Zollbedingungen und lässt sich nicht ändern („gelten für den gesamten Shop und
@@ -73,8 +100,8 @@ Eine Stornierung ist möglich, solange die Datei noch nicht heruntergeladen
 wurde. Melden Sie sich in diesem Fall bitte über die Nachrichtenfunktion — ich
 storniere die Bestellung und erstatte den Kaufpreis.
 
-Davon unberührt bleibt Ihr gesetzliches Widerrufsrecht; die
-Widerrufsbelehrung finden Sie unter „Rückgaben & Umtausch".
+Davon unberührt bleibt Ihr gesetzliches Widerrufsrecht; die vollständige
+Widerrufsbelehrung finden Sie in den Verkäuferinformationen dieses Shops.
 ```
 
 ## Bereich 3 — Das Listing selbst
@@ -89,8 +116,10 @@ Listing-Text enthalten:
 
 ## Reihenfolge beim Ausfüllen
 
-1. **Info und Ansicht** → Verkäuferstatus, Impressum, Zusatztexte
-2. **AGB-Einstellungen** → drei Reiter
+1. **Info und Ansicht** → Verkäuferstatus, Impressum, Widerrufsbelehrung und
+   die drei Zusatztexte
+2. **AGB-Einstellungen** → Schalter bei *Rückgaben & Umtausch*, dann die Reiter
+   *Stornierungen* und *Datenschutz*
 3. **Listing** → Beschreibung mit den beiden Abschnitten
 
 Der Impressum-Bereich zuerst: Ohne korrekten Verkäuferstatus fehlt die
@@ -255,8 +284,9 @@ einer Verbraucherschlichtungsstelle teilzunehmen.
 
 ## B. Widerrufsbelehrung
 
-Etsy-Feld: *Shop-Richtlinien → Rückgabe und Umtausch* oder als eigener Abschnitt
-unter „Weitere Infos für Käufer:innen"
+Etsy-Feld: Impressum-Bereich → *„Füge mehr Infos für Käufer:innen hinzu"*.
+**Nicht** unter *AGB-Einstellungen → Rückgaben & Umtausch* — dort gibt es kein
+Textfeld, nur Schalter (siehe Teil 0, Bereich 2).
 
 ```
 WIDERRUFSBELEHRUNG
