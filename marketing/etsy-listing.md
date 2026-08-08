@@ -11,16 +11,23 @@ das Shop-Profil stehen in `etsy-shop.md`.
 ## Titel
 
 ```
-Rechnungsvorlage Kleinunternehmer § 19 UStG | Rechnung & Angebot als PDF | Ohne Abo, offline nutzbar | Sofort-Download
+Rechnungsvorlage Kleinunternehmer § 19 UStG | rechnet automatisch, PDF-Export | Rechnung & Angebot | Ohne Abo | Sofort-Download
 ```
 
-118 Zeichen von 140 erlaubten.
+127 Zeichen von 140 erlaubten.
 
 Die Reihenfolge ist nicht beliebig: Etsy gewichtet die ersten Wörter am
 stärksten, und **„Rechnungsvorlage Kleinunternehmer"** ist die Suchanfrage, die
 deine Zielgruppe tatsächlich eintippt. „§ 19 UStG" schließt direkt daran an,
 weil genau diese Leute danach suchen. Die Verkaufsargumente stehen hinten — sie
 überzeugen beim Lesen, aber gefunden wirst du über die vorderen Begriffe.
+
+**Geändert gegenüber der ersten Fassung:** Dort stand „Rechnung & Angebot als
+PDF". Das las sich, als **sei** das Produkt ein PDF — drei der ersten
+Kaufanfragen drehten sich genau darum („Is this PDF editable?"). Jetzt steht
+`rechnet automatisch` an dieser Stelle, und `PDF-Export` weiter hinten als das,
+was es ist: ein Ausgabeformat, kein Lieferformat. Das Suchwort „PDF" bleibt
+damit erhalten, die falsche Erwartung nicht.
 
 ---
 
@@ -60,15 +67,36 @@ nur dann gilt der Ausschluss vom Widerrufsrecht.
 ## Beschreibung
 
 ```
-Rechnungen schreiben, ohne jeden Monat dafür zu zahlen.
-
-Das hier ist keine Word-Vorlage, in der du Beträge selbst ausrechnest. Es ist
-ein fertiges kleines Programm in einer einzigen Datei: Du trägst deine
-Positionen ein, alles wird automatisch berechnet, und du speicherst das
-Ergebnis als PDF.
+Kein PDF-Formular und keine Word-Vorlage: ein kleines Programm, das rechnet.
+Du trägst deine Positionen ein, alle Beträge werden automatisch berechnet, und
+zum Schluss speicherst du das Ergebnis als PDF.
 
 Doppelklick auf die Datei — sie öffnet sich in deinem Browser. Keine
 Installation, kein Konto, keine Internetverbindung nötig.
+
+Rechnungen schreiben, ohne jeden Monat dafür zu zahlen.
+
+
+FÜR RECHNUNGEN NACH DEUTSCHEM RECHT
+
+Das Werkzeug ist auf Deutschland zugeschnitten: deutschsprachige Oberfläche,
+§ 19 und § 14 UStG, Steuersätze 19 % und 7 %, Beträge im Format 1.530,00 €.
+
+Es passt für dich, wenn du in Deutschland abrechnest — unabhängig davon, woher
+du kommst. Es passt nicht, wenn deine Rechnungen österreichischem,
+Schweizer oder anderem ausländischem Steuerrecht folgen müssen.
+
+
+PLEASE READ BEFORE BUYING — ENGLISH
+
+This is a German invoicing tool. The interface is in German and it follows
+German VAT rules (§ 19 / § 14 UStG, 19 % and 7 %). It is the right tool if you
+invoice in Germany, whatever your nationality — it is not the right tool for
+invoicing under Italian, Spanish, UK or other national rules.
+
+It is also not a PDF template. What you download is a single HTML file that
+opens in your browser, lets you enter your own items and prices, does the maths
+for you, and exports the finished invoice as a PDF.
 
 
 WARUM ES DAS GIBT
