@@ -53,10 +53,14 @@
   }
 
   function initTheme() {
-    var stored = null;
-    try { stored = localStorage.getItem('netplan.theme'); } catch (e) { /* ignorieren */ }
-    var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    document.documentElement.setAttribute('data-theme', stored || (prefersDark ? 'dark' : 'light'));
+    // Das Theme wurde bereits vor dem ersten Zeichnen gesetzt; hier wird nur
+    // sichergestellt, dass ein Wert vorhanden ist.
+    if (!document.documentElement.getAttribute('data-theme')) {
+      var stored = null;
+      try { stored = localStorage.getItem('netplan.theme'); } catch (e) { /* ignorieren */ }
+      var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      document.documentElement.setAttribute('data-theme', stored || (prefersDark ? 'dark' : 'light'));
+    }
 
     U.$('#btn-theme').addEventListener('click', function () {
       var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';

@@ -175,5 +175,5 @@ Zwischenspeicherung lässt sich abschalten.
 
 ## Bibliotheken
 
-PapaParse 5.4.1 · SheetJS (xlsx) 0.18.5 · Chart.js 4.4.4 · Leaflet 1.9.4 –
+PapaParse 5.4.1 · SheetJS (xlsx) 0.18.5, Variante „core“ · Chart.js 4.4.4 · Leaflet 1.9.4 –
 jeweils lokal unter `vendor/` eingebunden.
