@@ -39,6 +39,10 @@ js/exporter.js      Excel-/CSV-Export, Projektdatei
 js/demo.js          Beispieldatensatz
 js/app.js           Navigation und Initialisierung
 vendor/             PapaParse, SheetJS, Chart.js, Leaflet (lokal eingebunden)
+vorlagen/           Ausfüllfertige Importvorlagen (Excel und CSV)
+dist/               Einzeldatei-Fassung (aus build-standalone.js erzeugt)
+build-standalone.js Baut die Einzeldatei-Fassung
+make-templates.js   Erzeugt die Importvorlagen neu
 ```
 
 ## Arbeitsablauf
@@ -61,6 +65,23 @@ Unterstützt werden CSV (Trennzeichen wird erkannt) sowie XLSX/XLS inklusive
 Blattauswahl. Der Import arbeitet mit **freiem Spalten-Mapping**: die Spalten
 der Datei werden den Feldern des Datenmodells zugeordnet, gängige deutsche und
 englische Bezeichnungen werden automatisch erkannt.
+
+Ausfüllfertige Vorlagen liegen unter `vorlagen/`:
+
+| Datei | Inhalt |
+|---|---|
+| `netplan_importvorlage.xlsx` | Blätter „Versanddaten“, „Forecast“, „DCs“ und „Hinweise“ |
+| `netplan_importvorlage_versanddaten.csv` | Versand-/Forecastdaten als CSV |
+| `netplan_importvorlage_dcs.csv` | Distributionszentren als CSV |
+
+Aufbau der Datei: Zeile 1 enthält die Spaltenüberschriften, ab Zeile 2 folgen
+die Daten – eine Zeile je Kombination aus Periode, Kunde, Region und Kategorie.
+Die Spaltenreihenfolge ist beliebig, nicht benötigte Spalten können entfallen.
+
+**Pflicht je Zeile:** Produktkategorie, Periode, eine Mengenangabe (Menge,
+Paletten, Paletten-Äquivalent, Volumen oder Umsatz) sowie ein Ortsbezug
+(Region, Land oder Kunde). Zeilen ohne Kategorie oder mit unlesbarer Periode
+werden übersprungen und am Ende des Imports gemeldet.
 
 * **Dimensionen:** Kunde, Land, Region, Produktkategorie, Periode
 * **Kennzahlen:** Menge, Umsatz (EUR), Transportvolumen (m³), Paletten,

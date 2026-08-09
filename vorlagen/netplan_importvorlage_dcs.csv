@@ -1,0 +1,4 @@
+﻿Name;Code;Region;Land;Breitengrad;Längengrad;Kapazität;Grundbelegung;Lagerkosten;Handling;Transport Grundkosten;Kosten je km;Fixkosten
+DC Duisburg;DUI;Nordrhein-Westfalen;Deutschland;51,4344;6,7623;26000;3200;13,5;3,8;5,5;0,042;48000
+DC München;MUC;Bayern;Deutschland;48,1372;11,5756;18000;2600;16,2;4,4;6,2;0,047;39000
+DC Poznań;POZ;Wielkopolska;Polen;52,4064;16,9252;22000;900;8,6;2,6;5;0,038;19000

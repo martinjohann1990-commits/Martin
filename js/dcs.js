@@ -244,15 +244,7 @@
 
   function importFromRows(rows) {
     if (!rows.length) { U.toast('Die Datei enthält keine Zeilen.', 'warn'); return; }
-    var headers = Object.keys(rows[0]);
-    var map = {};
-    DC_FIELDS.forEach(function (f) {
-      var hit = headers.find(function (h) {
-        var hn = String(h).toLowerCase().trim();
-        return f.syn.some(function (s) { return hn === s || hn.indexOf(s) >= 0; });
-      });
-      if (hit) map[f.key] = hit;
-    });
+    var map = U.matchColumns(DC_FIELDS, Object.keys(rows[0]));
 
     if (!map.name) { U.toast('Es konnte keine Spalte mit dem DC-Namen erkannt werden.', 'error'); return; }
 

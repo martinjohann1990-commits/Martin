@@ -49,12 +49,14 @@ window.LNP = window.LNP || {};
         ? s.replace(/\./g, '').replace(',', '.')
         : s.replace(/,/g, '');
     } else if (hasComma) {
-      // "1,234" = Tausendertrennzeichen nur bei durchgängigen Dreiergruppen
-      s = /^-?\d{1,3}(,\d{3})+$/.test(s) ? s.replace(/,/g, '') : s.replace(',', '.');
+      // "1,234" = Tausendertrennzeichen nur bei durchgängigen Dreiergruppen.
+      // Die erste Gruppe darf keine führende Null haben, sonst würde "0,042"
+      // fälschlich als 42 gelesen.
+      s = /^-?[1-9]\d{0,2}(,\d{3})+$/.test(s) ? s.replace(/,/g, '') : s.replace(',', '.');
     } else if (hasDot) {
       // Spiegelbildlich: "10.234" bzw. "1.234.567" sind Tausendertrennzeichen,
-      // "10.5" ist ein Dezimalpunkt.
-      if (/^-?\d{1,3}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '');
+      // "10.5" und "0.042" sind Dezimalzahlen.
+      if (/^-?[1-9]\d{0,2}(\.\d{3})+$/.test(s)) s = s.replace(/\./g, '');
     }
     var n = parseFloat(s);
     return isFinite(n) ? n : NaN;
@@ -232,6 +234,49 @@ window.LNP = window.LNP || {};
       '</span><b>' + fmt.score(v) + '</b></div>';
   }
 
+  /* ------------------------------------------------------------ Spaltenerkennung */
+  /**
+   * Ordnet Dateispalten den Feldern eines Zielschemas zu. Exakte Treffer
+   * gewinnen vor Teiltreffern; jede Spalte wird höchstens einmal vergeben.
+   * @param {Array<{key:string, syn:string[]}>} fields
+   * @param {string[]} headers
+   * @returns {Object} { feldSchlüssel: Spaltenname }
+   */
+  function matchColumns(fields, headers) {
+    var normalized = headers.map(function (h) {
+      return {
+        raw: h,
+        norm: String(h).toLowerCase().trim().replace(/[_\-.]+/g, ' ').replace(/\s+/g, ' ')
+      };
+    });
+
+    // Alle Kombinationen bewerten und absteigend vergeben, damit der jeweils
+    // beste Treffer gewinnt und nicht die Reihenfolge der Felder entscheidet.
+    var pairs = [];
+    fields.forEach(function (f) {
+      normalized.forEach(function (h) {
+        var score = 0;
+        f.syn.forEach(function (s) {
+          if (h.norm === s) score = Math.max(score, 100);
+          else if (h.norm.replace(/\s/g, '') === s.replace(/\s/g, '')) score = Math.max(score, 95);
+          else if (h.norm.indexOf(s) >= 0) score = Math.max(score, 60 + s.length);
+          else if (s.indexOf(h.norm) >= 0 && h.norm.length >= 3) score = Math.max(score, 40 + h.norm.length);
+        });
+        if (score >= 40) pairs.push({ field: f.key, header: h.raw, score: score });
+      });
+    });
+
+    pairs.sort(function (a, b) { return b.score - a.score; });
+
+    var map = {}, takenHeader = {};
+    pairs.forEach(function (p) {
+      if (map[p.field] || takenHeader[p.header]) return;
+      map[p.field] = p.header;
+      takenHeader[p.header] = 1;
+    });
+    return map;
+  }
+
   /* ------------------------------------------------------------ Toast */
   function toast(message, kind) {
     var wrap = document.getElementById('toasts');
@@ -293,7 +338,7 @@ window.LNP = window.LNP || {};
 
   NS.util = {
     fmt: fmt, parseNum: parseNum, num: num, isNum: isNum, clamp: clamp, round: round, id: id, esc: esc, slug: slug,
-    parsePeriod: parsePeriod, haversine: haversine, roadDistance: roadDistance, DETOUR: DETOUR,
+    parsePeriod: parsePeriod, matchColumns: matchColumns, haversine: haversine, roadDistance: roadDistance, DETOUR: DETOUR,
     $: $, $$: $$, el: el, renderTable: renderTable, scoreBar: scoreBar,
     toast: toast, download: download, downloadCSV: downloadCSV, timestamp: timestamp,
     debounce: debounce, unique: unique, sum: sum

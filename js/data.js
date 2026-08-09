@@ -81,24 +81,7 @@
 
   /* ------------------------------------------------------------ Mapping */
   function autoMap(headers) {
-    var map = {}, taken = {};
-    FIELDS.forEach(function (f) {
-      var best = null, bestScore = 0;
-      headers.forEach(function (h) {
-        if (taken[h]) return;
-        var hn = String(h).toLowerCase().trim().replace(/[_\-.]+/g, ' ').replace(/\s+/g, ' ');
-        var score = 0;
-        f.syn.forEach(function (s) {
-          if (hn === s) score = Math.max(score, 100);
-          else if (hn.replace(/\s/g, '') === s.replace(/\s/g, '')) score = Math.max(score, 95);
-          else if (hn.indexOf(s) >= 0) score = Math.max(score, 60 + s.length);
-          else if (s.indexOf(hn) >= 0 && hn.length >= 3) score = Math.max(score, 40 + hn.length);
-        });
-        if (score > bestScore) { bestScore = score; best = h; }
-      });
-      if (best && bestScore >= 40) { map[f.key] = best; taken[best] = 1; }
-    });
-    return map;
+    return U.matchColumns(FIELDS, headers);
   }
 
   function renderMapping() {
