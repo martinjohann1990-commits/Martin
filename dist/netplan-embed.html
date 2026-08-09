@@ -1299,6 +1299,7 @@ select.input { cursor: pointer; }
         <span class="pill" id="storage-pill" title="Zwischenspeicherung im Browser (localStorage)">
           <span class="dot"></span><span id="storage-label">Auto-Speichern: an</span>
         </span>
+        <button class="btn btn-ghost" id="btn-lang" title="Sprache umschalten">EN</button>
         <button class="btn btn-ghost" id="btn-theme" title="Hell/Dunkel umschalten">◐ Theme</button>
         <button class="btn btn-ghost" id="btn-demo">Demodaten laden</button>
       </div>
@@ -1974,6 +1975,767 @@ if(xr(e,"index.xml"))throw new Error("Unsupported NUMBERS 09 file");throw new Er
 
 <!-- App -->
 <script>
+/* ---- js/i18n.js ---- */
+/* =========================================================================
+   i18n.js – Zweisprachigkeit Deutsch / Englisch
+   ---------------------------------------------------------------------------
+   Schlüssel ist der deutsche Originaltext. Fehlt eine Übersetzung, wird der
+   deutsche Text unverändert ausgegeben – die Oberfläche bleibt damit immer
+   funktionsfähig.
+
+   Statische Texte aus index.html werden beim Start einmalig erfasst und bei
+   jedem Sprachwechsel neu gesetzt. Dynamisch erzeugte Texte laufen über t().
+   ========================================================================= */
+window.LNP = window.LNP || {};
+
+(function (NS) {
+  'use strict';
+
+  var STORAGE_KEY = 'netplan.lang';
+  var lang = 'de';
+
+  /* ==================================================================== *
+   *  Wörterbuch
+   * ==================================================================== */
+  var EN = {
+    /* ---------- Navigation und Kopfbereich ---------- */
+    'Logistik-Netzwerkplanung': 'Logistics Network Planning',
+    'Dashboard': 'Dashboard',
+    'Daten & Import': 'Data & Import',
+    'DC-Verwaltung': 'DC Management',
+    'Simulation': 'Simulation',
+    'Szenarien': 'Scenarios',
+    'Export & Projekt': 'Export & Project',
+    'Überblick über Netzwerk, Auslastung und Kosten': 'Network, utilisation and cost at a glance',
+    'Versandhistorie und Forecast einlesen, Zielreichweiten festlegen': 'Import shipment history and forecast, set target coverage',
+    'Distributionszentren anlegen, bearbeiten und bewerten': 'Create, edit and evaluate distribution centres',
+    'Zuordnung der Produktkategorien zu Distributionszentren ermitteln': 'Determine the allocation of product categories to distribution centres',
+    'Varianten parallel anlegen und gegenüberstellen': 'Create and compare variants side by side',
+    'Ergebnisse exportieren, Projekt sichern, Kostenparameter pflegen': 'Export results, save the project, maintain cost parameters',
+    'DCs': 'DCs',
+    'Datensätze': 'Records',
+    'Alle Daten bleiben im Browser. Es werden keine Daten an einen Server gesendet.':
+      'All data stays in your browser. Nothing is sent to a server.',
+    'Auto-Speichern: an': 'Auto-save: on',
+    'Auto-Speichern: aus': 'Auto-save: off',
+    'Zwischenspeicherung im Browser (localStorage)': 'Local caching in the browser (localStorage)',
+    'Hell/Dunkel umschalten': 'Toggle light/dark',
+    '◐ Theme': '◐ Theme',
+    'Demodaten laden': 'Load demo data',
+    'Sprache umschalten': 'Switch language',
+
+    /* ---------- Dashboard ---------- */
+    'Noch keine Auswertung vorhanden': 'No analysis yet',
+    'Legen Sie Distributionszentren an und importieren Sie Versand- oder Forecast-Daten. Anschließend simulieren Sie die Zuordnung der Produktkategorien.':
+      'Create distribution centres and import shipment or forecast data. Then simulate the allocation of your product categories.',
+    'DC anlegen': 'Create DC',
+    'Daten importieren': 'Import data',
+    'Ziel-Bestand vs. Kapazität je DC': 'Target stock vs. capacity per DC',
+    'Stellplätze (Paletten)': 'Pallet positions',
+    'Kostenverteilung je DC': 'Cost breakdown per DC',
+    'EUR im Betrachtungszeitraum': 'EUR over the analysis period',
+    'Volumenverteilung Kategorie → DC': 'Volume split category → DC',
+    'Paletten im Betrachtungszeitraum': 'Pallets over the analysis period',
+    'Netzwerkkarte': 'Network map',
+    'Darstellung': 'Display',
+    'Automatisch': 'Automatic',
+    'Kartenkacheln (online)': 'Map tiles (online)',
+    'Schema (offline)': 'Schematic (offline)',
+    'Detailergebnisse je DC und Kategorie': 'Detailed results per DC and category',
+    'CSV': 'CSV',
+
+    /* KPI-Kacheln */
+    'Gesamtkapazität': 'Total capacity',
+    'Stellplätze': 'pallet positions',
+    'Auslastung': 'Utilisation',
+    'Ziel-Bestand (zugeordnet)': 'Target stock (allocated)',
+    'Transportkosten': 'Transport cost',
+    'Lager- & Handlingkosten': 'Storage & handling cost',
+    'Gesamtkosten': 'Total cost',
+    'Ø Bewertung': 'Avg. score',
+    'Aktive DCs': 'Active DCs',
+    'Belegung (inkl. Zuordnungen)': 'Occupancy (incl. allocations)',
+    'Standorte mit Koordinaten': 'Sites with coordinates',
+    'Grundlage für Distanzberechnung': 'Basis for distance calculation',
+    '{0} aktive Standorte': '{0} active sites',
+    '{0} inaktiv': '{0} inactive',
+    '{0} belegt · {1} frei': '{0} occupied · {1} free',
+    '{0} von {1} Kategorien zugeordnet': '{0} of {1} categories allocated',
+    '{0} von {1}': '{0} of {1}',
+    'Ø Distanz {0}': 'Avg. distance {0}',
+    'im Betrachtungszeitraum': 'over the analysis period',
+    'davon Lager {0}': 'of which storage {0}',
+    '{0} € je Palette': '{0} € per pallet',
+    'inkl. Fixkosten': 'incl. fixed cost',
+    '{0} Zuordnung(en) über Kapazität': '{0} allocation(s) exceed capacity',
+    'alle Zuordnungen kapazitätsgerecht': 'all allocations within capacity',
+
+    /* ---------- Daten & Import ---------- */
+    '1 · Datei einlesen': '1 · Read file',
+    '2 · Spalten zuordnen': '2 · Map columns',
+    '3 · Mengenlogik & Umrechnung': '3 · Quantity logic & conversion',
+    '4 · Zielreichweite je Kategorie': '4 · Target coverage per category',
+    '5 · Regionen & Koordinaten': '5 · Regions & coordinates',
+    'CSV, XLSX, XLS – Verarbeitung ausschließlich lokal im Browser':
+      'CSV, XLSX, XLS – processed exclusively in your browser',
+    'Datensatz-Typ': 'Data set type',
+    'Historie': 'History',
+    'Forecast': 'Forecast',
+    'Historische Versanddaten oder extern erstellter Forecast. Beide nutzen dasselbe Schema.':
+      'Historical shipment data or an externally produced forecast. Both use the same schema.',
+    'Import-Modus': 'Import mode',
+    'Anhängen': 'Append',
+    'Ersetzen': 'Replace',
+    '„Ersetzen“ löscht vorhandene Datensätze des gewählten Typs.':
+      '“Replace” deletes existing records of the selected type.',
+    'Datenebene': 'Data level',
+    'Einzeltransaktion': 'Single transaction',
+    'Aggregiert': 'Aggregated',
+    'Einzellieferungen und bereits aggregierte Zeilen (z.B. je Monat/Kunde) werden beide unterstützt.':
+      'Individual deliveries and pre-aggregated rows (e.g. per month/customer) are both supported.',
+    'Datei hierher ziehen': 'Drop a file here',
+    'oder': 'or',
+    'Datei auswählen': 'choose a file',
+    'Unterstützt: .csv, .txt (Trennzeichen wird erkannt), .xlsx, .xls':
+      'Supported: .csv, .txt (delimiter detected automatically), .xlsx, .xls',
+    'Tabellenblatt': 'Worksheet',
+    'Ordnen Sie die Spalten Ihrer Datei den Feldern des Datenmodells zu. Erkannte Zuordnungen sind vorbelegt.':
+      'Map the columns of your file to the fields of the data model. Detected matches are pre-selected.',
+    'Vorschau der Datei (erste 8 Zeilen)': 'File preview (first 8 rows)',
+    'Abbrechen': 'Cancel',
+    'Import ausführen': 'Run import',
+    '– nicht zugeordnet –': '– not mapped –',
+    'erkannt': 'detected',
+    'Kunde': 'Customer',
+    'Land': 'Country',
+    'Region': 'Region',
+    'Produktkategorie': 'Product category',
+    'Periode / Datum': 'Period / date',
+    'Menge (Stück)': 'Quantity (units)',
+    'Umsatz (EUR)': 'Revenue (EUR)',
+    'Transportvolumen (m³)': 'Transport volume (m³)',
+    'Paletten': 'Pallets',
+    'Paletten-Äquivalent': 'Pallet equivalent',
+    'Breitengrad (optional)': 'Latitude (optional)',
+    'Längengrad (optional)': 'Longitude (optional)',
+
+    'Wird angewandt, wenn Paletten nicht direkt in den Daten stehen':
+      'Applied when pallets are not stated directly in the data',
+    'Stück je Palette': 'Units per pallet',
+    'Volumen je Palette (m³)': 'Volume per pallet (m³)',
+    'Betrachtungszeitraum (Tage)': 'Analysis period (days)',
+    'Umschlagfaktor Bestand': 'Stock safety factor',
+    'Aufschlag auf den Ziel-Bestand (z.B. 1,1 für Sicherheitspuffer)':
+      'Uplift on target stock (e.g. 1.1 for a safety buffer)',
+    'automatisch': 'automatic',
+    'Priorität der Palettenermittlung:': 'Pallet derivation priority:',
+    'Volumen ÷ Volumen je Palette': 'Volume ÷ volume per pallet',
+    'Menge ÷ Stück je Palette': 'Quantity ÷ units per pallet',
+
+    'Ziel-Bestand = Bedarf pro Tag × Zielreichweite': 'Target stock = demand per day × target coverage',
+    'Globale Zielreichweite (Tage)': 'Global target coverage (days)',
+    'Auf alle Kategorien anwenden': 'Apply to all categories',
+    'Diese Übersicht rechnet über': 'This overview is calculated across',
+    'alle importierten Daten': 'all imported data',
+    '(Historie und Forecast zusammen). Die Simulation verwendet dagegen die dort gewählte Datenbasis und den gewählten Zeitraum – der Bedarf je Tag kann daher abweichen.':
+      '(history and forecast combined). The simulation, by contrast, uses the data basis and period selected there – so demand per day may differ.',
+    'Volumen (Paletten)': 'Volume (pallets)',
+    'Zeitraum (Tage)': 'Period (days)',
+    'Bedarf je Tag': 'Demand per day',
+    'Zielreichweite (Tage)': 'Target coverage (days)',
+    'Ziel-Bestand (Stellplätze)': 'Target stock (positions)',
+
+    'Koordinaten automatisch ergänzen': 'Fill in coordinates automatically',
+    'Für Distanz- und Kartendarstellung benötigt jede Kundenregion Koordinaten. Bekannte Länder/Regionen werden automatisch erkannt, alle Werte sind manuell überschreibbar.':
+      'Every customer region needs coordinates for distance calculation and the map. Known countries and regions are detected automatically; every value can be overridden.',
+    'Region / Land': 'Region / country',
+    'Breitengrad': 'Latitude',
+    'Längengrad': 'Longitude',
+    'Quelle': 'Source',
+    'Koordinaten fehlen': 'coordinates missing',
+    'manuell': 'manual',
+    'datei': 'file',
+    'offen': 'open',
+
+    'Datenbestand': 'Data inventory',
+    'Alle Datensätze': 'All records',
+    'Nur Historie': 'History only',
+    'Nur Forecast': 'Forecast only',
+    'Daten löschen': 'Delete data',
+    'Typ': 'Type',
+    'Periode': 'Period',
+    'Kategorie': 'Category',
+    'Menge': 'Quantity',
+    'Umsatz': 'Revenue',
+    'Volumen m³': 'Volume m³',
+    'Kategorien': 'Categories',
+    'Regionen': 'Regions',
+    'Perioden': 'Periods',
+    'Volumen gesamt': 'Total volume',
+    '{0} Datensätze': '{0} records',
+    '{0} Paletten': '{0} pallets',
+    'Anzeige der ersten {0} von {1} Datensätzen.': 'Showing the first {0} of {1} records.',
+
+    /* ---------- DC-Verwaltung ---------- */
+    'Distributionszentren': 'Distribution centres',
+    'Distributionszentrum': 'Distribution centre',
+    'DCs aus Datei importieren': 'Import DCs from file',
+    '+ Neues DC': '+ New DC',
+    'Noch keine Distributionszentren angelegt.': 'No distribution centres created yet.',
+    'Netzwerk-Kennzahlen': 'Network key figures',
+    'Summen über alle aktiven DCs': 'Totals across all active DCs',
+    'DC': 'DC',
+    'Standort': 'Location',
+    'Koordinaten': 'Coordinates',
+    'fehlt': 'missing',
+    'Kapazität': 'Capacity',
+    'Grundbelegung': 'Base occupancy',
+    'Lager €/Platz/Mon.': 'Storage €/pos./mth',
+    'Transport €/Pal.': 'Transport €/pal.',
+    'Sonderpreise': 'Special rates',
+    '{0} Region(en)': '{0} region(s)',
+    'Status': 'Status',
+    'aktiv': 'active',
+    'inaktiv': 'inactive',
+    'Bearbeiten': 'Edit',
+    'Duplizieren': 'Duplicate',
+    'Löschen': 'Delete',
+    '(Kopie)': '(copy)',
+
+    'Neues Distributionszentrum': 'New distribution centre',
+    'DC bearbeiten': 'Edit DC',
+    'Name *': 'Name *',
+    'Kurzcode': 'Short code',
+    'Region / Standort': 'Region / location',
+    'Breitengrad (lat)': 'Latitude (lat)',
+    'Längengrad (lng)': 'Longitude (lng)',
+    'Kapazität (Stellplätze)': 'Capacity (pallet positions)',
+    'Bereits belegte Stellplätze': 'Positions already occupied',
+    'Vorbelegung durch nicht simulierte Sortimente': 'Occupancy from ranges not covered by the simulation',
+    'Lagerkosten je Stellplatz/Monat (EUR)': 'Storage cost per position/month (EUR)',
+    'Handlingkosten je Palette (EUR)': 'Handling cost per pallet (EUR)',
+    'Transport-Grundkosten je Palette (EUR)': 'Transport base cost per pallet (EUR)',
+    'Transportkosten je Paletten-km (EUR)': 'Transport cost per pallet-km (EUR)',
+    'Leer = Netzwerk-Standardwert': 'Empty = network default',
+    'Fixkosten je Periode (EUR)': 'Fixed cost per period (EUR)',
+    'Aktiv': 'Active',
+    'Inaktiv (nicht in Simulation)': 'Inactive (excluded from simulation)',
+    'Regionsspezifische Transportkosten (EUR je Palette)': 'Region-specific transport rates (EUR per pallet)',
+    '+ Region hinzufügen': '+ Add region',
+    'Pauschale je Zielregion. Überschreibt die distanzbasierte Berechnung für diese Region.':
+      'Flat rate per destination region. Overrides the distance-based calculation for that region.',
+    'Region / Land': 'Region / country',
+    'EUR je Palette': 'EUR per pallet',
+    'Speichern': 'Save',
+    'Schließen': 'Close',
+    'Standard: {0}': 'Default: {0}',
+
+    /* ---------- Simulation ---------- */
+    'Simulationsparameter': 'Simulation parameters',
+    'Datenbasis': 'Data basis',
+    'Historie + Forecast': 'History + forecast',
+    'Periode von': 'Period from',
+    'Periode bis': 'Period to',
+    'Zuordnungsmodus': 'Allocation mode',
+    'Alleinzuordnung': 'Single allocation',
+    'Splitting': 'Split',
+    'manuell': 'manual',
+    'Split': 'Split',
+    'Max. Anzahl DCs im Split': 'Max. number of DCs in the split',
+    'Zielreichweite dieser Kategorie (Tage)': 'Target coverage for this category (days)',
+    'Gewichtung der Kriterien': 'Criteria weighting',
+    'Zurücksetzen': 'Reset',
+    'Kapazität & Balance': 'Capacity & balance',
+    'Transportkosten / Distanz': 'Transport cost / distance',
+    'Zielreichweite / Bestand': 'Target coverage / stock',
+    'Normiert: Kapazität {0} · Transport {1} · Reichweite {2}':
+      'Normalised: capacity {0} · transport {1} · coverage {2}',
+    'Ziel-Auslastungsgrenze': 'Target utilisation limit',
+    'Ab dieser Auslastung wird ein DC im Kapazitäts-Score abgewertet.':
+      'Above this utilisation a DC is penalised in the capacity score.',
+    'Simulation starten': 'Run simulation',
+    'Alle Kategorien simulieren': 'Simulate all categories',
+    'Simulation noch nicht ausgeführt': 'Simulation not run yet',
+    'Wählen Sie links eine Produktkategorie und starten Sie die Simulation.':
+      'Select a product category on the left and start the simulation.',
+
+    'Empfehlung': 'Recommendation',
+    'Aufteilung auf {0} Standorte': 'Split across {0} sites',
+    'Kategorie „{0}“ – kombinierte Belieferung nach regionaler Nähe und verfügbarer Kapazität.':
+      'Category “{0}” – combined supply based on regional proximity and available capacity.',
+    'Kategorie „{0}“ vollständig aus diesem Distributionszentrum.':
+      'Category “{0}” served entirely from this distribution centre.',
+    'Die Kapazität reicht für den Ziel-Bestand nicht aus.': 'Capacity is not sufficient for the target stock.',
+    '{0} Paletten konnten nicht kapazitätsgerecht untergebracht werden.':
+      '{0} pallets could not be placed within available capacity.',
+    '{0} Region(en) ohne Koordinaten – für diese wird eine mittlere Netzdistanz angenommen.':
+      '{0} region(s) without coordinates – an average network distance is assumed for these.',
+    'Ausschlaggebend ist <b>{0}</b> mit {1} von {2} Punkten (Teil-Score {3}).':
+      'The decisive factor is <b>{0}</b> with {1} of {2} points (sub-score {3}).',
+    ' Der Abstand zum zweitplatzierten Standort {0} beträgt {1} Punkte':
+      ' The gap to the runner-up site {0} is {1} points',
+    ' bei {0} € Unterschied je Palette.': ', at a difference of {0} € per pallet.',
+    'Kapazität und Auslastungsbalance': 'capacity and utilisation balance',
+    'Transportkosten bzw. Kundennähe': 'transport cost and proximity to customers',
+    'Einhaltung der Zielreichweite': 'meeting the target coverage',
+    'Gesamt-Score': 'Total score',
+    'Volumen': 'Volume',
+    'Pal.': 'pal.',
+    'Ziel-Bestand': 'Target stock',
+    'Plätze': 'positions',
+    'Zielreichweite': 'Target coverage',
+    'Tage': 'days',
+    'Ø Distanz': 'Avg. distance',
+    'Auslastung danach': 'Utilisation after',
+
+    'Bewertung aller Standorte': 'Evaluation of all sites',
+    'Gewichteter Gesamt-Score aus drei Teil-Scores': 'Weighted total score from three sub-scores',
+    'gewählt': 'selected',
+    'Transport': 'Transport',
+    'Reichweite': 'Coverage',
+    'Transit': 'Transit',
+    '€/Palette': '€/pallet',
+    'Frei': 'Free',
+    'Reichweite erreichbar': 'Coverage achievable',
+    'ausreichend': 'sufficient',
+    'zu klein': 'too small',
+    'überschritten': 'exceeded',
+
+    'Score-Zusammensetzung': 'Score composition',
+    'Beiträge der gewichteten Kriterien': 'Contributions of the weighted criteria',
+    'Kapazität & Balance ({0})': 'Capacity & balance ({0})',
+    'Transport / Distanz ({0})': 'Transport / distance ({0})',
+    'Zielreichweite ({0})': 'Target coverage ({0})',
+
+    'Aufteilung der Kategorie': 'Category split',
+    'Anteile lassen sich manuell überschreiben': 'Shares can be overridden manually',
+    'Anteil (%)': 'Share (%)',
+    'Volumen (Pal.)': 'Volume (pal.)',
+    'Freie Kapazität': 'Free capacity',
+    'Lagerkosten': 'Storage cost',
+    'Score': 'Score',
+    'Summe der Anteile: {0} %': 'Sum of shares: {0} %',
+    'Mit manuellen Anteilen neu rechnen': 'Recalculate with manual shares',
+
+    'Regionale Zuordnung': 'Regional allocation',
+    'Welche Kundenregion wird aus welchem DC beliefert?': 'Which customer region is served from which DC?',
+    'Kundenregion': 'Customer region',
+    'Beliefert aus': 'Served from',
+    'Anteil der Region': 'Share of region',
+    'Distanz': 'Distance',
+    'geschätzt': 'estimated',
+    'Zuordnung übernehmen': 'Apply allocation',
+
+    'Aktuelle Zuordnungen': 'Current allocations',
+    'Alle zurücksetzen': 'Reset all',
+    'Modus': 'Mode',
+    'Zuordnung': 'Allocation',
+    'Anteil': 'Share',
+    'Erneut simulieren': 'Simulate again',
+    'Entfernen': 'Remove',
+
+    /* ---------- Szenarien ---------- */
+    'Szenario aus aktuellem Stand erzeugen': 'Create a scenario from the current state',
+    'Ein Szenario friert DC-Konfiguration, Gewichtungen, Zielreichweiten und Zuordnungen ein und macht sie vergleichbar.':
+      'A scenario freezes the DC configuration, weightings, target coverage and allocations, making them comparable.',
+    'Bezeichnung': 'Name',
+    'z.B. Zentralisiert, 21 Tage Reichweite': 'e.g. centralised, 21 days coverage',
+    'Szenario speichern': 'Save scenario',
+    'Szenario-Vergleich': 'Scenario comparison',
+    'Noch keine Szenarien gespeichert.': 'No scenarios saved yet.',
+    'Die Markierung „best“ kennzeichnet je Zeile den günstigsten bzw. höchsten Wert. Die Ø Bewertung wird mit der jeweils im Szenario hinterlegten Gewichtung berechnet – bei unterschiedlichen Gewichtungen sind Kosten und Auslastung die belastbareren Vergleichsgrößen.':
+      'The “best” marker highlights the lowest or highest value in each row. The average score is computed with the weighting stored in each scenario – where weightings differ, cost and utilisation are the more reliable comparators.',
+    'Gesamtkosten je Szenario': 'Total cost per scenario',
+    'Auslastung & Service je Szenario': 'Utilisation & service per scenario',
+    'Prozent': 'Per cent',
+    'Zuordnungen im Vergleich': 'Allocations compared',
+    'Kategorie → DC je Szenario': 'Category → DC per scenario',
+    'Aktueller Stand': 'Current state',
+    'live': 'live',
+    '{0} gespeicherte Szenarien im Vergleich zum aktuellen Stand':
+      '{0} saved scenarios compared with the current state',
+    'Noch kein Szenario gespeichert – angezeigt wird nur der aktuelle Stand.':
+      'No scenario saved yet – only the current state is shown.',
+    'Kennzahl': 'Key figure',
+    'Aktionen': 'Actions',
+    'Laden': 'Load',
+    'Umbenennen': 'Rename',
+    'best': 'best',
+    'Genutzte DCs': 'DCs in use',
+    'Gesamtkapazität (Stellplätze)': 'Total capacity (positions)',
+    'Ziel-Bestand zugeordnet': 'Target stock allocated',
+    'Handlingkosten': 'Handling cost',
+    'Fixkosten': 'Fixed cost',
+    'Kosten je Palette': 'Cost per pallet',
+    'Ø Bewertung (0–100)': 'Avg. score (0–100)',
+    'Zielreichweite global (Tage)': 'Global target coverage (days)',
+    'Zugeordnete Kategorien': 'Categories allocated',
+    'Kapazitätsverletzungen': 'Capacity violations',
+    'Auslastung (%)': 'Utilisation (%)',
+    'Prozent bzw. Punkte (0–100)': 'Per cent or points (0–100)',
+    'Noch keine Zuordnungen vorhanden.': 'No allocations yet.',
+
+    /* ---------- Export ---------- */
+    'Ergebnisse exportieren': 'Export results',
+    'Der Download wird vollständig im Browser erzeugt – es findet kein Server-Roundtrip statt.':
+      'The download is generated entirely in your browser – there is no server round trip.',
+    'Excel-Arbeitsmappe (.xlsx)': 'Excel workbook (.xlsx)',
+    'Ergebnisse als CSV': 'Results as CSV',
+    'Zuordnungen als CSV': 'Allocations as CSV',
+    'Szenario-Vergleich als CSV': 'Scenario comparison as CSV',
+    'Die Excel-Mappe enthält die Blätter: KPI, DCs, Zuordnungen, Simulationsdetails, Regionen, Szenarien und Rohdaten.':
+      'The workbook contains the sheets: KPI, DCs, Allocations, Simulation details, Regions, Scenarios and Raw data.',
+    'Projekt sichern & laden': 'Save & load project',
+    'Speichert bzw. lädt den kompletten Arbeitsstand (DCs, Daten, Einstellungen, Szenarien) als JSON-Datei.':
+      'Saves or loads the complete working state (DCs, data, settings, scenarios) as a JSON file.',
+    'Projekt als JSON speichern': 'Save project as JSON',
+    'Projekt aus JSON laden': 'Load project from JSON',
+    'Automatisch im Browser zwischenspeichern (localStorage)': 'Cache automatically in the browser (localStorage)',
+    'Alles zurücksetzen': 'Reset everything',
+    'Kostenparameter des Netzwerks': 'Network cost parameters',
+    'Fallback, wenn im DC kein Wert hinterlegt ist': 'Fallback when no value is set on the DC',
+    'Ø Transportleistung (km/Tag)': 'Avg. transport performance (km/day)',
+    'Für die Ermittlung der Transitzeit aus der Distanz': 'Used to derive transit time from distance',
+    'Fixe Handlingzeit (Tage)': 'Fixed handling time (days)',
+    'Rechenlogik im Überblick': 'Calculation logic at a glance',
+
+    /* Formeln */
+    'Paletten je Datensatz': 'Pallets per record',
+    'Paletten = Paletten-Äquivalent\n      → sonst Paletten\n      → sonst Volumen ÷ {0} m³\n      → sonst Menge ÷ {1} Stück':
+      'Pallets = pallet equivalent\n      → else pallets\n      → else volume ÷ {0} m³\n      → else quantity ÷ {1} units',
+    'Die erste verfügbare Größe wird verwendet. So lassen sich Dateien mit unterschiedlichem Detailgrad gemeinsam auswerten.':
+      'The first available figure is used, so files with different levels of detail can be analysed together.',
+    'Bedarf/Tag = Paletten im Zeitraum ÷ Zeitraum in Tagen\nZiel-Bestand = Bedarf/Tag × Zielreichweite × {0}':
+      'Demand/day = pallets in period ÷ period length in days\nTarget stock = demand/day × target coverage × {0}',
+    'Der Ziel-Bestand belegt Stellplätze im DC und ist damit die kapazitätswirksame Größe.':
+      'Target stock occupies pallet positions in the DC and is therefore the capacity-relevant figure.',
+    'Kosten/Palette = Grundkosten + Kosten/km × Distanz\nDistanz = Luftlinie × {0} (Umwegfaktor)':
+      'Cost/pallet = base cost + cost/km × distance\nDistance = great-circle × {0} (detour factor)',
+    'Regionsspezifische Pauschalen im DC überschreiben die distanzbasierte Rechnung.':
+      'Region-specific flat rates on the DC override the distance-based calculation.',
+    'Lager- und Handlingkosten': 'Storage and handling cost',
+    'Lager = Ziel-Bestand × €/Stellplatz/Monat × Monate\nHandling = Paletten × €/Palette':
+      'Storage = target stock × €/position/month × months\nHandling = pallets × €/pallet',
+    'Werte je DC haben Vorrang vor den Netzwerk-Standardwerten.': 'Values set per DC take precedence over network defaults.',
+    'Score Kapazität & Balance': 'Capacity & balance score',
+    '100 → leeres DC\n 50 → an der Ziel-Auslastungsgrenze ({0})\n  0 → ab Vollauslastung':
+      '100 → empty DC\n 50 → at the target utilisation limit ({0})\n  0 → at and above full utilisation',
+    'Belohnt Reserve und eine ausgeglichene Auslastung im Netzwerk.': 'Rewards headroom and balanced utilisation across the network.',
+    'Score Transport': 'Transport score',
+    'Score = 100 × günstigste €/Palette ÷ eigene €/Palette': 'Score = 100 × lowest €/pallet ÷ own €/pallet',
+    'Verhältnisskala: doppelte Kosten ergeben den halben Teil-Score.': 'Ratio scale: twice the cost yields half the sub-score.',
+    'Score Zielreichweite': 'Target coverage score',
+    'Score = 100 × (0,7 × Bestandsfähigkeit + 0,3 × Reaktionsfähigkeit)\nBestandsfähigkeit = freie Plätze ÷ Ziel-Bestand (max. 1)\nReaktionsfähigkeit = 1 − Transitzeit ÷ Zielreichweite':
+      'Score = 100 × (0.7 × stock capability + 0.3 × responsiveness)\nStock capability = free positions ÷ target stock (max. 1)\nResponsiveness = 1 − transit time ÷ target coverage',
+    'Transitzeit = {0} Tage Handling + Distanz ÷ {1} km/Tag.': 'Transit time = {0} days handling + distance ÷ {1} km/day.',
+    'Score = w₁ × Kapazität + w₂ × Transport + w₃ × Reichweite':
+      'Score = w₁ × capacity + w₂ × transport + w₃ × coverage',
+    'Die Gewichte werden auf 100 % normiert. Die Teil-Beiträge sind im Diagramm „Score-Zusammensetzung“ einzeln ausgewiesen.':
+      'Weights are normalised to 100 %. The individual contributions are shown in the “Score composition” chart.',
+
+    /* ---------- Diagramme ---------- */
+    'Zugeordneter Ziel-Bestand': 'Allocated target stock',
+    'Überlast': 'Overload',
+    'Überlast (Kapazität überschritten)': 'Overload (capacity exceeded)',
+    'Lager': 'Storage',
+    'Handling': 'Handling',
+    'Auslastung: {0} · Kapazität: {1}': 'Utilisation: {0} · capacity: {1}',
+    'Gesamt: {0}': 'Total: {0}',
+    'Gesamt: {0} / 100': 'Total: {0} / 100',
+    '{0} Stellplätze': '{0} pallet positions',
+    '{0} Punkte': '{0} points',
+
+    /* ---------- Karte ---------- */
+    'Kartenkacheln werden von openstreetmap.org geladen. Ohne Internetzugang wird automatisch auf die Schema-Ansicht umgeschaltet.':
+      'Map tiles are loaded from openstreetmap.org. Without internet access the view switches to the schematic automatically.',
+    'Schema-Ansicht: Standorte und Regionen werden ohne externe Kartenkacheln auf einem Koordinatenraster dargestellt – vollständig offline nutzbar.':
+      'Schematic view: sites and regions are placed on a coordinate grid without external map tiles – fully usable offline.',
+    'Kartenkacheln nicht erreichbar – automatisch auf die Offline-Schema-Ansicht umgeschaltet.':
+      'Map tiles unreachable – switched to the offline schematic view automatically.',
+    'Vereinfachte Schemadarstellung (Leaflet nicht verfügbar): Positionen sind maßstäblich nach Koordinaten angeordnet.':
+      'Simplified schematic (Leaflet unavailable): positions are placed to scale by coordinates.',
+    'Keine Standorte mit Koordinaten vorhanden.': 'No sites with coordinates available.',
+    'Kundenregion · {0} Paletten': 'Customer region · {0} pallets',
+    'Kapazität {0} Stellplätze': 'Capacity {0} pallet positions',
+    'Belegung {0}': 'Occupancy {0}',
+    'Schematische Netzwerkkarte': 'Schematic network map',
+
+    /* ---------- Meldungen ---------- */
+    'Keine Daten vorhanden': 'No data available',
+    'Zwischengespeicherter Arbeitsstand wiederhergestellt.': 'Cached working state restored.',
+    'Bitte einen Namen für das DC angeben.': 'Please enter a name for the DC.',
+    'Koordinaten für „{0}“ automatisch ergänzt.': 'Coordinates for “{0}” filled in automatically.',
+    'DC „{0}“ aktualisiert.': 'DC “{0}” updated.',
+    'DC „{0}“ angelegt.': 'DC “{0}” created.',
+    'DC dupliziert.': 'DC duplicated.',
+    'DC gelöscht.': 'DC deleted.',
+    'DC „{0}“ wirklich löschen? Bestehende Zuordnungen zu diesem Standort werden entfernt.':
+      'Really delete DC “{0}”? Existing allocations to this site will be removed.',
+    'Die Datei enthält keine Zeilen.': 'The file contains no rows.',
+    'Es konnte keine Spalte mit dem DC-Namen erkannt werden.': 'No column containing the DC name could be detected.',
+    '{0} Distributionszentren importiert.': '{0} distribution centres imported.',
+    'Datei konnte nicht gelesen werden: {0}': 'The file could not be read: {0}',
+    'Datei konnte nicht gelesen werden': 'The file could not be read',
+    'Excel-Bibliothek nicht geladen': 'Excel library not loaded',
+    'CSV-Bibliothek nicht geladen': 'CSV library not loaded',
+    'Import fehlgeschlagen: {0}': 'Import failed: {0}',
+    'Die Datei enthält keine Datenzeilen.': 'The file contains no data rows.',
+    'Pflichtfeld „{0}“ ist nicht zugeordnet.': 'Required field “{0}” is not mapped.',
+    'Mindestens eine Kennzahl (Menge, Paletten, Paletten-Äquivalent, Volumen oder Umsatz) muss zugeordnet sein.':
+      'At least one measure (quantity, pallets, pallet equivalent, volume or revenue) must be mapped.',
+    'Für die Distanzberechnung wird eine Regions-, Länder- oder Kundenspalte benötigt.':
+      'A region, country or customer column is required for the distance calculation.',
+    'Hinweis: Paletten werden aus der Menge über „Stück je Palette“ ({0}) umgerechnet.':
+      'Note: pallets are derived from quantity using “units per pallet” ({0}).',
+    'Es konnten keine gültigen Datensätze erzeugt werden. Bitte Spaltenzuordnung prüfen.':
+      'No valid records could be created. Please check the column mapping.',
+    '{0} Zeilen eingelesen': '{0} rows read',
+    ', auf {0} Datensätze verdichtet': ', condensed into {0} records',
+    ' – {0} Zeilen ohne lesbare Periode übersprungen': ' – {0} rows skipped due to an unreadable period',
+    'Datensätze {0} wirklich löschen?': 'Really delete records of {0}?',
+    'der Historie': 'the history',
+    'des Forecasts': 'the forecast',
+    'aller Datenbestände': 'all data sets',
+    'Datensätze gelöscht.': 'Records deleted.',
+    '{0} Regionen automatisch ergänzt': '{0} regions filled in automatically',
+    ', {0} weiterhin offen': ', {0} still open',
+    'Die Zielreichweite muss größer als 0 sein.': 'Target coverage must be greater than 0.',
+    'Bitte eine Zielreichweite größer 0 angeben.': 'Please enter a target coverage greater than 0.',
+    'Zielreichweite von {0} Tagen auf alle Kategorien angewendet.': 'Target coverage of {0} days applied to all categories.',
+    'Bitte zuerst Daten importieren und eine Kategorie wählen.': 'Please import data and select a category first.',
+    'Es ist kein aktives Distributionszentrum vorhanden.': 'There is no active distribution centre.',
+    'Für diese Kategorie liegen im gewählten Zeitraum keine Mengen vor.':
+      'There are no quantities for this category in the selected period.',
+    'Die Summe der Anteile muss größer als 0 sein.': 'The sum of the shares must be greater than 0.',
+    'Simulation für „{0}“ abgeschlossen.': 'Simulation for “{0}” completed.',
+    'Keine Kategorien in der gewählten Datenbasis.': 'No categories in the selected data basis.',
+    'Alle Kategorien werden nacheinander simuliert und zugeordnet (volumenstärkste zuerst). Bestehende Zuordnungen werden dabei ersetzt. Fortfahren?':
+      'All categories will be simulated and allocated in sequence (highest volume first). Existing allocations will be replaced. Continue?',
+    '{0} Kategorien simuliert und zugeordnet.': '{0} categories simulated and allocated.',
+    'Bitte mindestens einen Anteil größer 0 angeben.': 'Please enter at least one share greater than 0.',
+    'Neu berechnet mit manuellen Anteilen.': 'Recalculated with manual shares.',
+    'Bitte zuerst eine Simulation ausführen.': 'Please run a simulation first.',
+    'Zuordnung für „{0}“ übernommen.': 'Allocation for “{0}” applied.',
+    'Alle übernommenen Zuordnungen zurücksetzen?': 'Reset all applied allocations?',
+    'Zuordnungen zurückgesetzt.': 'Allocations reset.',
+    'Zuordnung für „{0}“ entfernt.': 'Allocation for “{0}” removed.',
+    'Es sind noch keine Zuordnungen übernommen – das Szenario hätte keine Ergebnisse.':
+      'No allocations have been applied yet – the scenario would contain no results.',
+    'Szenario „{0}“ gespeichert.': 'Scenario “{0}” saved.',
+    'Szenario „{0}“ laden? Die aktuelle DC-Konfiguration, die Einstellungen und die Zuordnungen werden dadurch ersetzt (importierte Daten bleiben erhalten).':
+      'Load scenario “{0}”? The current DC configuration, settings and allocations will be replaced (imported data is kept).',
+    'Szenario „{0}“ geladen.': 'Scenario “{0}” loaded.',
+    'Szenario „{0}“ löschen?': 'Delete scenario “{0}”?',
+    'Szenario gelöscht.': 'Scenario deleted.',
+    'Neue Bezeichnung für das Szenario:': 'New name for the scenario:',
+    'Szenario {0}': 'Scenario {0}',
+    'CSV-Datei erzeugt.': 'CSV file created.',
+    'Excel-Arbeitsmappe erzeugt.': 'Excel workbook created.',
+    'Excel-Bibliothek nicht geladen.': 'Excel library not loaded.',
+    'Projektdatei gespeichert.': 'Project file saved.',
+    'Projekt geladen: {0} DCs, {1} Datensätze, {2} Szenarien.': 'Project loaded: {0} DCs, {1} records, {2} scenarios.',
+    'Projektdatei konnte nicht gelesen werden: {0}': 'The project file could not be read: {0}',
+    'Ungültiges Format': 'Invalid format',
+    'Wirklich alles zurücksetzen? DCs, Daten, Zuordnungen und Szenarien werden gelöscht.':
+      'Really reset everything? DCs, data, allocations and scenarios will be deleted.',
+    'Arbeitsstand zurückgesetzt.': 'Working state reset.',
+    'Automatische Zwischenspeicherung aktiviert.': 'Automatic caching enabled.',
+    'Zwischenspeicherung deaktiviert und gelöschter Browser-Speicher.': 'Caching disabled and browser storage cleared.',
+    'Ungültiger Wert – bitte eine Zahl{0} eingeben.': 'Invalid value – please enter a number{0}.',
+    ' ≥ {0}': ' ≥ {0}',
+    'Speicherlimit erreicht: Konfiguration gesichert, Rohdaten nicht. Bitte Projekt als JSON exportieren.':
+      'Storage limit reached: configuration saved, raw data not. Please export the project as JSON.',
+    'Die Demodaten ersetzen den aktuellen Arbeitsstand (DCs, Daten, Zuordnungen, Szenarien). Fortfahren?':
+      'The demo data replaces the current working state (DCs, data, allocations, scenarios). Continue?',
+    'Demodaten geladen: 5 DCs, {0} Datensätze über 36 Monate (24 Monate Historie, 12 Monate Forecast).':
+      'Demo data loaded: 5 DCs, {0} records over 36 months (24 months of history, 12 months of forecast).',
+
+    /* ---------- Export-Tabellen ---------- */
+    'NetPlan – Auswertung Logistik-Netzwerk': 'NetPlan – logistics network analysis',
+    'Erstellt am': 'Created on',
+    'Wert': 'Value',
+    'Einheit': 'Unit',
+    'Aktive Distributionszentren': 'Active distribution centres',
+    'Belegte Stellplätze': 'Occupied positions',
+    'davon Grundbelegung': 'of which base occupancy',
+    'davon zugeordneter Ziel-Bestand': 'of which allocated target stock',
+    'Ø Distanz (mengengewichtet)': 'Avg. distance (volume-weighted)',
+    'Punkte (0–100)': 'points (0–100)',
+    'Zuordnungen': 'Allocations',
+    'Parameter': 'Parameter',
+    'Zielreichweite global': 'Global target coverage',
+    'Sicherheitsaufschlag Bestand': 'Stock safety factor',
+    'Faktor': 'factor',
+    'Gewichtung Kapazität': 'Weighting capacity',
+    'Gewichtung Transport': 'Weighting transport',
+    'Gewichtung Zielreichweite': 'Weighting target coverage',
+    'Transportkosten je Paletten-km': 'Transport cost per pallet-km',
+    'Transport-Grundkosten je Palette': 'Transport base cost per pallet',
+    'Lagerkosten je Stellplatz/Monat': 'Storage cost per position/month',
+    'Handlingkosten je Palette': 'Handling cost per pallet',
+    'Volumen je Palette': 'Volume per pallet',
+    'Name': 'Name',
+    'Code': 'Code',
+    'Belegt gesamt': 'Total occupied',
+    'Auslastung %': 'Utilisation %',
+    'Volumen Paletten': 'Volume pallets',
+    'Transportkosten EUR': 'Transport cost EUR',
+    'Lagerkosten EUR': 'Storage cost EUR',
+    'Handlingkosten EUR': 'Handling cost EUR',
+    'Fixkosten EUR': 'Fixed cost EUR',
+    'Gesamtkosten EUR': 'Total cost EUR',
+    'Ø Distanz km': 'Avg. distance km',
+    'Zielreichweite Tage': 'Target coverage days',
+    'Ziel-Bestand Stellplätze': 'Target stock positions',
+    'Ø Transitzeit Tage': 'Avg. transit time days',
+    'Score Kapazität': 'Score capacity',
+    'Score Reichweite': 'Score coverage',
+    'Kapazität ausreichend': 'Capacity sufficient',
+    'ja': 'yes',
+    'nein': 'no',
+    'Beliefert aus DC': 'Served from DC',
+    'Distanz km': 'Distance km',
+    'Menge Stück': 'Quantity units',
+    'Umsatz EUR': 'Revenue EUR',
+    'Datensatztyp': 'Record type',
+    'Paletten (berechnet)': 'Pallets (calculated)',
+    'Reichweite (Tage)': 'Coverage (days)',
+    'Anteil %': 'Share %',
+    'Zeitraum Tage': 'Period days',
+    'Rohdaten': 'Raw data',
+    'Detailergebnisse': 'Detailed results',
+    'Regionszuordnung': 'Regional allocation',
+    'Zielreichweiten': 'Target coverage',
+    'z.B. DC Duisburg': 'e.g. DC Duisburg',
+    'z.B. DUI': 'e.g. DUI',
+    'z.B. Nordrhein-Westfalen': 'e.g. North Rhine-Westphalia',
+    'z.B. Deutschland': 'e.g. Germany',
+    '– keine Kategorien vorhanden –': '– no categories available –',
+    'T': 'd',
+    'Palette': 'pallet',
+    'Blatt': 'Sheet',
+
+    /* ---------- Demodaten (nur für den Beispieldatensatz) ---------- */
+    'Kühlgeräte': 'Refrigeration', 'Kleingeräte': 'Small appliances',
+    'Gartenmöbel': 'Garden furniture', 'Werkzeuge': 'Tools', 'Sanitärartikel': 'Sanitary ware',
+    'Deutschland Nord': 'Germany North', 'Deutschland West': 'Germany West',
+    'Deutschland Süd': 'Germany South', 'Deutschland Ost': 'Germany East',
+    'Niederlande': 'Netherlands', 'Belgien': 'Belgium', 'Frankreich': 'France',
+    'Italien': 'Italy', 'Spanien': 'Spain', 'Österreich': 'Austria', 'Polen': 'Poland',
+    'Tschechien': 'Czechia', 'Dänemark': 'Denmark', 'Schweden': 'Sweden',
+    'Deutschland': 'Germany',
+    'Handelshaus Nord': 'Northern Trading', 'BauMarkt Gruppe': 'BuildMart Group',
+    'Elektro Partner': 'Electro Partner', 'Fachhandel Süd': 'Southern Specialists',
+    'Online Retail EU': 'Online Retail EU', 'Möbelkette West': 'Furniture Chain West',
+    'Discount Kette': 'Discount Chain', 'Regionalhändler': 'Regional Dealer',
+    'KPI': 'KPI'
+  };
+
+  var DICT = { en: EN };
+
+  /* ==================================================================== *
+   *  Übersetzen
+   * ==================================================================== */
+  function t(text) {
+    if (lang === 'de' || text === null || text === undefined) return text;
+    var d = DICT[lang];
+    var hit = d && Object.prototype.hasOwnProperty.call(d, text) ? d[text] : undefined;
+    return hit === undefined ? text : hit;
+  }
+
+  /** Wie t(), zusätzlich mit Platzhaltern {0}, {1}, … */
+  function tf(text) {
+    var args = Array.prototype.slice.call(arguments, 1);
+    return String(t(text)).replace(/\{(\d+)\}/g, function (m, i) {
+      return args[i] === undefined ? m : args[i];
+    });
+  }
+
+  function locale() { return lang === 'en' ? 'en-GB' : 'de-DE'; }
+  function get() { return lang; }
+
+  /* ==================================================================== *
+   *  Statische Texte aus dem Dokument
+   * ==================================================================== */
+  var records = [];   // { node, attr, de }
+  var captured = false;
+
+  /** Erfasst den Auslieferungszustand des Dokuments (einmalig beim Start). */
+  function capture(root) {
+    if (captured) return;
+    captured = true;
+    var scope = root || document.body;
+
+    var walker = document.createTreeWalker(scope, NodeFilter.SHOW_TEXT, {
+      acceptNode: function (node) {
+        var p = node.parentNode;
+        if (!p || p.nodeName === 'SCRIPT' || p.nodeName === 'STYLE') return NodeFilter.FILTER_REJECT;
+        return node.nodeValue.trim() ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+      }
+    });
+    var node;
+    while ((node = walker.nextNode())) {
+      // Umbrüche und Einrückung aus dem Quelltext vereinheitlichen, damit der
+      // Schlüssel dem einzeiligen Wörterbucheintrag entspricht
+      records.push({
+        node: node, attr: null,
+        de: node.nodeValue.replace(/\s+/g, ' ').trim(),
+        raw: node.nodeValue
+      });
+    }
+
+    ['placeholder', 'title', 'aria-label'].forEach(function (attr) {
+      Array.prototype.forEach.call(scope.querySelectorAll('[' + attr + ']'), function (elem) {
+        records.push({ node: elem, attr: attr, de: elem.getAttribute(attr) });
+      });
+    });
+  }
+
+  /** Setzt alle erfassten Texte in der aktuellen Sprache. */
+  function applyStatic() {
+    records.forEach(function (r) {
+      var translated = t(r.de);
+      if (r.attr) {
+        r.node.setAttribute(r.attr, translated);
+      } else if (translated !== r.de) {
+        r.node.nodeValue = translated;
+      } else {
+        // Keine Übersetzung: den Auslieferungszustand wiederherstellen
+        r.node.nodeValue = r.raw;
+      }
+    });
+  }
+
+  function setLang(next) {
+    if (next !== 'de' && next !== 'en') return;
+    lang = next;
+    try { localStorage.setItem(STORAGE_KEY, next); } catch (e) { /* ignorieren */ }
+    document.documentElement.setAttribute('lang', next);
+    applyStatic();
+  }
+
+  function init() {
+    var stored = null;
+    try { stored = localStorage.getItem(STORAGE_KEY); } catch (e) { /* ignorieren */ }
+    lang = stored === 'en' ? 'en' : 'de';
+    capture();
+    document.documentElement.setAttribute('lang', lang);
+    applyStatic();
+  }
+
+  NS.i18n = {
+    t: t, tf: tf, get: get, setLang: setLang, init: init, locale: locale,
+    capture: capture, applyStatic: applyStatic,
+    /** Für Tests: meldet Schlüssel ohne Übersetzung. */
+    missing: function () {
+      return records.map(function (r) { return r.de; })
+        .filter(function (s) { return !Object.prototype.hasOwnProperty.call(EN, s); });
+    }
+  };
+})(window.LNP);
+
+</script>
+<script>
 /* ---- js/util.js ---- */
 /* =========================================================================
    util.js – Hilfsfunktionen (Formatierung, DOM, Geo, Datei-Download)
@@ -1985,31 +2747,45 @@ window.LNP = window.LNP || {};
   'use strict';
 
   /* ------------------------------------------------------------ Formatierung */
-  var nf0 = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 0 });
-  var nf1 = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-  var nf2 = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  /** Übersetzung; vor dem Laden von i18n.js wird der Originaltext geliefert. */
+  function t(s) { return NS.i18n ? NS.i18n.t(s) : s; }
+  function tf() { return NS.i18n ? NS.i18n.tf.apply(null, arguments) : arguments[0]; }
+
+  // Zahlenformate folgen der eingestellten Sprache und werden bei Bedarf neu gebaut
+  var _loc = null, nf0, nf1, nf2;
+  function rebuild() {
+    var loc = NS.i18n ? NS.i18n.locale() : 'de-DE';
+    if (loc === _loc) return;
+    _loc = loc;
+    nf0 = new Intl.NumberFormat(loc, { maximumFractionDigits: 0 });
+    nf1 = new Intl.NumberFormat(loc, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+    nf2 = new Intl.NumberFormat(loc, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  rebuild();
 
   var fmt = {
-    int: function (v) { return isFinite(v) ? nf0.format(Math.round(v)) : '–'; },
-    dec1: function (v) { return isFinite(v) ? nf1.format(v) : '–'; },
-    dec2: function (v) { return isFinite(v) ? nf2.format(v) : '–'; },
+    int: function (v) { rebuild(); return isFinite(v) ? nf0.format(Math.round(v)) : '–'; },
+    dec1: function (v) { rebuild(); return isFinite(v) ? nf1.format(v) : '–'; },
+    dec2: function (v) { rebuild(); return isFinite(v) ? nf2.format(v) : '–'; },
     /** Kompakte EUR-Darstellung: 1.234 € / 12,3 Tsd. € / 4,5 Mio. € */
     eur: function (v) {
+      rebuild();
       if (!isFinite(v)) return '–';
       var a = Math.abs(v);
-      if (a >= 1e6) return nf1.format(v / 1e6) + ' Mio. €';
-      if (a >= 1e4) return nf0.format(v / 1e3) + ' Tsd. €';
+      if (a >= 1e6) return nf1.format(v / 1e6) + (_loc === 'en-GB' ? ' M €' : ' Mio. €');
+      if (a >= 1e4) return nf0.format(v / 1e3) + (_loc === 'en-GB' ? ' k €' : ' Tsd. €');
       return nf0.format(v) + ' €';
     },
-    eurExact: function (v) { return isFinite(v) ? nf2.format(v) + ' €' : '–'; },
+    eurExact: function (v) { rebuild(); return isFinite(v) ? nf2.format(v) + ' €' : '–'; },
     pct: function (v, digits) {
+      rebuild();
       if (!isFinite(v)) return '–';
       return (digits === 1 ? nf1 : nf0).format(v * 100) + ' %';
     },
-    pct1: function (v) { return isFinite(v) ? nf1.format(v * 100) + ' %' : '–'; },
-    km: function (v) { return isFinite(v) ? nf0.format(v) + ' km' : '–'; },
-    days: function (v) { return isFinite(v) ? nf1.format(v) + ' Tage' : '–'; },
-    score: function (v) { return isFinite(v) ? nf1.format(v) : '–'; }
+    pct1: function (v) { rebuild(); return isFinite(v) ? nf1.format(v * 100) + ' %' : '–'; },
+    km: function (v) { rebuild(); return isFinite(v) ? nf0.format(v) + ' km' : '–'; },
+    days: function (v) { rebuild(); return isFinite(v) ? nf1.format(v) + ' ' + t('Tage') : '–'; },
+    score: function (v) { rebuild(); return isFinite(v) ? nf1.format(v) : '–'; }
   };
 
   /** Robuste Zahlenerkennung: akzeptiert "1.234,56", "1,234.56", "1 234", "45%" */
@@ -2188,7 +2964,7 @@ window.LNP = window.LNP || {};
   function renderTable(table, columns, rows, options) {
     var opt = options || {};
     var head = '<thead><tr>' + columns.map(function (c) {
-      return '<th class="' + (c.num ? 'num ' : '') + (c.wrap ? 'wrap' : '') + '">' + esc(c.label) + '</th>';
+      return '<th class="' + (c.num ? 'num ' : '') + (c.wrap ? 'wrap' : '') + '">' + esc(t(c.label)) + '</th>';
     }).join('') + '</tr></thead>';
 
     var body = '<tbody>' + (rows.length ? rows.map(function (r, i) {
@@ -2198,7 +2974,7 @@ window.LNP = window.LNP || {};
           var v = c.render ? c.render(r, i) : esc(r[c.key]);
           return '<td class="' + (c.num ? 'num ' : '') + (c.wrap ? 'wrap ' : '') + (c.cls || '') + '">' + v + '</td>';
         }).join('') + '</tr>';
-    }).join('') : '<tr><td class="t-muted" colspan="' + columns.length + '">Keine Daten vorhanden</td></tr>') + '</tbody>';
+    }).join('') : '<tr><td class="t-muted" colspan="' + columns.length + '">' + esc(t('Keine Daten vorhanden')) + '</td></tr>') + '</tbody>';
 
     table.innerHTML = head + body;
   }
@@ -2258,14 +3034,18 @@ window.LNP = window.LNP || {};
   function toast(message, kind) {
     var wrap = document.getElementById('toasts');
     if (!wrap) return;
-    var t = el('div', { class: 'toast is-' + (kind || 'good'), text: message });
-    wrap.appendChild(t);
+    var node = el('div', { class: 'toast is-' + (kind || 'good'), text: t(message) });
+    wrap.appendChild(node);
     setTimeout(function () {
-      t.style.transition = 'opacity .25s, transform .25s';
-      t.style.opacity = '0'; t.style.transform = 'translateX(12px)';
-      setTimeout(function () { t.remove(); }, 260);
+      node.style.transition = 'opacity .25s, transform .25s';
+      node.style.opacity = '0'; node.style.transform = 'translateX(12px)';
+      setTimeout(function () { node.remove(); }, 260);
     }, kind === 'error' ? 6000 : 3400);
   }
+
+  /** Rückfrage in der eingestellten Sprache. */
+  function ask(message) { return window.confirm(t(message)); }
+  function askText(message, preset) { return window.prompt(t(message), preset); }
 
   /* ------------------------------------------------------------ Download */
   function download(blob, filename) {
@@ -2317,7 +3097,7 @@ window.LNP = window.LNP || {};
     fmt: fmt, parseNum: parseNum, num: num, isNum: isNum, clamp: clamp, round: round, id: id, esc: esc, slug: slug,
     parsePeriod: parsePeriod, matchColumns: matchColumns, haversine: haversine, roadDistance: roadDistance, DETOUR: DETOUR,
     $: $, $$: $$, el: el, renderTable: renderTable, scoreBar: scoreBar,
-    toast: toast, download: download, downloadCSV: downloadCSV, timestamp: timestamp,
+    toast: toast, ask: ask, askText: askText, t: t, tf: tf, download: download, downloadCSV: downloadCSV, timestamp: timestamp,
     debounce: debounce, unique: unique, sum: sum
   };
 })(window.LNP);
@@ -2911,7 +3691,7 @@ window.LNP = window.LNP || {};
         label: 'Koordinaten', render: function (d) {
           return U.isNum(d.lat) && U.isNum(d.lng)
             ? '<span class="t-muted">' + fmt.dec2(d.lat) + ' / ' + fmt.dec2(d.lng) + '</span>'
-            : '<span class="badge badge-warn">fehlt</span>';
+            : '<span class="badge badge-warn">' + U.t('fehlt') + '</span>';
         }
       },
       { label: 'Kapazität', num: true, render: function (d) { return fmt.int(d.capacity); } },
@@ -2938,22 +3718,22 @@ window.LNP = window.LNP || {};
       {
         label: 'Sonderpreise', num: true, render: function (d) {
           var n = Object.keys(d.regionCosts || {}).length;
-          return n ? '<span class="badge">' + n + ' Region(en)</span>' : '<span class="t-muted">–</span>';
+          return n ? '<span class="badge">' + U.tf('{0} Region(en)', n) + '</span>' : '<span class="t-muted">–</span>';
         }
       },
       {
         label: 'Status', render: function (d) {
           return d.active
-            ? '<span class="badge badge-good">aktiv</span>'
-            : '<span class="badge">inaktiv</span>';
+            ? '<span class="badge badge-good">' + U.t('aktiv') + '</span>'
+            : '<span class="badge">' + U.t('inaktiv') + '</span>';
         }
       },
       {
         label: '', render: function (d) {
           return '<span class="tools">' +
-            '<button class="btn btn-xs" data-act="edit" data-id="' + d.id + '">Bearbeiten</button>' +
-            '<button class="btn btn-xs" data-act="dup" data-id="' + d.id + '">Duplizieren</button>' +
-            '<button class="btn btn-xs btn-danger" data-act="del" data-id="' + d.id + '">Löschen</button>' +
+            '<button class="btn btn-xs" data-act="edit" data-id="' + d.id + '">' + U.t('Bearbeiten') + '</button>' +
+            '<button class="btn btn-xs" data-act="dup" data-id="' + d.id + '">' + U.t('Duplizieren') + '</button>' +
+            '<button class="btn btn-xs btn-danger" data-act="del" data-id="' + d.id + '">' + U.t('Löschen') + '</button>' +
             '</span>';
         }
       }
@@ -2978,13 +3758,13 @@ window.LNP = window.LNP || {};
     var withCoords = act.filter(function (d) { return U.isNum(d.lat) && U.isNum(d.lng); }).length;
 
     var tiles = [
-      { label: 'Aktive DCs', value: fmt.int(act.length), sub: st.dcs.length - act.length + ' inaktiv', accent: 'var(--series-1)' },
+      { label: 'Aktive DCs', value: fmt.int(act.length), sub: U.tf('{0} inaktiv', st.dcs.length - act.length), accent: 'var(--series-1)' },
       { label: 'Gesamtkapazität', value: fmt.int(cap), unit: 'Stellplätze', accent: 'var(--series-3)' },
       {
         label: 'Belegung (inkl. Zuordnungen)', value: fmt.pct(cap > 0 ? used / cap : 0),
-        sub: fmt.int(used) + ' von ' + fmt.int(cap), bar: cap > 0 ? used / cap : 0, accent: 'var(--series-4)'
+        sub: U.tf('{0} von {1}', fmt.int(used), fmt.int(cap)), bar: cap > 0 ? used / cap : 0, accent: 'var(--series-4)'
       },
-      { label: 'Standorte mit Koordinaten', value: withCoords + ' / ' + act.length, sub: 'Grundlage für Distanzberechnung', accent: 'var(--series-7)' }
+      { label: 'Standorte mit Koordinaten', value: withCoords + ' / ' + act.length, sub: U.t('Grundlage für Distanzberechnung'), accent: 'var(--series-7)' }
     ];
     NS.charts.renderKPIs(U.$('#dc-kpis'), tiles);
   }
@@ -2995,7 +3775,7 @@ window.LNP = window.LNP || {};
     var dc = dcId ? S.getDC(dcId) : null;
     var s = S.settings();
 
-    U.$('#dc-modal-title').textContent = dc ? 'DC bearbeiten' : 'Neues Distributionszentrum';
+    U.$('#dc-modal-title').textContent = U.t(dc ? 'DC bearbeiten' : 'Neues Distributionszentrum');
     setVal('#dc-name', dc ? dc.name : '');
     setVal('#dc-code', dc ? dc.code : '');
     setVal('#dc-region', dc ? dc.region : '');
@@ -3011,10 +3791,10 @@ window.LNP = window.LNP || {};
     setVal('#dc-fixed', dc ? dc.fixedCostPerPeriod : 0);
     U.$('#dc-active').value = dc ? String(dc.active) : 'true';
 
-    U.$('#dc-storage').placeholder = 'Standard: ' + fmt.dec2(s.storageCostPerSlotMonth);
-    U.$('#dc-handling').placeholder = 'Standard: ' + fmt.dec2(s.handlingCostPerPallet);
-    U.$('#dc-transportBase').placeholder = 'Standard: ' + fmt.dec2(s.costBasePerPallet);
-    U.$('#dc-transportKm').placeholder = 'Standard: ' + fmt.dec2(s.costPerPalletKm);
+    U.$('#dc-storage').placeholder = U.tf('Standard: {0}', fmt.dec2(s.storageCostPerSlotMonth));
+    U.$('#dc-handling').placeholder = U.tf('Standard: {0}', fmt.dec2(s.handlingCostPerPallet));
+    U.$('#dc-transportBase').placeholder = U.tf('Standard: {0}', fmt.dec2(s.costBasePerPallet));
+    U.$('#dc-transportKm').placeholder = U.tf('Standard: {0}', fmt.dec2(s.costPerPalletKm));
 
     renderOverrides(dc ? dc.regionCosts : {});
     U.$('#dc-modal').classList.remove('hidden');
@@ -3044,8 +3824,8 @@ window.LNP = window.LNP || {};
   function overrideRow(region, cost) {
     var options = S.regionKeys('all');
     var row = U.el('div', { class: 'override-row' });
-    var list = U.el('input', { class: 'input input-sm', list: 'region-options', value: region || '', placeholder: 'Region / Land' });
-    var val = U.el('input', { class: 'input input-sm', type: 'number', step: '0.5', min: '0', value: cost === undefined ? '' : cost, placeholder: 'EUR je Palette' });
+    var list = U.el('input', { class: 'input input-sm', list: 'region-options', value: region || '', placeholder: U.t('Region / Land') });
+    var val = U.el('input', { class: 'input input-sm', type: 'number', step: '0.5', min: '0', value: cost === undefined ? '' : cost, placeholder: U.t('EUR je Palette') });
     var del = U.el('button', { class: 'icon-btn', type: 'button', text: '✕', onclick: function () { row.remove(); } });
     row.appendChild(list); row.appendChild(val); row.appendChild(del);
 
@@ -3096,12 +3876,12 @@ window.LNP = window.LNP || {};
       var guess = NS.geo.lookup(payload.region || payload.name, payload.country);
       if (guess) {
         payload.lat = guess.lat; payload.lng = guess.lng;
-        U.toast('Koordinaten für „' + (payload.region || payload.name) + '“ automatisch ergänzt.', 'good');
+        U.toast(U.tf('Koordinaten für „{0}“ automatisch ergänzt.', payload.region || payload.name), 'good');
       }
     }
 
-    if (editingId) { S.updateDC(editingId, payload); U.toast('DC „' + payload.name + '“ aktualisiert.'); }
-    else { S.addDC(payload); U.toast('DC „' + payload.name + '“ angelegt.'); }
+    if (editingId) { S.updateDC(editingId, payload); U.toast(U.tf('DC „{0}“ aktualisiert.', payload.name)); }
+    else { S.addDC(payload); U.toast(U.tf('DC „{0}“ angelegt.', payload.name)); }
 
     closeModal();
   }
@@ -3147,7 +3927,7 @@ window.LNP = window.LNP || {};
       S.addDC(dc);
       added++;
     });
-    U.toast(added + ' Distributionszentren importiert.', 'good');
+    U.toast(U.tf('{0} Distributionszentren importiert.', added), 'good');
   }
 
   /* ------------------------------------------------------------ Events */
@@ -3178,13 +3958,13 @@ window.LNP = window.LNP || {};
         if (src) {
           var copy = JSON.parse(JSON.stringify(src));
           delete copy.id;
-          copy.name = src.name + ' (Kopie)';
+          copy.name = src.name + ' ' + U.t('(Kopie)');
           S.addDC(copy);
           U.toast('DC dupliziert.');
         }
       } else if (act === 'del') {
         var dc = S.getDC(dcId);
-        if (dc && confirm('DC „' + dc.name + '“ wirklich löschen? Bestehende Zuordnungen zu diesem Standort werden entfernt.')) {
+        if (dc && window.confirm(U.tf('DC „{0}“ wirklich löschen? Bestehende Zuordnungen zu diesem Standort werden entfernt.', dc.name))) {
           S.removeDC(dcId);
           U.toast('DC gelöscht.', 'warn');
         }
@@ -3196,7 +3976,7 @@ window.LNP = window.LNP || {};
       var file = e.target.files && e.target.files[0];
       if (!file) return;
       NS.data.readFile(file, function (err, result) {
-        if (err) { U.toast('Datei konnte nicht gelesen werden: ' + err.message, 'error'); return; }
+        if (err) { U.toast(U.tf('Datei konnte nicht gelesen werden: {0}', err.message), 'error'); return; }
         importFromRows(result.rows);
         e.target.value = '';
       });
@@ -3304,14 +4084,14 @@ window.LNP = window.LNP || {};
     var grid = U.$('#mapping-grid');
     var map = pending.map;
     grid.innerHTML = FIELDS.map(function (f) {
-      var opts = ['<option value="">– nicht zugeordnet –</option>'].concat(
+      var opts = ['<option value="">' + U.t('– nicht zugeordnet –') + '</option>'].concat(
         pending.headers.map(function (h) {
           return '<option value="' + U.esc(h) + '"' + (map[f.key] === h ? ' selected' : '') + '>' + U.esc(h) + '</option>';
         })
       ).join('');
       return '<label class="map-field">' +
-        '<span>' + U.esc(f.label) + (f.required ? ' <i class="req">*</i>' : '') +
-        (map[f.key] ? '<i class="auto">erkannt</i>' : '') + '</span>' +
+        '<span>' + U.esc(U.t(f.label)) + (f.required ? ' <i class="req">*</i>' : '') +
+        (map[f.key] ? '<i class="auto">' + U.t('erkannt') + '</i>' : '') + '</span>' +
         '<select class="input input-sm" data-field="' + f.key + '">' + opts + '</select>' +
         '</label>';
     }).join('');
@@ -3327,25 +4107,25 @@ window.LNP = window.LNP || {};
 
   function validateMapping() {
     var warn = U.$('#mapping-warn');
-    var problems = [];
+    var problems = [];   // { text, blocking }
     var map = pending.map;
 
     FIELDS.filter(function (f) { return f.required; }).forEach(function (f) {
-      if (!map[f.key]) problems.push('Pflichtfeld „' + f.label + '“ ist nicht zugeordnet.');
+      if (!map[f.key]) problems.push({ blocking: true, text: U.tf('Pflichtfeld „{0}“ ist nicht zugeordnet.', U.t(f.label)) });
     });
     if (!map.qty && !map.pallets && !map.palletEq && !map.volume && !map.revenue) {
-      problems.push('Mindestens eine Kennzahl (Menge, Paletten, Paletten-Äquivalent, Volumen oder Umsatz) muss zugeordnet sein.');
+      problems.push({ blocking: true, text: U.t('Mindestens eine Kennzahl (Menge, Paletten, Paletten-Äquivalent, Volumen oder Umsatz) muss zugeordnet sein.') });
     }
     if (!map.region && !map.country && !map.customer) {
-      problems.push('Für die Distanzberechnung wird eine Regions-, Länder- oder Kundenspalte benötigt.');
+      problems.push({ blocking: true, text: U.t('Für die Distanzberechnung wird eine Regions-, Länder- oder Kundenspalte benötigt.') });
     }
     if (!map.pallets && !map.palletEq && !map.volume && map.qty) {
-      problems.push('Hinweis: Paletten werden aus der Menge über „Stück je Palette“ (' + fmt.int(S.settings().qtyPerPallet) + ') umgerechnet.');
+      problems.push({ blocking: false, text: U.tf('Hinweis: Paletten werden aus der Menge über „Stück je Palette“ ({0}) umgerechnet.', fmt.int(S.settings().qtyPerPallet)) });
     }
 
-    var blocking = problems.filter(function (p) { return p.indexOf('Hinweis:') !== 0; });
+    var blocking = problems.filter(function (p) { return p.blocking; });
     warn.classList.toggle('hidden', problems.length === 0);
-    warn.innerHTML = problems.map(function (p) { return '• ' + U.esc(p); }).join('<br>');
+    warn.innerHTML = problems.map(function (p) { return '• ' + U.esc(p.text); }).join('<br>');
     U.$('#btn-confirm-import').disabled = blocking.length > 0;
   }
 
@@ -3437,9 +4217,9 @@ window.LNP = window.LNP || {};
     S.syncRegions();
     S.emit('regions');
 
-    var msg = fmt.int(before) + ' Zeilen eingelesen';
-    if (doCompact && records.length < before) msg += ', auf ' + fmt.int(records.length) + ' Datensätze verdichtet';
-    if (built.badPeriods) msg += ' – ' + built.badPeriods + ' Zeilen ohne lesbare Periode übersprungen';
+    var msg = U.tf('{0} Zeilen eingelesen', fmt.int(before));
+    if (doCompact && records.length < before) msg += U.tf(', auf {0} Datensätze verdichtet', fmt.int(records.length));
+    if (built.badPeriods) msg += U.tf(' – {0} Zeilen ohne lesbare Periode übersprungen', built.badPeriods);
     U.toast(msg + '.', built.badPeriods ? 'warn' : 'good');
 
     cancelImport();
@@ -3455,7 +4235,7 @@ window.LNP = window.LNP || {};
 
   function handleFile(file, sheetName) {
     readFile(file, function (err, res) {
-      if (err) { U.toast('Import fehlgeschlagen: ' + err.message, 'error'); return; }
+      if (err) { U.toast(U.tf('Import fehlgeschlagen: {0}', err.message), 'error'); return; }
       if (!res.rows.length) { U.toast('Die Datei enthält keine Datenzeilen.', 'warn'); return; }
 
       pending = {
@@ -3475,8 +4255,8 @@ window.LNP = window.LNP || {};
       }
 
       U.$('#mapping-file').textContent = file.name +
-        (res.sheetName ? ' · Blatt „' + res.sheetName + '“' : '') +
-        ' · ' + fmt.int(res.rows.length) + ' Zeilen';
+        (res.sheetName ? ' · ' + res.sheetName : '') +
+        ' · ' + U.tf('{0} Zeilen eingelesen', fmt.int(res.rows.length));
       U.$('#card-mapping').classList.remove('hidden');
       renderMapping();
       renderPreview();
@@ -3501,15 +4281,15 @@ window.LNP = window.LNP || {};
     var pal = U.sum(st.records, function (r) { return S.recordPallets(r); });
 
     var chips = [
-      ['Historie', fmt.int(hist.length) + ' Datensätze'],
-      ['Forecast', fmt.int(fc.length) + ' Datensätze'],
+      ['Historie', U.tf('{0} Datensätze', fmt.int(hist.length))],
+      ['Forecast', U.tf('{0} Datensätze', fmt.int(fc.length))],
       ['Kategorien', fmt.int(cats.length)],
       ['Regionen', fmt.int(regs.length)],
       ['Perioden', fmt.int(pers.length) + (pers.length ? ' (' + pers[0] + ' – ' + pers[pers.length - 1] + ')' : '')],
-      ['Volumen gesamt', fmt.int(pal) + ' Paletten']
+      ['Volumen gesamt', U.tf('{0} Paletten', fmt.int(pal))]
     ];
     wrap.innerHTML = chips.map(function (c) {
-      return '<span class="chip">' + U.esc(c[0]) + ' <b>' + U.esc(c[1]) + '</b></span>';
+      return '<span class="chip">' + U.esc(U.t(c[0])) + ' <b>' + U.esc(c[1]) + '</b></span>';
     }).join('');
   }
 
@@ -3519,7 +4299,7 @@ window.LNP = window.LNP || {};
     var shown = recs.slice(0, 150);
 
     U.renderTable(U.$('#table-data'), [
-      { label: 'Typ', render: function (r) { return r.dataset === 'forecast' ? '<span class="badge">Forecast</span>' : '<span class="badge">Historie</span>'; } },
+      { label: 'Typ', render: function (r) { return '<span class="badge">' + U.t(r.dataset === 'forecast' ? 'Forecast' : 'Historie') + '</span>'; } },
       { label: 'Periode', render: function (r) { return U.esc(r.period); } },
       { label: 'Kategorie', render: function (r) { return U.esc(r.category); } },
       { label: 'Region', render: function (r) { return U.esc(r.regionKey); } },
@@ -3531,8 +4311,8 @@ window.LNP = window.LNP || {};
     ], shown);
 
     U.$('#data-foot').textContent = recs.length > shown.length
-      ? 'Anzeige der ersten ' + shown.length + ' von ' + fmt.int(recs.length) + ' Datensätzen.'
-      : (recs.length ? fmt.int(recs.length) + ' Datensätze' : '');
+      ? U.tf('Anzeige der ersten {0} von {1} Datensätzen.', shown.length, fmt.int(recs.length))
+      : (recs.length ? U.tf('{0} Datensätze', fmt.int(recs.length)) : '');
   }
 
   function renderCoverage() {
@@ -3613,8 +4393,8 @@ window.LNP = window.LNP || {};
       },
       {
         label: 'Quelle', render: function (r) {
-          if (!U.isNum(r.lat) || !U.isNum(r.lng)) return '<span class="badge badge-warn">Koordinaten fehlen</span>';
-          return '<span class="badge">' + U.esc(r.source) + '</span>';
+          if (!U.isNum(r.lat) || !U.isNum(r.lng)) return '<span class="badge badge-warn">' + U.t('Koordinaten fehlen') + '</span>';
+          return '<span class="badge">' + U.esc(U.t(r.source)) + '</span>';
         }
       }
     ], rows);
@@ -3642,7 +4422,7 @@ window.LNP = window.LNP || {};
     });
     S.emit('regions');
     renderRegions();
-    U.toast(filled + ' Regionen automatisch ergänzt' + (open ? ', ' + open + ' weiterhin offen' : '') + '.', open ? 'warn' : 'good');
+    U.toast(U.tf('{0} Regionen automatisch ergänzt', filled) + (open ? U.tf(', {0} weiterhin offen', open) : '') + '.', open ? 'warn' : 'good');
   }
 
   function syncConfigInputs() {
@@ -3707,8 +4487,8 @@ window.LNP = window.LNP || {};
 
     U.$('#btn-clear-data').addEventListener('click', function () {
       var filter = U.$('#data-filter-dataset').value;
-      var label = filter === 'history' ? 'der Historie' : (filter === 'forecast' ? 'des Forecasts' : 'aller Datenbestände');
-      if (!confirm('Datensätze ' + label + ' wirklich löschen?')) return;
+      var label = U.t(filter === 'history' ? 'der Historie' : (filter === 'forecast' ? 'des Forecasts' : 'aller Datenbestände'));
+      if (!window.confirm(U.tf('Datensätze {0} wirklich löschen?', label))) return;
       S.clearRecords(filter);
       render();
       U.toast('Datensätze gelöscht.', 'warn');
@@ -3725,7 +4505,7 @@ window.LNP = window.LNP || {};
       S.categories('all').forEach(function (c) { st.settings.targetDaysByCategory[c] = v; });
       S.emit('settings');
       renderCoverage();
-      U.toast('Zielreichweite von ' + v + ' Tagen auf alle Kategorien angewendet.', 'good');
+      U.toast(U.tf('Zielreichweite von {0} Tagen auf alle Kategorien angewendet.', v), 'good');
     });
 
     S.onChange(function (reason) {
@@ -4404,6 +5184,7 @@ window.LNP = window.LNP || {};
   'use strict';
 
   var U = NS.util;
+  function t(s) { return NS.i18n ? NS.i18n.t(s) : s; }
   var registry = Object.create(null);   // canvasId -> Chart-Instanz
   var MAX_SERIES = 8;
 
@@ -4483,7 +5264,7 @@ window.LNP = window.LNP || {};
       stacked: !!o.stacked,
       beginAtZero: true
     };
-    if (o.title) scale.title = { display: true, text: o.title, color: c.muted, font: { size: 11 } };
+    if (o.title) scale.title = { display: true, text: t(o.title), color: c.muted, font: { size: 11 } };
     return scale;
   }
 
@@ -4514,7 +5295,8 @@ window.LNP = window.LNP || {};
     var horizontal = !!o.horizontal;
 
     var ds = datasets.map(function (d, i) {
-      return Object.assign({
+      return Object.assign({}, d, {
+        label: t(d.label),
         backgroundColor: d.color || seriesColor(i),
         borderColor: c.surface,
         borderWidth: o.stacked ? 2 : 0,
@@ -4523,7 +5305,7 @@ window.LNP = window.LNP || {};
         barPercentage: 0.78,
         categoryPercentage: 0.8,
         maxBarThickness: o.maxBarThickness || 46
-      }, d);
+      });
     });
 
     return render(canvasId, {
@@ -4566,7 +5348,7 @@ window.LNP = window.LNP || {};
     node.style.display = '';
     node.innerHTML = items.map(function (it) {
       return '<span class="legend-item"><i class="legend-swatch' + (it.kind === 'line' ? ' line' : '') +
-        '" style="background:' + it.color + '"></i>' + U.esc(it.label) + '</span>';
+        '" style="background:' + it.color + '"></i>' + U.esc(t(it.label)) + '</span>';
     }).join('');
   }
 
@@ -4578,14 +5360,14 @@ window.LNP = window.LNP || {};
   function renderKPIs(target, tiles) {
     var node = typeof target === 'string' ? U.$(target) : target;
     if (!node) return;
-    node.innerHTML = tiles.map(function (t) {
-      var accent = t.accent || 'var(--accent)';
-      var barHtml = t.bar === undefined || t.bar === null ? '' :
-        '<div class="kpi-bar"><span style="width:' + U.clamp(t.bar * 100, 0, 100).toFixed(1) + '%"></span></div>';
+    node.innerHTML = tiles.map(function (tile) {
+      var accent = tile.accent || 'var(--accent)';
+      var barHtml = tile.bar === undefined || tile.bar === null ? '' :
+        '<div class="kpi-bar"><span style="width:' + U.clamp(tile.bar * 100, 0, 100).toFixed(1) + '%"></span></div>';
       return '<div class="kpi" style="--kpi-accent:' + accent + '">' +
-        '<div class="kpi-label">' + U.esc(t.label) + '</div>' +
-        '<div class="kpi-value">' + t.value + (t.unit ? '<span class="kpi-unit">' + U.esc(t.unit) + '</span>' : '') + '</div>' +
-        (t.sub ? '<div class="kpi-sub">' + t.sub + '</div>' : '') +
+        '<div class="kpi-label">' + U.esc(t(tile.label)) + '</div>' +
+        '<div class="kpi-value">' + tile.value + (tile.unit ? '<span class="kpi-unit">' + U.esc(t(tile.unit)) + '</span>' : '') + '</div>' +
+        (tile.sub ? '<div class="kpi-sub">' + tile.sub + '</div>' : '') +
         barHtml +
         '</div>';
     }).join('');
@@ -4664,8 +5446,8 @@ window.LNP = window.LNP || {};
     U.$('#w-capacity-out').textContent = w.capacity + ' %';
     U.$('#w-transport-out').textContent = w.transport + ' %';
     U.$('#w-service-out').textContent = w.service + ' %';
-    U.$('#weights-note').textContent = 'Normiert: Kapazität ' + fmt.pct(n.capacity) +
-      ' · Transport ' + fmt.pct(n.transport) + ' · Reichweite ' + fmt.pct(n.service);
+    U.$('#weights-note').textContent = U.tf('Normiert: Kapazität {0} · Transport {1} · Reichweite {2}',
+      fmt.pct(n.capacity), fmt.pct(n.transport), fmt.pct(n.service));
     S.settings().weights = w;
   }
 
@@ -4679,7 +5461,7 @@ window.LNP = window.LNP || {};
     var prevCat = catSel.value;
     catSel.innerHTML = cats.length
       ? cats.map(function (c) { return '<option value="' + U.esc(c) + '">' + U.esc(c) + '</option>'; }).join('')
-      : '<option value="">– keine Kategorien vorhanden –</option>';
+      : '<option value="">' + U.t('– keine Kategorien vorhanden –') + '</option>';
     if (cats.indexOf(prevCat) >= 0) catSel.value = prevCat;
 
     var pers = S.periods(dataset);
@@ -4723,17 +5505,17 @@ window.LNP = window.LNP || {};
     if (res.error) { U.toast(res.error, 'error'); return; }
     lastResult = res;
     renderResult(res);
-    U.toast('Simulation für „' + p.category + '“ abgeschlossen.', 'good');
+    U.toast(U.tf('Simulation für „{0}“ abgeschlossen.', p.category), 'good');
   }
 
   function simulateAll() {
     var p = params();
     if (!S.activeDCs().length) { U.toast('Es ist kein aktives Distributionszentrum vorhanden.', 'warn'); return; }
     if (!S.categories(p.dataset).length) { U.toast('Keine Kategorien in der gewählten Datenbasis.', 'warn'); return; }
-    if (!confirm('Alle Kategorien werden nacheinander simuliert und zugeordnet (volumenstärkste zuerst). Bestehende Zuordnungen werden dabei ersetzt. Fortfahren?')) return;
+    if (!U.ask('Alle Kategorien werden nacheinander simuliert und zugeordnet (volumenstärkste zuerst). Bestehende Zuordnungen werden dabei ersetzt. Fortfahren?')) return;
 
     var out = NS.sim.runAll(p);
-    U.toast(out.count + ' Kategorien simuliert und zugeordnet.', 'good');
+    U.toast(U.tf('{0} Kategorien simuliert und zugeordnet.', out.count), 'good');
     if (out.results && out.results.length) {
       var current = out.results.find(function (r) { return r.category === p.category; }) || out.results[0];
       lastResult = current;
@@ -4763,11 +5545,11 @@ window.LNP = window.LNP || {};
 
     var head, sub;
     if (isSplit) {
-      head = 'Aufteilung auf ' + res.parts.length + ' Standorte';
-      sub = 'Kategorie „' + res.category + '“ – kombinierte Belieferung nach regionaler Nähe und verfügbarer Kapazität.';
+      head = U.tf('Aufteilung auf {0} Standorte', res.parts.length);
+      sub = U.tf('Kategorie „{0}“ – kombinierte Belieferung nach regionaler Nähe und verfügbarer Kapazität.', res.category);
     } else {
       head = best.dcName;
-      sub = 'Kategorie „' + res.category + '“ vollständig aus diesem Distributionszentrum.';
+      sub = U.tf('Kategorie „{0}“ vollständig aus diesem Distributionszentrum.', res.category);
     }
 
     var badges = res.parts.map(function (p) {
@@ -4776,15 +5558,15 @@ window.LNP = window.LNP || {};
     }).join('');
 
     var warnings = [];
-    if (!res.metrics.feasible) warnings.push('Die Kapazität reicht für den Ziel-Bestand nicht aus.');
-    if (res.overflowPallets > 0) warnings.push(fmt.int(res.overflowPallets) + ' Paletten konnten nicht kapazitätsgerecht untergebracht werden.');
-    if (d.regionsWithoutCoords > 0) warnings.push(d.regionsWithoutCoords + ' Region(en) ohne Koordinaten – für diese wird eine mittlere Netzdistanz angenommen.');
+    if (!res.metrics.feasible) warnings.push(U.t('Die Kapazität reicht für den Ziel-Bestand nicht aus.'));
+    if (res.overflowPallets > 0) warnings.push(U.tf('{0} Paletten konnten nicht kapazitätsgerecht untergebracht werden.', fmt.int(res.overflowPallets)));
+    if (d.regionsWithoutCoords > 0) warnings.push(U.tf('{0} Region(en) ohne Koordinaten – für diese wird eine mittlere Netzdistanz angenommen.', d.regionsWithoutCoords));
 
     var runnerUp = res.candidates.length > 1 ? res.candidates[1] : null;
     var reason = buildReason(res, runnerUp);
 
     card.innerHTML =
-      '<span class="reco-tag">Empfehlung</span>' +
+      '<span class="reco-tag">' + U.t('Empfehlung') + '</span>' +
       '<h2>' + U.esc(head) + '</h2>' +
       '<p class="reco-sub">' + U.esc(sub) + '</p>' +
       (isSplit ? '<div class="reco-split">' + badges + '</div>' : '') +
@@ -4793,9 +5575,9 @@ window.LNP = window.LNP || {};
         warnings.map(function (w) { return '• ' + U.esc(w); }).join('<br>') + '</div>' : '') +
       '<div class="reco-metrics">' +
       metric('Gesamt-Score', fmt.dec1(res.metrics.score) + ' <span class="kpi-unit">/100</span>') +
-      metric('Volumen', fmt.int(d.totalPallets) + ' <span class="kpi-unit">Pal.</span>') +
-      metric('Ziel-Bestand', fmt.int(res.metrics.requiredSlots) + ' <span class="kpi-unit">Plätze</span>') +
-      metric('Zielreichweite', fmt.int(res.targetDays) + ' <span class="kpi-unit">Tage</span>') +
+      metric('Volumen', fmt.int(d.totalPallets) + ' <span class="kpi-unit">' + U.t('Pal.') + '</span>') +
+      metric('Ziel-Bestand', fmt.int(res.metrics.requiredSlots) + ' <span class="kpi-unit">' + U.t('Plätze') + '</span>') +
+      metric('Zielreichweite', fmt.int(res.targetDays) + ' <span class="kpi-unit">' + U.t('Tage') + '</span>') +
       metric('Ø Distanz', isFinite(res.metrics.avgDistance) ? fmt.km(res.metrics.avgDistance) : '–') +
       metric('Transportkosten', fmt.eur(res.metrics.transportCost)) +
       metric('Gesamtkosten', fmt.eur(res.metrics.totalCost)) +
@@ -4804,7 +5586,7 @@ window.LNP = window.LNP || {};
   }
 
   function metric(label, value) {
-    return '<div class="reco-metric"><span>' + U.esc(label) + '</span><b>' + value + '</b></div>';
+    return '<div class="reco-metric"><span>' + U.esc(U.t(label)) + '</span><b>' + value + '</b></div>';
   }
 
   /** Formuliert, welches Kriterium den Ausschlag gegeben hat. */
@@ -4815,15 +5597,15 @@ window.LNP = window.LNP || {};
     var names = { capacity: 'Kapazität und Auslastungsbalance', transport: 'Transportkosten bzw. Kundennähe', service: 'Einhaltung der Zielreichweite' };
     var top = Object.keys(c).sort(function (a, b) { return c[b] - c[a]; })[0];
 
-    var txt = 'Ausschlaggebend ist <b>' + names[top] + '</b> mit ' + fmt.dec1(c[top]) +
-      ' von ' + fmt.dec1(best.scores.total) + ' Punkten (Teil-Score ' + fmt.dec1(best.scores[top]) + ').';
+    var txt = U.tf('Ausschlaggebend ist <b>{0}</b> mit {1} von {2} Punkten (Teil-Score {3}).',
+      U.t(names[top]), fmt.dec1(c[top]), fmt.dec1(best.scores.total), fmt.dec1(best.scores[top]));
 
     if (runnerUp && runnerUp.dcId !== best.dcId) {
       var delta = best.scores.total - runnerUp.scores.total;
-      txt += ' Der Abstand zum zweitplatzierten Standort ' + U.esc(runnerUp.dcName) + ' beträgt ' +
-        fmt.dec1(delta) + ' Punkte' +
+      txt += U.tf(' Der Abstand zum zweitplatzierten Standort {0} beträgt {1} Punkte',
+        U.esc(runnerUp.dcName), fmt.dec1(delta)) +
         (isFinite(best.costPerPallet) && isFinite(runnerUp.costPerPallet)
-          ? ' bei ' + fmt.dec2(runnerUp.costPerPallet - best.costPerPallet) + ' € Unterschied je Palette.' : '.');
+          ? U.tf(' bei {0} € Unterschied je Palette.', fmt.dec2(runnerUp.costPerPallet - best.costPerPallet)) : '.');
     }
     return txt;
   }
@@ -4840,7 +5622,7 @@ window.LNP = window.LNP || {};
           return '<span style="display:inline-flex;align-items:center;gap:7px">' +
             '<i class="dc-dot" style="background:' + NS.charts.seriesColor(NS.dcs.dcIndex(r.dcId)) + '"></i><b>' +
             U.esc(r.dcName) + '</b>' +
-            (usedIds.indexOf(r.dcId) >= 0 ? ' <span class="badge badge-good">gewählt</span>' : '') + '</span>';
+            (usedIds.indexOf(r.dcId) >= 0 ? ' <span class="badge badge-good">' + U.t('gewählt') + '</span>' : '') + '</span>';
         }
       },
       { label: 'Gesamt-Score', num: true, render: function (r) { return U.scoreBar(r.scores.total, NS.charts.seriesColor(NS.dcs.dcIndex(r.dcId))); } },
@@ -4848,7 +5630,7 @@ window.LNP = window.LNP || {};
       { label: 'Transport', num: true, render: function (r) { return fmt.dec1(r.scores.transport); } },
       { label: 'Reichweite', num: true, render: function (r) { return fmt.dec1(r.scores.service); } },
       { label: 'Ø Distanz', num: true, render: function (r) { return isFinite(r.avgDistance) ? fmt.km(r.avgDistance) : '–'; } },
-      { label: 'Transit', num: true, render: function (r) { return isFinite(r.avgTransitDays) ? fmt.dec1(r.avgTransitDays) + ' T' : '–'; } },
+      { label: 'Transit', num: true, render: function (r) { return isFinite(r.avgTransitDays) ? fmt.dec1(r.avgTransitDays) + ' ' + U.t('T') : '–'; } },
       { label: '€/Palette', num: true, render: function (r) { return fmt.dec2(r.costPerPallet); } },
       { label: 'Transportkosten', num: true, render: function (r) { return fmt.eur(r.transportCost); } },
       { label: 'Ziel-Bestand', num: true, render: function (r) { return fmt.int(r.requiredSlots); } },
@@ -4861,12 +5643,12 @@ window.LNP = window.LNP || {};
       },
       {
         label: 'Reichweite erreichbar', num: true, render: function (r) {
-          return fmt.dec1(r.achievableDays) + ' / ' + fmt.int(res.targetDays) + ' T';
+          return fmt.dec1(r.achievableDays) + ' / ' + fmt.int(res.targetDays) + ' ' + U.t('T');
         }
       },
       {
         label: 'Kapazität', render: function (r) {
-          return r.feasible ? '<span class="badge badge-good">ausreichend</span>' : '<span class="badge badge-crit">zu klein</span>';
+          return r.feasible ? '<span class="badge badge-good">' + U.t('ausreichend') + '</span>' : '<span class="badge badge-crit">' + U.t('zu klein') + '</span>';
         }
       }
     ], rows, {
@@ -4886,17 +5668,17 @@ window.LNP = window.LNP || {};
       stacked: true,
       horizontal: true,
       valueFormat: function (v) { return fmt.int(v); },
-      tooltipFormat: function (v) { return fmt.dec1(v) + ' Punkte'; },
+      tooltipFormat: function (v) { return U.tf('{0} Punkte', fmt.dec1(v)); },
       tooltipFooter: function (items) {
         var r = top[items[0].dataIndex];
-        return 'Gesamt: ' + fmt.dec1(r.scores.total) + ' / 100';
+        return U.tf('Gesamt: {0} / 100', fmt.dec1(r.scores.total));
       }
     });
 
     NS.charts.legend('#legend-score', [
-      { label: 'Kapazität & Balance (' + fmt.pct(res.weights.capacity) + ')', color: NS.charts.seriesColor(0) },
-      { label: 'Transport / Distanz (' + fmt.pct(res.weights.transport) + ')', color: NS.charts.seriesColor(1) },
-      { label: 'Zielreichweite (' + fmt.pct(res.weights.service) + ')', color: NS.charts.seriesColor(2) }
+      { label: U.tf('Kapazität & Balance ({0})', fmt.pct(res.weights.capacity)), color: NS.charts.seriesColor(0) },
+      { label: U.tf('Transport / Distanz ({0})', fmt.pct(res.weights.transport)), color: NS.charts.seriesColor(1) },
+      { label: U.tf('Zielreichweite ({0})', fmt.pct(res.weights.service)), color: NS.charts.seriesColor(2) }
     ]);
   }
 
@@ -4942,7 +5724,7 @@ window.LNP = window.LNP || {};
     var inputs = U.$$('#table-split input[data-dc]');
     var total = U.sum(inputs, function (i) { return U.num(i.value, 0); });
     var node = U.$('#split-sum');
-    node.textContent = 'Summe der Anteile: ' + fmt.dec1(total) + ' %';
+    node.textContent = U.tf('Summe der Anteile: {0} %', fmt.dec1(total));
     node.className = Math.abs(total - 100) > 0.5 ? 'hint t-warn' : 'hint';
   }
 
@@ -4982,10 +5764,10 @@ window.LNP = window.LNP || {};
       {
         label: 'Distanz', num: true, render: function (r) {
           return (isFinite(r.distance) ? fmt.km(r.distance) : '–') +
-            (r.distanceKnown === false ? ' <span class="badge badge-warn">geschätzt</span>' : '');
+            (r.distanceKnown === false ? ' <span class="badge badge-warn">' + U.t('geschätzt') + '</span>' : '');
         }
       },
-      { label: 'Transit', num: true, render: function (r) { return isFinite(r.transitDays) ? fmt.dec1(r.transitDays) + ' T' : '–'; } },
+      { label: 'Transit', num: true, render: function (r) { return isFinite(r.transitDays) ? fmt.dec1(r.transitDays) + ' ' + U.t('T') : '–'; } },
       { label: '€/Palette', num: true, render: function (r) { return fmt.dec2(r.costPerPallet); } },
       { label: 'Transportkosten', num: true, render: function (r) { return fmt.eur(r.cost); } }
     ], rows);
@@ -5006,7 +5788,7 @@ window.LNP = window.LNP || {};
 
     U.renderTable(U.$('#table-assignments'), [
       { label: 'Produktkategorie', render: function (r) { return '<b>' + U.esc(r.category) + '</b>'; } },
-      { label: 'Modus', render: function (r) { return r.mode === 'single' ? 'Alleinzuordnung' : (r.mode === 'split' ? 'Split' : 'manuell'); } },
+      { label: 'Modus', render: function (r) { return U.t(r.mode === 'single' ? 'Alleinzuordnung' : (r.mode === 'split' ? 'Split' : 'manuell')); } },
       {
         label: 'Zuordnung', wrap: true, render: function (r) {
           return r.parts.map(function (p) {
@@ -5015,7 +5797,7 @@ window.LNP = window.LNP || {};
           }).join(' ');
         }
       },
-      { label: 'Reichweite', num: true, render: function (r) { return fmt.int(r.targetDays) + ' T'; } },
+      { label: 'Reichweite', num: true, render: function (r) { return fmt.int(r.targetDays) + ' ' + U.t('T'); } },
       { label: 'Volumen (Pal.)', num: true, render: function (r) { return fmt.int(r.metrics.pallets); } },
       { label: 'Ziel-Bestand', num: true, render: function (r) { return fmt.int(r.metrics.requiredSlots); } },
       { label: 'Gesamtkosten', num: true, render: function (r) { return fmt.eur(r.metrics.totalCost); } },
@@ -5023,8 +5805,8 @@ window.LNP = window.LNP || {};
       {
         label: '', render: function (r) {
           return '<span class="tools">' +
-            '<button class="btn btn-xs" data-act="load" data-cat="' + U.esc(r.category) + '">Erneut simulieren</button>' +
-            '<button class="btn btn-xs btn-danger" data-act="del" data-cat="' + U.esc(r.category) + '">Entfernen</button>' +
+            '<button class="btn btn-xs" data-act="load" data-cat="' + U.esc(r.category) + '">' + U.t('Erneut simulieren') + '</button>' +
+            '<button class="btn btn-xs btn-danger" data-act="del" data-cat="' + U.esc(r.category) + '">' + U.t('Entfernen') + '</button>' +
             '</span>';
         }
       }
@@ -5075,14 +5857,14 @@ window.LNP = window.LNP || {};
     U.$('#btn-apply-assign').addEventListener('click', function () {
       if (!lastResult) { U.toast('Bitte zuerst eine Simulation ausführen.', 'warn'); return; }
       if (NS.sim.applyResult(lastResult)) {
-        U.toast('Zuordnung für „' + lastResult.category + '“ übernommen.', 'good');
+        U.toast(U.tf('Zuordnung für „{0}“ übernommen.', lastResult.category), 'good');
         renderAssignments();
       }
     });
 
     U.$('#btn-clear-assign').addEventListener('click', function () {
       if (!Object.keys(S.get().assignments).length) return;
-      if (!confirm('Alle übernommenen Zuordnungen zurücksetzen?')) return;
+      if (!U.ask('Alle übernommenen Zuordnungen zurücksetzen?')) return;
       S.clearAssignments();
       renderAssignments();
       U.toast('Zuordnungen zurückgesetzt.', 'warn');
@@ -5096,7 +5878,7 @@ window.LNP = window.LNP || {};
         delete S.get().assignments[cat];
         S.emit('assignments');
         renderAssignments();
-        U.toast('Zuordnung für „' + cat + '“ entfernt.', 'warn');
+        U.toast(U.tf('Zuordnung für „{0}“ entfernt.', cat), 'warn');
       } else {
         var a = S.get().assignments[cat];
         U.$('#sim-category').value = cat;
@@ -5214,9 +5996,12 @@ window.LNP = window.LNP || {};
     }
   }
 
-  function note(text) {
+  var noteKey = '';
+  /** Merkt den deutschen Originaltext, damit er bei Sprachwechsel neu übersetzt wird. */
+  function note(textDe) {
+    noteKey = textDe;
     var n = U.$('#map-note');
-    if (n) n.textContent = text;
+    if (n) n.textContent = U.t(textDe);
   }
 
   /* ------------------------------------------------------------ Daten */
@@ -5268,6 +6053,7 @@ window.LNP = window.LNP || {};
   /* ------------------------------------------------------------ Zeichnen */
   function render() {
     if (!initialized) return;
+    if (noteKey) note(noteKey);          // Sprache des Hinweises aktualisieren
     if (!map) { renderSVG(); return; }
 
     if (layers.marks) map.removeLayer(layers.marks);
@@ -5298,7 +6084,7 @@ window.LNP = window.LNP || {};
         radius: radiusFor(r.pallets, maxRegion, 4, 11),
         color: c.surface, weight: 2,
         fillColor: c.muted, fillOpacity: 0.75
-      }).bindTooltip('<b>' + U.esc(r.key) + '</b>Kundenregion · ' + U.fmt.int(r.pallets) + ' Paletten',
+      }).bindTooltip('<b>' + U.esc(r.key) + '</b>' + U.tf('Kundenregion · {0} Paletten', U.fmt.int(r.pallets)),
         { className: 'map-tip' }).addTo(layers.marks);
     });
 
@@ -5310,8 +6096,8 @@ window.LNP = window.LNP || {};
         radius: radiusFor(d.capacity, maxCap, 8, 18),
         color: c.surface, weight: 2,
         fillColor: color, fillOpacity: 0.9
-      }).bindTooltip('<b>' + U.esc(d.name) + '</b>Kapazität ' + U.fmt.int(d.capacity) + ' Stellplätze<br>' +
-        'Belegung ' + (isFinite(load.util) ? U.fmt.pct(load.util) : '–'),
+      }).bindTooltip('<b>' + U.esc(d.name) + '</b>' + U.tf('Kapazität {0} Stellplätze', U.fmt.int(d.capacity)) + '<br>' +
+        U.tf('Belegung {0}', isFinite(load.util) ? U.fmt.pct(load.util) : '–'),
         { className: 'map-tip' }).addTo(layers.marks);
     });
 
@@ -5332,7 +6118,7 @@ window.LNP = window.LNP || {};
 
     var pts = data.dcs.concat(data.regions);
     if (!pts.length) {
-      box.innerHTML = '<div class="empty-inline" style="padding:20px">Keine Standorte mit Koordinaten vorhanden.</div>';
+      box.innerHTML = '<div class="empty-inline" style="padding:20px">' + U.t('Keine Standorte mit Koordinaten vorhanden.') + '</div>';
       return;
     }
 
@@ -5347,7 +6133,7 @@ window.LNP = window.LNP || {};
     var maxCap = Math.max.apply(null, [1].concat(data.dcs.map(function (d) { return d.capacity; })));
     var maxRegion = Math.max.apply(null, [1].concat(data.regions.map(function (r) { return r.pallets; })));
 
-    var svg = ['<svg class="map-fallback" viewBox="0 0 ' + w + ' ' + h + '" role="img" aria-label="Schematische Netzwerkkarte">'];
+    var svg = ['<svg class="map-fallback" viewBox="0 0 ' + w + ' ' + h + '" role="img" aria-label="' + U.t('Schematische Netzwerkkarte') + '">'];
     svg.push('<rect width="' + w + '" height="' + h + '" fill="' + NS.charts.cssVar('--surface-3', '#f2f2ef') + '"/>');
     for (var gx = 1; gx < 6; gx++) {
       svg.push('<line x1="' + (gx * w / 6) + '" y1="0" x2="' + (gx * w / 6) + '" y2="' + h + '" stroke="' + c.grid + '"/>');
@@ -5566,31 +6352,31 @@ window.LNP = window.LNP || {};
     var tiles = [
       {
         label: 'Gesamtkapazität', value: fmt.int(sum.capacity), unit: 'Stellplätze',
-        sub: S.activeDCs().length + ' aktive Standorte', accent: 'var(--series-1)'
+        sub: U.tf('{0} aktive Standorte', S.activeDCs().length), accent: 'var(--series-1)'
       },
       {
         label: 'Auslastung', value: isFinite(util) ? fmt.pct1(util) : '–',
-        sub: fmt.int(sum.usedSlots) + ' belegt · ' + fmt.int(Math.max(sum.capacity - sum.usedSlots, 0)) + ' frei',
+        sub: U.tf('{0} belegt · {1} frei', fmt.int(sum.usedSlots), fmt.int(Math.max(sum.capacity - sum.usedSlots, 0))),
         bar: isFinite(util) ? util : 0, accent: utilAccent
       },
       {
         label: 'Ziel-Bestand (zugeordnet)', value: fmt.int(sum.assignedSlots), unit: 'Stellplätze',
-        sub: sum.categoriesAssigned + ' von ' + sum.categoriesTotal + ' Kategorien zugeordnet',
+        sub: U.tf('{0} von {1} Kategorien zugeordnet', sum.categoriesAssigned, sum.categoriesTotal),
         accent: 'var(--series-7)'
       },
       {
         label: 'Transportkosten', value: fmt.eur(sum.transportCost),
-        sub: isFinite(sum.avgDistance) ? 'Ø Distanz ' + fmt.km(sum.avgDistance) : 'im Betrachtungszeitraum',
+        sub: isFinite(sum.avgDistance) ? U.tf('Ø Distanz {0}', fmt.km(sum.avgDistance)) : U.t('im Betrachtungszeitraum'),
         accent: 'var(--series-2)'
       },
       {
         label: 'Lager- & Handlingkosten', value: fmt.eur(sum.storageCost + sum.handlingCost),
-        sub: 'davon Lager ' + fmt.eur(sum.storageCost),
+        sub: U.tf('davon Lager {0}', fmt.eur(sum.storageCost)),
         accent: 'var(--series-4)'
       },
       {
         label: 'Gesamtkosten', value: fmt.eur(sum.totalCost),
-        sub: isFinite(sum.costPerPallet) ? fmt.dec2(sum.costPerPallet) + ' € je Palette' : 'inkl. Fixkosten',
+        sub: isFinite(sum.costPerPallet) ? U.tf('{0} € je Palette', fmt.dec2(sum.costPerPallet)) : U.t('inkl. Fixkosten'),
         accent: 'var(--series-6)'
       }
     ];
@@ -5598,7 +6384,7 @@ window.LNP = window.LNP || {};
     if (hasResults) {
       tiles.push({
         label: 'Ø Bewertung', value: fmt.dec1(sum.avgScore), unit: '/ 100',
-        sub: sum.infeasible ? sum.infeasible + ' Zuordnung(en) über Kapazität' : 'alle Zuordnungen kapazitätsgerecht',
+        sub: sum.infeasible ? U.tf('{0} Zuordnung(en) über Kapazität', sum.infeasible) : U.t('alle Zuordnungen kapazitätsgerecht'),
         bar: sum.avgScore / 100,
         accent: sum.infeasible ? 'var(--critical)' : 'var(--series-3)'
       });
@@ -5620,11 +6406,11 @@ window.LNP = window.LNP || {};
     ], {
       stacked: true,
       valueFormat: function (v) { return fmt.int(v); },
-      tooltipFormat: function (v) { return fmt.int(v) + ' Stellplätze'; },
+      tooltipFormat: function (v) { return U.tf('{0} Stellplätze', fmt.int(v)); },
       tooltipFooter: function (items) {
         var d = dcs[items[0].dataIndex];
-        return 'Auslastung: ' + (isFinite(d.utilization) ? fmt.pct1(d.utilization) : '–') +
-          ' · Kapazität: ' + fmt.int(d.capacity);
+        return U.tf('Auslastung: {0} · Kapazität: {1}',
+          isFinite(d.utilization) ? fmt.pct1(d.utilization) : '–', fmt.int(d.capacity));
       }
     });
 
@@ -5651,7 +6437,7 @@ window.LNP = window.LNP || {};
       tooltipFormat: function (v) { return fmt.eurExact(v); },
       tooltipFooter: function (items) {
         var d = dcs[items[0].dataIndex];
-        return 'Gesamt: ' + fmt.eur(d.totalCost) + (d.pallets > 0 ? ' · ' + fmt.dec2(d.totalCost / d.pallets) + ' €/Palette' : '');
+        return U.tf('Gesamt: {0}', fmt.eur(d.totalCost)) + (d.pallets > 0 ? ' · ' + fmt.dec2(d.totalCost / d.pallets) + ' €/' + U.t('Palette') : '');
       }
     });
 
@@ -5684,7 +6470,7 @@ window.LNP = window.LNP || {};
       stacked: true,
       horizontal: cats.length > 6,
       valueFormat: function (v) { return fmt.int(v); },
-      tooltipFormat: function (v) { return fmt.int(v) + ' Paletten'; }
+      tooltipFormat: function (v) { return U.tf('{0} Paletten', fmt.int(v)); }
     });
 
     NS.charts.legend('#legend-volume', datasets.map(function (d) {
@@ -5706,7 +6492,7 @@ window.LNP = window.LNP || {};
             U.esc(r.dcName) + '</span>';
         }
       },
-      { label: 'Modus', render: function (r) { return r.mode === 'single' ? 'Alleinzuordnung' : (r.mode === 'split' ? 'Split' : 'manuell'); } },
+      { label: 'Modus', render: function (r) { return U.t(r.mode === 'single' ? 'Alleinzuordnung' : (r.mode === 'split' ? 'Split' : 'manuell')); } },
       { label: 'Anteil', num: true, render: function (r) { return fmt.pct1(r.share); } },
       { label: 'Volumen (Pal.)', num: true, render: function (r) { return fmt.int(r.pallets); } },
       { label: 'Ziel-Bestand', num: true, render: function (r) { return fmt.int(r.slots); } },
@@ -5719,8 +6505,8 @@ window.LNP = window.LNP || {};
       { label: 'Score', num: true, render: function (r) { return U.scoreBar(r.score, NS.charts.seriesColor(NS.dcs.dcIndex(r.dcId))); } },
       {
         label: 'Kapazität', render: function (r) {
-          return r.feasible ? '<span class="badge badge-good">ausreichend</span>'
-            : '<span class="badge badge-crit">überschritten</span>';
+          return r.feasible ? '<span class="badge badge-good">' + U.t('ausreichend') + '</span>'
+            : '<span class="badge badge-crit">' + U.t('überschritten') + '</span>';
         }
       }
     ], rows);
@@ -5731,12 +6517,12 @@ window.LNP = window.LNP || {};
     var sum = networkSummary();
     var head = ['Kategorie', 'DC', 'Modus', 'Anteil %', 'Volumen Paletten', 'Ziel-Bestand Stellplätze',
       'Zielreichweite Tage', 'Ø Distanz km', 'Ø Transitzeit Tage', 'Transportkosten EUR',
-      'Lagerkosten EUR', 'Handlingkosten EUR', 'Gesamtkosten EUR', 'Score', 'Kapazität ausreichend'];
+      'Lagerkosten EUR', 'Handlingkosten EUR', 'Gesamtkosten EUR', 'Score', 'Kapazität ausreichend'].map(U.t);
     var body = sum.rows.map(function (r) {
       return [r.category, r.dcName, r.mode, U.round(r.share * 100, 2), U.round(r.pallets, 1), U.round(r.slots, 1),
         r.targetDays, U.round(r.avgDistance, 1), U.round(r.avgTransitDays, 2), U.round(r.transportCost, 2),
         U.round(r.storageCost, 2), U.round(r.handlingCost, 2), U.round(r.totalCost, 2),
-        U.round(r.score, 1), r.feasible ? 'ja' : 'nein'];
+        U.round(r.score, 1), U.t(r.feasible ? 'ja' : 'nein')];
     });
     return [head].concat(body);
   }
@@ -5777,7 +6563,7 @@ window.LNP = window.LNP || {};
 
     return {
       id: U.id('scn'),
-      name: name || ('Szenario ' + (st.scenarios.length + 1)),
+      name: name || U.tf('Szenario {0}', st.scenarios.length + 1),
       createdAt: new Date().toISOString(),
       settings: JSON.parse(JSON.stringify(st.settings)),
       dcs: JSON.parse(JSON.stringify(st.dcs)),
@@ -5819,7 +6605,7 @@ window.LNP = window.LNP || {};
     S.emit('scenarios');
     U.$('#scn-name').value = '';
     render();
-    U.toast('Szenario „' + scn.name + '“ gespeichert.', 'good');
+    U.toast(U.tf('Szenario „{0}“ gespeichert.', scn.name), 'good');
   }
 
   /* ------------------------------------------------------------ Laden */
@@ -5827,19 +6613,19 @@ window.LNP = window.LNP || {};
     var st = S.get();
     var scn = st.scenarios.find(function (s) { return s.id === scnId; });
     if (!scn) return;
-    if (!confirm('Szenario „' + scn.name + '“ laden? Die aktuelle DC-Konfiguration, die Einstellungen und die Zuordnungen werden dadurch ersetzt (importierte Daten bleiben erhalten).')) return;
+    if (!window.confirm(U.tf('Szenario „{0}“ laden? Die aktuelle DC-Konfiguration, die Einstellungen und die Zuordnungen werden dadurch ersetzt (importierte Daten bleiben erhalten).', scn.name))) return;
 
     st.settings = Object.assign(S.defaultSettings(), JSON.parse(JSON.stringify(scn.settings)));
     st.dcs = JSON.parse(JSON.stringify(scn.dcs)).map(S.normalizeDC);
     st.assignments = JSON.parse(JSON.stringify(scn.assignments));
     S.emit('project');
-    U.toast('Szenario „' + scn.name + '“ geladen.', 'good');
+    U.toast(U.tf('Szenario „{0}“ geladen.', scn.name), 'good');
   }
 
   function remove(scnId) {
     var st = S.get();
     var scn = st.scenarios.find(function (s) { return s.id === scnId; });
-    if (!scn || !confirm('Szenario „' + scn.name + '“ löschen?')) return;
+    if (!scn || !window.confirm(U.tf('Szenario „{0}“ löschen?', scn.name))) return;
     st.scenarios = st.scenarios.filter(function (s) { return s.id !== scnId; });
     S.emit('scenarios');
     render();
@@ -5850,7 +6636,7 @@ window.LNP = window.LNP || {};
     var st = S.get();
     var scn = st.scenarios.find(function (s) { return s.id === scnId; });
     if (!scn) return;
-    var name = prompt('Neue Bezeichnung für das Szenario:', scn.name);
+    var name = U.askText('Neue Bezeichnung für das Szenario:', scn.name);
     if (name === null) return;
     scn.name = name.trim() || scn.name;
     S.emit('scenarios');
@@ -5861,7 +6647,7 @@ window.LNP = window.LNP || {};
   /** Spalten des Vergleichs: aktueller Stand + alle gespeicherten Szenarien. */
   function comparisonSet() {
     var st = S.get();
-    var live = snapshot('Aktueller Stand');
+    var live = snapshot(U.t('Aktueller Stand'));
     live.id = '__live';
     live.isLive = true;
     return [live].concat(st.scenarios);
@@ -5892,8 +6678,8 @@ window.LNP = window.LNP || {};
 
     U.$('#scn-empty').classList.toggle('hidden', st.scenarios.length > 0);
     U.$('#scn-count-hint').textContent = st.scenarios.length
-      ? st.scenarios.length + ' gespeicherte Szenarien im Vergleich zum aktuellen Stand'
-      : 'Noch kein Szenario gespeichert – angezeigt wird nur der aktuelle Stand.';
+      ? U.tf('{0} gespeicherte Szenarien im Vergleich zum aktuellen Stand', st.scenarios.length)
+      : U.t('Noch kein Szenario gespeichert – angezeigt wird nur der aktuelle Stand.');
 
     renderTable(set);
     renderCharts(set);
@@ -5903,8 +6689,8 @@ window.LNP = window.LNP || {};
   function renderTable(set) {
     var table = U.$('#table-scenarios');
 
-    var head = '<thead><tr><th>Kennzahl</th>' + set.map(function (s) {
-      return '<th class="num">' + (s.isLive ? '<span class="badge">live</span> ' : '') + U.esc(s.name) + '</th>';
+    var head = '<thead><tr><th>' + U.t('Kennzahl') + '</th>' + set.map(function (s) {
+      return '<th class="num">' + (s.isLive ? '<span class="badge">' + U.t('live') + '</span> ' : '') + U.esc(s.name) + '</th>';
     }).join('') + '</tr></thead>';
 
     var body = METRICS.map(function (m) {
@@ -5914,21 +6700,21 @@ window.LNP = window.LNP || {};
         var valid = values.filter(function (v) { return isFinite(v); });
         if (valid.length > 1) best = m.lowerBetter ? Math.min.apply(null, valid) : Math.max.apply(null, valid);
       }
-      return '<tr><th style="position:static">' + U.esc(m.label) + '</th>' +
+      return '<tr><th style="position:static">' + U.esc(U.t(m.label)) + '</th>' +
         set.map(function (s) {
           var v = s.kpis[m.key];
           var isBest = best !== null && isFinite(v) && Math.abs(v - best) < 1e-9;
           return '<td class="num' + (isBest ? ' t-good' : '') + '">' + m.fmt(v, s) +
-            (isBest ? ' <span class="badge badge-good">best</span>' : '') + '</td>';
+            (isBest ? ' <span class="badge badge-good">' + U.t('best') + '</span>' : '') + '</td>';
         }).join('') + '</tr>';
     }).join('');
 
-    var actions = '<tr><th style="position:static">Aktionen</th>' + set.map(function (s) {
+    var actions = '<tr><th style="position:static">' + U.t('Aktionen') + '</th>' + set.map(function (s) {
       if (s.isLive) return '<td class="num"><span class="t-muted">–</span></td>';
       return '<td class="num"><span class="tools" style="justify-content:flex-end">' +
-        '<button class="btn btn-xs" data-act="load" data-id="' + s.id + '">Laden</button>' +
-        '<button class="btn btn-xs" data-act="rename" data-id="' + s.id + '">Umbenennen</button>' +
-        '<button class="btn btn-xs btn-danger" data-act="del" data-id="' + s.id + '">Löschen</button>' +
+        '<button class="btn btn-xs" data-act="load" data-id="' + s.id + '">' + U.t('Laden') + '</button>' +
+        '<button class="btn btn-xs" data-act="rename" data-id="' + s.id + '">' + U.t('Umbenennen') + '</button>' +
+        '<button class="btn btn-xs btn-danger" data-act="del" data-id="' + s.id + '">' + U.t('Löschen') + '</button>' +
         '</span></td>';
     }).join('') + '</tr>';
 
@@ -5948,7 +6734,7 @@ window.LNP = window.LNP || {};
       valueFormat: function (v) { return fmt.eur(v); },
       tooltipFormat: function (v) { return fmt.eurExact(v); },
       tooltipFooter: function (items) {
-        return 'Gesamt: ' + fmt.eur(set[items[0].dataIndex].kpis.totalCost);
+        return U.tf('Gesamt: {0}', fmt.eur(set[items[0].dataIndex].kpis.totalCost));
       }
     });
 
@@ -5985,11 +6771,11 @@ window.LNP = window.LNP || {};
     var cats = U.unique([].concat.apply([], set.map(function (s) { return Object.keys(s.assignments || {}); }))).sort();
 
     if (!cats.length) {
-      table.innerHTML = '<tbody><tr><td class="t-muted">Noch keine Zuordnungen vorhanden.</td></tr></tbody>';
+      table.innerHTML = '<tbody><tr><td class="t-muted">' + U.t('Noch keine Zuordnungen vorhanden.') + '</td></tr></tbody>';
       return;
     }
 
-    var head = '<thead><tr><th>Produktkategorie</th>' + set.map(function (s) {
+    var head = '<thead><tr><th>' + U.t('Produktkategorie') + '</th>' + set.map(function (s) {
       return '<th>' + U.esc(s.name) + '</th>';
     }).join('') + '</tr></thead>';
 
@@ -6011,11 +6797,11 @@ window.LNP = window.LNP || {};
   /* ------------------------------------------------------------ Export-Daten */
   function comparisonRows() {
     var set = comparisonSet();
-    var head = ['Kennzahl'].concat(set.map(function (s) { return s.name; }));
+    var head = [U.t('Kennzahl')].concat(set.map(function (s) { return s.name; }));
     var rows = METRICS.map(function (m) {
       // Anteile werden im Export als Prozentwert geschrieben
       var isRatio = m.key === 'utilization';
-      var label = isRatio ? m.label + ' %' : m.label;
+      var label = isRatio ? U.t(m.label) + ' %' : U.t(m.label);
       return [label].concat(set.map(function (s) {
         var v = s.kpis[m.key];
         if (!isFinite(v)) return '';
@@ -6071,7 +6857,7 @@ window.LNP = window.LNP || {};
     var st = S.get();
     var rows = [
       ['NetPlan – Auswertung Logistik-Netzwerk'],
-      ['Erstellt am', new Date().toLocaleString('de-DE')],
+      ['Erstellt am', new Date().toLocaleString(NS.i18n ? NS.i18n.locale() : 'de-DE')],
       [],
       ['Kennzahl', 'Wert', 'Einheit'],
       ['Aktive Distributionszentren', S.activeDCs().length, 'Anzahl'],
@@ -6106,21 +6892,26 @@ window.LNP = window.LNP || {};
       ['Stück je Palette', st.settings.qtyPerPallet, 'Stück'],
       ['Volumen je Palette', st.settings.volPerPallet, 'm³']
     ];
-    return rows;
+    // Erste Spalte (Bezeichnung) und Einheit übersetzen, Zahlen unverändert lassen
+    return rows.map(function (r) {
+      return r.map(function (cell, i) {
+        return (i === 0 || i === 2) && typeof cell === 'string' ? U.t(cell) : cell;
+      });
+    });
   }
 
   function sheetDCs(sum) {
     var head = ['Name', 'Code', 'Region', 'Land', 'Breitengrad', 'Längengrad', 'Aktiv',
       'Kapazität', 'Grundbelegung', 'Zugeordneter Ziel-Bestand', 'Belegt gesamt', 'Frei', 'Auslastung %',
       'Volumen Paletten', 'Transportkosten EUR', 'Lagerkosten EUR', 'Handlingkosten EUR', 'Fixkosten EUR',
-      'Gesamtkosten EUR', 'Ø Distanz km', 'Kategorien'];
+      'Gesamtkosten EUR', 'Ø Distanz km', 'Kategorien'].map(U.t);
     var byId = Object.create(null);
     sum.perDC.forEach(function (d) { byId[d.dcId] = d; });
 
     var rows = S.get().dcs.map(function (dc) {
       var d = byId[dc.id] || {};
       return [dc.name, dc.code, dc.region, dc.country,
-        U.isNum(dc.lat) ? dc.lat : '', U.isNum(dc.lng) ? dc.lng : '', dc.active ? 'ja' : 'nein',
+        U.isNum(dc.lat) ? dc.lat : '', U.isNum(dc.lng) ? dc.lng : '', U.t(dc.active ? 'ja' : 'nein'),
         U.round(dc.capacity, 0), U.round(dc.usedSlots, 0), U.round(d.assignedSlots, 1),
         U.round(d.usedTotal, 1), U.round(d.free, 1), U.round(d.utilization * 100, 2),
         U.round(d.pallets, 1), U.round(d.transportCost, 2), U.round(d.storageCost, 2),
@@ -6135,7 +6926,7 @@ window.LNP = window.LNP || {};
     var head = ['Produktkategorie', 'Modus', 'Zielreichweite Tage', 'Datenbasis', 'Periode von', 'Periode bis',
       'DC', 'Anteil %', 'Volumen Paletten', 'Ziel-Bestand Stellplätze', 'Transportkosten EUR',
       'Lagerkosten EUR', 'Handlingkosten EUR', 'Gesamtkosten EUR', 'Ø Distanz km', 'Ø Transitzeit Tage',
-      'Score', 'Score Kapazität', 'Score Transport', 'Score Reichweite', 'Kapazität ausreichend'];
+      'Score', 'Score Kapazität', 'Score Transport', 'Score Reichweite', 'Kapazität ausreichend'].map(U.t);
     var rows = [];
     Object.keys(st.assignments).sort().forEach(function (cat) {
       var a = st.assignments[cat];
@@ -6146,7 +6937,7 @@ window.LNP = window.LNP || {};
           U.round(p.transportCost, 2), U.round(p.storageCost, 2), U.round(p.handlingCost, 2),
           U.round(p.totalCost, 2), U.round(p.avgDistance, 1), U.round(p.avgTransitDays, 2),
           U.round(p.score, 1), U.round(sc.capacity, 1), U.round(sc.transport, 1), U.round(sc.service, 1),
-          p.feasible === false ? 'nein' : 'ja']);
+          U.t(p.feasible === false ? 'nein' : 'ja')]);
       });
     });
     return [head].concat(rows);
@@ -6154,7 +6945,7 @@ window.LNP = window.LNP || {};
 
   function sheetRegionAssignments() {
     var st = S.get();
-    var head = ['Produktkategorie', 'Kundenregion', 'Beliefert aus DC', 'Volumen Paletten', 'Distanz km', 'Transportkosten EUR'];
+    var head = ['Produktkategorie', 'Kundenregion', 'Beliefert aus DC', 'Volumen Paletten', 'Distanz km', 'Transportkosten EUR'].map(U.t);
     var rows = [];
     Object.keys(st.assignments).sort().forEach(function (cat) {
       (st.assignments[cat].regions || []).forEach(function (r) {
@@ -6173,7 +6964,7 @@ window.LNP = window.LNP || {};
       var e = stats[r.regionKey] || (stats[r.regionKey] = { n: 0, pallets: 0, qty: 0, revenue: 0 });
       e.n++; e.pallets += S.recordPallets(r); e.qty += r.qty; e.revenue += r.revenue;
     });
-    var head = ['Region', 'Land', 'Breitengrad', 'Längengrad', 'Quelle', 'Datensätze', 'Volumen Paletten', 'Menge Stück', 'Umsatz EUR'];
+    var head = ['Region', 'Land', 'Breitengrad', 'Längengrad', 'Quelle', 'Datensätze', 'Volumen Paletten', 'Menge Stück', 'Umsatz EUR'].map(U.t);
     var rows = Object.keys(st.regions).sort().map(function (k) {
       var info = st.regions[k], s = stats[k] || {};
       return [k, info.country || '', U.isNum(info.lat) ? info.lat : '', U.isNum(info.lng) ? info.lng : '',
@@ -6188,7 +6979,7 @@ window.LNP = window.LNP || {};
 
   function sheetCoverage() {
     var head = ['Produktkategorie', 'Volumen Paletten', 'Zeitraum Tage', 'Bedarf je Tag',
-      'Zielreichweite Tage', 'Ziel-Bestand Stellplätze'];
+      'Zielreichweite Tage', 'Ziel-Bestand Stellplätze'].map(U.t);
     var s = S.settings();
     var rows = S.categories('all').map(function (cat) {
       var recs = S.get().records.filter(function (r) { return r.category === cat; });
@@ -6205,9 +6996,9 @@ window.LNP = window.LNP || {};
   function sheetRaw() {
     var st = S.get();
     var head = ['Datensatztyp', 'Periode', 'Produktkategorie', 'Region', 'Land', 'Kunde',
-      'Menge', 'Umsatz EUR', 'Volumen m³', 'Paletten', 'Paletten-Äquivalent', 'Paletten (berechnet)'];
+      'Menge', 'Umsatz EUR', 'Volumen m³', 'Paletten', 'Paletten-Äquivalent', 'Paletten (berechnet)'].map(U.t);
     var rows = st.records.slice(0, MAX_RAW_ROWS).map(function (r) {
-      return [r.dataset === 'forecast' ? 'Forecast' : 'Historie', r.period, r.category, r.regionKey,
+      return [U.t(r.dataset === 'forecast' ? 'Forecast' : 'Historie'), r.period, r.category, r.regionKey,
         r.country, r.customer, U.round(r.qty, 2), U.round(r.revenue, 2), U.round(r.volume, 3),
         U.round(r.pallets, 2), U.round(r.palletEq, 2), U.round(S.recordPallets(r), 2)];
     });
@@ -6231,15 +7022,15 @@ window.LNP = window.LNP || {};
       XLSX.utils.book_append_sheet(wb, ws, name.slice(0, 31));
     }
 
-    add('KPI', sheetKPI(sum), [38, 20, 18]);
-    add('DCs', sheetDCs(sum));
-    add('Zuordnungen', sheetAssignments());
-    add('Detailergebnisse', NS.dashboard.detailCSV());
-    add('Regionszuordnung', sheetRegionAssignments());
-    add('Zielreichweiten', sheetCoverage());
-    add('Regionen', sheetRegions());
-    add('Szenarien', sheetScenarios());
-    if (S.get().records.length) add('Rohdaten', sheetRaw());
+    add(U.t('KPI'), sheetKPI(sum), [38, 20, 18]);
+    add(U.t('DCs'), sheetDCs(sum));
+    add(U.t('Zuordnungen'), sheetAssignments());
+    add(U.t('Detailergebnisse'), NS.dashboard.detailCSV());
+    add(U.t('Regionszuordnung'), sheetRegionAssignments());
+    add(U.t('Zielreichweiten'), sheetCoverage());
+    add(U.t('Regionen'), sheetRegions());
+    add(U.t('Szenarien'), sheetScenarios());
+    if (S.get().records.length) add(U.t('Rohdaten'), sheetRaw());
 
     XLSX.writeFile(wb, 'netplan_auswertung_' + U.timestamp() + '.xlsx');
     U.toast('Excel-Arbeitsmappe erzeugt.', 'good');
@@ -6278,13 +7069,13 @@ window.LNP = window.LNP || {};
     reader.onload = function (e) {
       try {
         var obj = JSON.parse(e.target.result);
-        if (!obj || typeof obj !== 'object') throw new Error('Ungültiges Format');
+        if (!obj || typeof obj !== 'object') throw new Error(U.t('Ungültiges Format'));
         S.hydrate(obj);
         S.emit('project');
-        U.toast('Projekt geladen: ' + (obj.dcs || []).length + ' DCs, ' +
-          fmt.int((obj.records || []).length) + ' Datensätze, ' + (obj.scenarios || []).length + ' Szenarien.', 'good');
+        U.toast(U.tf('Projekt geladen: {0} DCs, {1} Datensätze, {2} Szenarien.',
+          (obj.dcs || []).length, fmt.int((obj.records || []).length), (obj.scenarios || []).length), 'good');
       } catch (err) {
-        U.toast('Projektdatei konnte nicht gelesen werden: ' + err.message, 'error');
+        U.toast(U.tf('Projektdatei konnte nicht gelesen werden: {0}', err.message), 'error');
       }
     };
     reader.onerror = function () { U.toast('Datei konnte nicht gelesen werden.', 'error'); };
@@ -6403,11 +7194,11 @@ window.LNP = window.LNP || {};
           out.push({
             id: U.id('r'),
             dataset: dataset,
-            customer: customer,
-            country: region.country,
-            region: region.key,
-            regionKey: region.key,
-            category: cat.name,
+            customer: U.t(customer),
+            country: U.t(region.country),
+            region: U.t(region.key),
+            regionKey: U.t(region.key),
+            category: U.t(cat.name),
             period: period,
             periodTs: Date.UTC(year, month, 1),
             periodDays: days,
@@ -6428,7 +7219,7 @@ window.LNP = window.LNP || {};
   function load() {
     var st = S.get();
     if (st.dcs.length || st.records.length) {
-      if (!confirm('Die Demodaten ersetzen den aktuellen Arbeitsstand (DCs, Daten, Zuordnungen, Szenarien). Fortfahren?')) return;
+      if (!U.ask('Die Demodaten ersetzen den aktuellen Arbeitsstand (DCs, Daten, Zuordnungen, Szenarien). Fortfahren?')) return;
     }
 
     S.hydrate(S.emptyState());
@@ -6437,7 +7228,7 @@ window.LNP = window.LNP || {};
 
     // Regionsspezifische Sonderkondition als Beispiel für Pauschalpreise
     var poz = S.get().dcs.find(function (d) { return d.code === 'POZ'; });
-    if (poz) poz.regionCosts = { 'Polen': 4.2, 'Tschechien': 6.5 };
+    if (poz) { poz.regionCosts = {}; poz.regionCosts[U.t('Polen')] = 4.2; poz.regionCosts[U.t('Tschechien')] = 6.5; }
 
     var now = new Date();
     var histStart = new Date(Date.UTC(now.getUTCFullYear() - 1, now.getUTCMonth() - 11, 1));
@@ -6448,12 +7239,12 @@ window.LNP = window.LNP || {};
 
     S.get().records = history.concat(forecast);
 
-    CATEGORIES.forEach(function (c) { S.get().settings.targetDaysByCategory[c.name] = c.targetDays; });
+    CATEGORIES.forEach(function (c) { S.get().settings.targetDaysByCategory[U.t(c.name)] = c.targetDays; });
     S.syncRegions();
 
     S.emit('project');
-    U.toast('Demodaten geladen: 5 DCs, ' + U.fmt.int(history.length + forecast.length) +
-      ' Datensätze über 36 Monate (24 Monate Historie, 12 Monate Forecast).', 'good');
+    U.toast(U.tf('Demodaten geladen: 5 DCs, {0} Datensätze über 36 Monate (24 Monate Historie, 12 Monate Forecast).',
+      U.fmt.int(history.length + forecast.length)), 'good');
   }
 
   NS.demo = { load: load, DEMO_DCS: DEMO_DCS, CATEGORIES: CATEGORIES, REGIONS: REGIONS };
@@ -6491,8 +7282,9 @@ window.LNP = window.LNP || {};
       b.classList.toggle('is-active', b.getAttribute('data-view') === name);
     });
 
-    U.$('#view-title').textContent = VIEWS[name].title;
-    U.$('#view-sub').textContent = VIEWS[name].sub;
+    currentView = name;
+    U.$('#view-title').textContent = U.t(VIEWS[name].title);
+    U.$('#view-sub').textContent = U.t(VIEWS[name].sub);
     window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
 
     if (name === 'dashboard') { NS.dashboard.render(); NS.mapview.invalidate(); }
@@ -6502,6 +7294,33 @@ window.LNP = window.LNP || {};
     if (name === 'data') NS.data.render();
 
     try { location.hash = name; } catch (e) { /* file:// ohne Hash-Unterstützung */ }
+  }
+
+  var currentView = 'dashboard';
+
+  /* ------------------------------------------------------------ Sprache */
+  function applyLang(next) {
+    NS.i18n.setLang(next);
+    U.$('#btn-lang').textContent = next === 'de' ? 'EN' : 'DE';
+    // Sämtliche dynamisch erzeugten Inhalte neu aufbauen
+    NS.dcs.render();
+    NS.data.render();
+    NS.dashboard.render();
+    NS.scenarios.render();
+    NS.simui.refreshControls();
+    var last = NS.simui.getLastResult();
+    if (last) NS.simui.simulate();
+    renderFormulas();
+    updateStoragePill();
+    updateSidebar();
+    showView(currentView);
+  }
+
+  function initLang() {
+    U.$('#btn-lang').textContent = NS.i18n.get() === 'de' ? 'EN' : 'DE';
+    U.$('#btn-lang').addEventListener('click', function () {
+      applyLang(NS.i18n.get() === 'de' ? 'en' : 'de');
+    });
   }
 
   /* ------------------------------------------------------------ Theme */
@@ -6555,7 +7374,8 @@ window.LNP = window.LNP || {};
       } else {
         var v = U.num(raw, NaN);
         if (!isFinite(v) || (o.min !== undefined && v < o.min)) {
-          U.toast('Ungültiger Wert – bitte eine Zahl' + (o.min !== undefined ? ' ≥ ' + o.min : '') + ' eingeben.', 'warn');
+          U.toast(U.tf('Ungültiger Wert – bitte eine Zahl{0} eingeben.',
+            o.min !== undefined ? U.tf(' ≥ {0}', o.min) : ''), 'warn');
           node.value = o.factor ? S.settings()[key] * o.factor : S.settings()[key];
           return;
         }
@@ -6590,7 +7410,7 @@ window.LNP = window.LNP || {};
     });
 
     U.$('#btn-reset-all').addEventListener('click', function () {
-      if (!confirm('Wirklich alles zurücksetzen? DCs, Daten, Zuordnungen und Szenarien werden gelöscht.')) return;
+      if (!U.ask('Wirklich alles zurücksetzen? DCs, Daten, Zuordnungen und Szenarien werden gelöscht.')) return;
       S.reset();
       U.toast('Arbeitsstand zurückgesetzt.', 'warn');
       showView('dashboard');
@@ -6600,7 +7420,7 @@ window.LNP = window.LNP || {};
   function updateStoragePill() {
     var on = S.settings().autosave !== false;
     U.$('#storage-pill').classList.toggle('is-off', !on);
-    U.$('#storage-label').textContent = 'Auto-Speichern: ' + (on ? 'an' : 'aus');
+    U.$('#storage-label').textContent = U.t(on ? 'Auto-Speichern: an' : 'Auto-Speichern: aus');
   }
 
   /* ------------------------------------------------------------ Rechenlogik-Übersicht */
@@ -6609,17 +7429,17 @@ window.LNP = window.LNP || {};
     var items = [
       {
         title: 'Paletten je Datensatz',
-        code: 'Paletten = Paletten-Äquivalent\n      → sonst Paletten\n      → sonst Volumen ÷ ' + fmt.dec1(s.volPerPallet) + ' m³\n      → sonst Menge ÷ ' + fmt.int(s.qtyPerPallet) + ' Stück',
+        code: U.tf('Paletten = Paletten-Äquivalent\n      → sonst Paletten\n      → sonst Volumen ÷ {0} m³\n      → sonst Menge ÷ {1} Stück', fmt.dec1(s.volPerPallet), fmt.int(s.qtyPerPallet)),
         text: 'Die erste verfügbare Größe wird verwendet. So lassen sich Dateien mit unterschiedlichem Detailgrad gemeinsam auswerten.'
       },
       {
         title: 'Ziel-Bestand',
-        code: 'Bedarf/Tag = Paletten im Zeitraum ÷ Zeitraum in Tagen\nZiel-Bestand = Bedarf/Tag × Zielreichweite × ' + fmt.dec2(s.stockFactor),
+        code: U.tf('Bedarf/Tag = Paletten im Zeitraum ÷ Zeitraum in Tagen\nZiel-Bestand = Bedarf/Tag × Zielreichweite × {0}', fmt.dec2(s.stockFactor)),
         text: 'Der Ziel-Bestand belegt Stellplätze im DC und ist damit die kapazitätswirksame Größe.'
       },
       {
         title: 'Transportkosten',
-        code: 'Kosten/Palette = Grundkosten + Kosten/km × Distanz\nDistanz = Luftlinie × ' + fmt.dec2(U.DETOUR) + ' (Umwegfaktor)',
+        code: U.tf('Kosten/Palette = Grundkosten + Kosten/km × Distanz\nDistanz = Luftlinie × {0} (Umwegfaktor)', fmt.dec2(U.DETOUR)),
         text: 'Regionsspezifische Pauschalen im DC überschreiben die distanzbasierte Rechnung.'
       },
       {
@@ -6629,7 +7449,7 @@ window.LNP = window.LNP || {};
       },
       {
         title: 'Score Kapazität & Balance',
-        code: '100 → leeres DC\n 50 → an der Ziel-Auslastungsgrenze (' + fmt.pct(s.maxUtilization) + ')\n  0 → ab Vollauslastung',
+        code: U.tf('100 → leeres DC\n 50 → an der Ziel-Auslastungsgrenze ({0})\n  0 → ab Vollauslastung', fmt.pct(s.maxUtilization)),
         text: 'Belohnt Reserve und eine ausgeglichene Auslastung im Netzwerk.'
       },
       {
@@ -6640,7 +7460,7 @@ window.LNP = window.LNP || {};
       {
         title: 'Score Zielreichweite',
         code: 'Score = 100 × (0,7 × Bestandsfähigkeit + 0,3 × Reaktionsfähigkeit)\nBestandsfähigkeit = freie Plätze ÷ Ziel-Bestand (max. 1)\nReaktionsfähigkeit = 1 − Transitzeit ÷ Zielreichweite',
-        text: 'Transitzeit = ' + fmt.dec1(s.handlingDays) + ' Tage Handling + Distanz ÷ ' + fmt.int(s.kmPerDay) + ' km/Tag.'
+        text: U.tf('Transitzeit = {0} Tage Handling + Distanz ÷ {1} km/Tag.', fmt.dec1(s.handlingDays), fmt.int(s.kmPerDay))
       },
       {
         title: 'Gesamt-Score',
@@ -6650,7 +7470,7 @@ window.LNP = window.LNP || {};
     ];
 
     U.$('#formula-grid').innerHTML = items.map(function (i) {
-      return '<div class="formula"><h4>' + U.esc(i.title) + '</h4><code>' + U.esc(i.code) + '</code><p>' + U.esc(i.text) + '</p></div>';
+      return '<div class="formula"><h4>' + U.esc(U.t(i.title)) + '</h4><code>' + U.esc(U.t(i.code)) + '</code><p>' + U.esc(U.t(i.text)) + '</p></div>';
     }).join('');
   }
 
@@ -6664,6 +7484,7 @@ window.LNP = window.LNP || {};
 
   /* ------------------------------------------------------------ Start */
   function init() {
+    NS.i18n.init();
     initTheme();
     NS.charts.init();
 
@@ -6676,6 +7497,8 @@ window.LNP = window.LNP || {};
     NS.scenarios.init();
     NS.exporter.init();
     initSettings();
+
+    initLang();
 
     U.$('#nav').addEventListener('click', function (e) {
       var btn = e.target.closest('.nav-item');

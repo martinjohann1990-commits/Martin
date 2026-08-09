@@ -30,7 +30,7 @@
         label: 'Koordinaten', render: function (d) {
           return U.isNum(d.lat) && U.isNum(d.lng)
             ? '<span class="t-muted">' + fmt.dec2(d.lat) + ' / ' + fmt.dec2(d.lng) + '</span>'
-            : '<span class="badge badge-warn">fehlt</span>';
+            : '<span class="badge badge-warn">' + U.t('fehlt') + '</span>';
         }
       },
       { label: 'Kapazität', num: true, render: function (d) { return fmt.int(d.capacity); } },
@@ -57,22 +57,22 @@
       {
         label: 'Sonderpreise', num: true, render: function (d) {
           var n = Object.keys(d.regionCosts || {}).length;
-          return n ? '<span class="badge">' + n + ' Region(en)</span>' : '<span class="t-muted">–</span>';
+          return n ? '<span class="badge">' + U.tf('{0} Region(en)', n) + '</span>' : '<span class="t-muted">–</span>';
         }
       },
       {
         label: 'Status', render: function (d) {
           return d.active
-            ? '<span class="badge badge-good">aktiv</span>'
-            : '<span class="badge">inaktiv</span>';
+            ? '<span class="badge badge-good">' + U.t('aktiv') + '</span>'
+            : '<span class="badge">' + U.t('inaktiv') + '</span>';
         }
       },
       {
         label: '', render: function (d) {
           return '<span class="tools">' +
-            '<button class="btn btn-xs" data-act="edit" data-id="' + d.id + '">Bearbeiten</button>' +
-            '<button class="btn btn-xs" data-act="dup" data-id="' + d.id + '">Duplizieren</button>' +
-            '<button class="btn btn-xs btn-danger" data-act="del" data-id="' + d.id + '">Löschen</button>' +
+            '<button class="btn btn-xs" data-act="edit" data-id="' + d.id + '">' + U.t('Bearbeiten') + '</button>' +
+            '<button class="btn btn-xs" data-act="dup" data-id="' + d.id + '">' + U.t('Duplizieren') + '</button>' +
+            '<button class="btn btn-xs btn-danger" data-act="del" data-id="' + d.id + '">' + U.t('Löschen') + '</button>' +
             '</span>';
         }
       }
@@ -97,13 +97,13 @@
     var withCoords = act.filter(function (d) { return U.isNum(d.lat) && U.isNum(d.lng); }).length;
 
     var tiles = [
-      { label: 'Aktive DCs', value: fmt.int(act.length), sub: st.dcs.length - act.length + ' inaktiv', accent: 'var(--series-1)' },
+      { label: 'Aktive DCs', value: fmt.int(act.length), sub: U.tf('{0} inaktiv', st.dcs.length - act.length), accent: 'var(--series-1)' },
       { label: 'Gesamtkapazität', value: fmt.int(cap), unit: 'Stellplätze', accent: 'var(--series-3)' },
       {
         label: 'Belegung (inkl. Zuordnungen)', value: fmt.pct(cap > 0 ? used / cap : 0),
-        sub: fmt.int(used) + ' von ' + fmt.int(cap), bar: cap > 0 ? used / cap : 0, accent: 'var(--series-4)'
+        sub: U.tf('{0} von {1}', fmt.int(used), fmt.int(cap)), bar: cap > 0 ? used / cap : 0, accent: 'var(--series-4)'
       },
-      { label: 'Standorte mit Koordinaten', value: withCoords + ' / ' + act.length, sub: 'Grundlage für Distanzberechnung', accent: 'var(--series-7)' }
+      { label: 'Standorte mit Koordinaten', value: withCoords + ' / ' + act.length, sub: U.t('Grundlage für Distanzberechnung'), accent: 'var(--series-7)' }
     ];
     NS.charts.renderKPIs(U.$('#dc-kpis'), tiles);
   }
@@ -114,7 +114,7 @@
     var dc = dcId ? S.getDC(dcId) : null;
     var s = S.settings();
 
-    U.$('#dc-modal-title').textContent = dc ? 'DC bearbeiten' : 'Neues Distributionszentrum';
+    U.$('#dc-modal-title').textContent = U.t(dc ? 'DC bearbeiten' : 'Neues Distributionszentrum');
     setVal('#dc-name', dc ? dc.name : '');
     setVal('#dc-code', dc ? dc.code : '');
     setVal('#dc-region', dc ? dc.region : '');
@@ -130,10 +130,10 @@
     setVal('#dc-fixed', dc ? dc.fixedCostPerPeriod : 0);
     U.$('#dc-active').value = dc ? String(dc.active) : 'true';
 
-    U.$('#dc-storage').placeholder = 'Standard: ' + fmt.dec2(s.storageCostPerSlotMonth);
-    U.$('#dc-handling').placeholder = 'Standard: ' + fmt.dec2(s.handlingCostPerPallet);
-    U.$('#dc-transportBase').placeholder = 'Standard: ' + fmt.dec2(s.costBasePerPallet);
-    U.$('#dc-transportKm').placeholder = 'Standard: ' + fmt.dec2(s.costPerPalletKm);
+    U.$('#dc-storage').placeholder = U.tf('Standard: {0}', fmt.dec2(s.storageCostPerSlotMonth));
+    U.$('#dc-handling').placeholder = U.tf('Standard: {0}', fmt.dec2(s.handlingCostPerPallet));
+    U.$('#dc-transportBase').placeholder = U.tf('Standard: {0}', fmt.dec2(s.costBasePerPallet));
+    U.$('#dc-transportKm').placeholder = U.tf('Standard: {0}', fmt.dec2(s.costPerPalletKm));
 
     renderOverrides(dc ? dc.regionCosts : {});
     U.$('#dc-modal').classList.remove('hidden');
@@ -163,8 +163,8 @@
   function overrideRow(region, cost) {
     var options = S.regionKeys('all');
     var row = U.el('div', { class: 'override-row' });
-    var list = U.el('input', { class: 'input input-sm', list: 'region-options', value: region || '', placeholder: 'Region / Land' });
-    var val = U.el('input', { class: 'input input-sm', type: 'number', step: '0.5', min: '0', value: cost === undefined ? '' : cost, placeholder: 'EUR je Palette' });
+    var list = U.el('input', { class: 'input input-sm', list: 'region-options', value: region || '', placeholder: U.t('Region / Land') });
+    var val = U.el('input', { class: 'input input-sm', type: 'number', step: '0.5', min: '0', value: cost === undefined ? '' : cost, placeholder: U.t('EUR je Palette') });
     var del = U.el('button', { class: 'icon-btn', type: 'button', text: '✕', onclick: function () { row.remove(); } });
     row.appendChild(list); row.appendChild(val); row.appendChild(del);
 
@@ -215,12 +215,12 @@
       var guess = NS.geo.lookup(payload.region || payload.name, payload.country);
       if (guess) {
         payload.lat = guess.lat; payload.lng = guess.lng;
-        U.toast('Koordinaten für „' + (payload.region || payload.name) + '“ automatisch ergänzt.', 'good');
+        U.toast(U.tf('Koordinaten für „{0}“ automatisch ergänzt.', payload.region || payload.name), 'good');
       }
     }
 
-    if (editingId) { S.updateDC(editingId, payload); U.toast('DC „' + payload.name + '“ aktualisiert.'); }
-    else { S.addDC(payload); U.toast('DC „' + payload.name + '“ angelegt.'); }
+    if (editingId) { S.updateDC(editingId, payload); U.toast(U.tf('DC „{0}“ aktualisiert.', payload.name)); }
+    else { S.addDC(payload); U.toast(U.tf('DC „{0}“ angelegt.', payload.name)); }
 
     closeModal();
   }
@@ -266,7 +266,7 @@
       S.addDC(dc);
       added++;
     });
-    U.toast(added + ' Distributionszentren importiert.', 'good');
+    U.toast(U.tf('{0} Distributionszentren importiert.', added), 'good');
   }
 
   /* ------------------------------------------------------------ Events */
@@ -297,13 +297,13 @@
         if (src) {
           var copy = JSON.parse(JSON.stringify(src));
           delete copy.id;
-          copy.name = src.name + ' (Kopie)';
+          copy.name = src.name + ' ' + U.t('(Kopie)');
           S.addDC(copy);
           U.toast('DC dupliziert.');
         }
       } else if (act === 'del') {
         var dc = S.getDC(dcId);
-        if (dc && confirm('DC „' + dc.name + '“ wirklich löschen? Bestehende Zuordnungen zu diesem Standort werden entfernt.')) {
+        if (dc && window.confirm(U.tf('DC „{0}“ wirklich löschen? Bestehende Zuordnungen zu diesem Standort werden entfernt.', dc.name))) {
           S.removeDC(dcId);
           U.toast('DC gelöscht.', 'warn');
         }
@@ -315,7 +315,7 @@
       var file = e.target.files && e.target.files[0];
       if (!file) return;
       NS.data.readFile(file, function (err, result) {
-        if (err) { U.toast('Datei konnte nicht gelesen werden: ' + err.message, 'error'); return; }
+        if (err) { U.toast(U.tf('Datei konnte nicht gelesen werden: {0}', err.message), 'error'); return; }
         importFromRows(result.rows);
         e.target.value = '';
       });

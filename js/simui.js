@@ -39,8 +39,8 @@
     U.$('#w-capacity-out').textContent = w.capacity + ' %';
     U.$('#w-transport-out').textContent = w.transport + ' %';
     U.$('#w-service-out').textContent = w.service + ' %';
-    U.$('#weights-note').textContent = 'Normiert: Kapazität ' + fmt.pct(n.capacity) +
-      ' · Transport ' + fmt.pct(n.transport) + ' · Reichweite ' + fmt.pct(n.service);
+    U.$('#weights-note').textContent = U.tf('Normiert: Kapazität {0} · Transport {1} · Reichweite {2}',
+      fmt.pct(n.capacity), fmt.pct(n.transport), fmt.pct(n.service));
     S.settings().weights = w;
   }
 
@@ -54,7 +54,7 @@
     var prevCat = catSel.value;
     catSel.innerHTML = cats.length
       ? cats.map(function (c) { return '<option value="' + U.esc(c) + '">' + U.esc(c) + '</option>'; }).join('')
-      : '<option value="">– keine Kategorien vorhanden –</option>';
+      : '<option value="">' + U.t('– keine Kategorien vorhanden –') + '</option>';
     if (cats.indexOf(prevCat) >= 0) catSel.value = prevCat;
 
     var pers = S.periods(dataset);
@@ -98,17 +98,17 @@
     if (res.error) { U.toast(res.error, 'error'); return; }
     lastResult = res;
     renderResult(res);
-    U.toast('Simulation für „' + p.category + '“ abgeschlossen.', 'good');
+    U.toast(U.tf('Simulation für „{0}“ abgeschlossen.', p.category), 'good');
   }
 
   function simulateAll() {
     var p = params();
     if (!S.activeDCs().length) { U.toast('Es ist kein aktives Distributionszentrum vorhanden.', 'warn'); return; }
     if (!S.categories(p.dataset).length) { U.toast('Keine Kategorien in der gewählten Datenbasis.', 'warn'); return; }
-    if (!confirm('Alle Kategorien werden nacheinander simuliert und zugeordnet (volumenstärkste zuerst). Bestehende Zuordnungen werden dabei ersetzt. Fortfahren?')) return;
+    if (!U.ask('Alle Kategorien werden nacheinander simuliert und zugeordnet (volumenstärkste zuerst). Bestehende Zuordnungen werden dabei ersetzt. Fortfahren?')) return;
 
     var out = NS.sim.runAll(p);
-    U.toast(out.count + ' Kategorien simuliert und zugeordnet.', 'good');
+    U.toast(U.tf('{0} Kategorien simuliert und zugeordnet.', out.count), 'good');
     if (out.results && out.results.length) {
       var current = out.results.find(function (r) { return r.category === p.category; }) || out.results[0];
       lastResult = current;
@@ -138,11 +138,11 @@
 
     var head, sub;
     if (isSplit) {
-      head = 'Aufteilung auf ' + res.parts.length + ' Standorte';
-      sub = 'Kategorie „' + res.category + '“ – kombinierte Belieferung nach regionaler Nähe und verfügbarer Kapazität.';
+      head = U.tf('Aufteilung auf {0} Standorte', res.parts.length);
+      sub = U.tf('Kategorie „{0}“ – kombinierte Belieferung nach regionaler Nähe und verfügbarer Kapazität.', res.category);
     } else {
       head = best.dcName;
-      sub = 'Kategorie „' + res.category + '“ vollständig aus diesem Distributionszentrum.';
+      sub = U.tf('Kategorie „{0}“ vollständig aus diesem Distributionszentrum.', res.category);
     }
 
     var badges = res.parts.map(function (p) {
@@ -151,15 +151,15 @@
     }).join('');
 
     var warnings = [];
-    if (!res.metrics.feasible) warnings.push('Die Kapazität reicht für den Ziel-Bestand nicht aus.');
-    if (res.overflowPallets > 0) warnings.push(fmt.int(res.overflowPallets) + ' Paletten konnten nicht kapazitätsgerecht untergebracht werden.');
-    if (d.regionsWithoutCoords > 0) warnings.push(d.regionsWithoutCoords + ' Region(en) ohne Koordinaten – für diese wird eine mittlere Netzdistanz angenommen.');
+    if (!res.metrics.feasible) warnings.push(U.t('Die Kapazität reicht für den Ziel-Bestand nicht aus.'));
+    if (res.overflowPallets > 0) warnings.push(U.tf('{0} Paletten konnten nicht kapazitätsgerecht untergebracht werden.', fmt.int(res.overflowPallets)));
+    if (d.regionsWithoutCoords > 0) warnings.push(U.tf('{0} Region(en) ohne Koordinaten – für diese wird eine mittlere Netzdistanz angenommen.', d.regionsWithoutCoords));
 
     var runnerUp = res.candidates.length > 1 ? res.candidates[1] : null;
     var reason = buildReason(res, runnerUp);
 
     card.innerHTML =
-      '<span class="reco-tag">Empfehlung</span>' +
+      '<span class="reco-tag">' + U.t('Empfehlung') + '</span>' +
       '<h2>' + U.esc(head) + '</h2>' +
       '<p class="reco-sub">' + U.esc(sub) + '</p>' +
       (isSplit ? '<div class="reco-split">' + badges + '</div>' : '') +
@@ -168,9 +168,9 @@
         warnings.map(function (w) { return '• ' + U.esc(w); }).join('<br>') + '</div>' : '') +
       '<div class="reco-metrics">' +
       metric('Gesamt-Score', fmt.dec1(res.metrics.score) + ' <span class="kpi-unit">/100</span>') +
-      metric('Volumen', fmt.int(d.totalPallets) + ' <span class="kpi-unit">Pal.</span>') +
-      metric('Ziel-Bestand', fmt.int(res.metrics.requiredSlots) + ' <span class="kpi-unit">Plätze</span>') +
-      metric('Zielreichweite', fmt.int(res.targetDays) + ' <span class="kpi-unit">Tage</span>') +
+      metric('Volumen', fmt.int(d.totalPallets) + ' <span class="kpi-unit">' + U.t('Pal.') + '</span>') +
+      metric('Ziel-Bestand', fmt.int(res.metrics.requiredSlots) + ' <span class="kpi-unit">' + U.t('Plätze') + '</span>') +
+      metric('Zielreichweite', fmt.int(res.targetDays) + ' <span class="kpi-unit">' + U.t('Tage') + '</span>') +
       metric('Ø Distanz', isFinite(res.metrics.avgDistance) ? fmt.km(res.metrics.avgDistance) : '–') +
       metric('Transportkosten', fmt.eur(res.metrics.transportCost)) +
       metric('Gesamtkosten', fmt.eur(res.metrics.totalCost)) +
@@ -179,7 +179,7 @@
   }
 
   function metric(label, value) {
-    return '<div class="reco-metric"><span>' + U.esc(label) + '</span><b>' + value + '</b></div>';
+    return '<div class="reco-metric"><span>' + U.esc(U.t(label)) + '</span><b>' + value + '</b></div>';
   }
 
   /** Formuliert, welches Kriterium den Ausschlag gegeben hat. */
@@ -190,15 +190,15 @@
     var names = { capacity: 'Kapazität und Auslastungsbalance', transport: 'Transportkosten bzw. Kundennähe', service: 'Einhaltung der Zielreichweite' };
     var top = Object.keys(c).sort(function (a, b) { return c[b] - c[a]; })[0];
 
-    var txt = 'Ausschlaggebend ist <b>' + names[top] + '</b> mit ' + fmt.dec1(c[top]) +
-      ' von ' + fmt.dec1(best.scores.total) + ' Punkten (Teil-Score ' + fmt.dec1(best.scores[top]) + ').';
+    var txt = U.tf('Ausschlaggebend ist <b>{0}</b> mit {1} von {2} Punkten (Teil-Score {3}).',
+      U.t(names[top]), fmt.dec1(c[top]), fmt.dec1(best.scores.total), fmt.dec1(best.scores[top]));
 
     if (runnerUp && runnerUp.dcId !== best.dcId) {
       var delta = best.scores.total - runnerUp.scores.total;
-      txt += ' Der Abstand zum zweitplatzierten Standort ' + U.esc(runnerUp.dcName) + ' beträgt ' +
-        fmt.dec1(delta) + ' Punkte' +
+      txt += U.tf(' Der Abstand zum zweitplatzierten Standort {0} beträgt {1} Punkte',
+        U.esc(runnerUp.dcName), fmt.dec1(delta)) +
         (isFinite(best.costPerPallet) && isFinite(runnerUp.costPerPallet)
-          ? ' bei ' + fmt.dec2(runnerUp.costPerPallet - best.costPerPallet) + ' € Unterschied je Palette.' : '.');
+          ? U.tf(' bei {0} € Unterschied je Palette.', fmt.dec2(runnerUp.costPerPallet - best.costPerPallet)) : '.');
     }
     return txt;
   }
@@ -215,7 +215,7 @@
           return '<span style="display:inline-flex;align-items:center;gap:7px">' +
             '<i class="dc-dot" style="background:' + NS.charts.seriesColor(NS.dcs.dcIndex(r.dcId)) + '"></i><b>' +
             U.esc(r.dcName) + '</b>' +
-            (usedIds.indexOf(r.dcId) >= 0 ? ' <span class="badge badge-good">gewählt</span>' : '') + '</span>';
+            (usedIds.indexOf(r.dcId) >= 0 ? ' <span class="badge badge-good">' + U.t('gewählt') + '</span>' : '') + '</span>';
         }
       },
       { label: 'Gesamt-Score', num: true, render: function (r) { return U.scoreBar(r.scores.total, NS.charts.seriesColor(NS.dcs.dcIndex(r.dcId))); } },
@@ -223,7 +223,7 @@
       { label: 'Transport', num: true, render: function (r) { return fmt.dec1(r.scores.transport); } },
       { label: 'Reichweite', num: true, render: function (r) { return fmt.dec1(r.scores.service); } },
       { label: 'Ø Distanz', num: true, render: function (r) { return isFinite(r.avgDistance) ? fmt.km(r.avgDistance) : '–'; } },
-      { label: 'Transit', num: true, render: function (r) { return isFinite(r.avgTransitDays) ? fmt.dec1(r.avgTransitDays) + ' T' : '–'; } },
+      { label: 'Transit', num: true, render: function (r) { return isFinite(r.avgTransitDays) ? fmt.dec1(r.avgTransitDays) + ' ' + U.t('T') : '–'; } },
       { label: '€/Palette', num: true, render: function (r) { return fmt.dec2(r.costPerPallet); } },
       { label: 'Transportkosten', num: true, render: function (r) { return fmt.eur(r.transportCost); } },
       { label: 'Ziel-Bestand', num: true, render: function (r) { return fmt.int(r.requiredSlots); } },
@@ -236,12 +236,12 @@
       },
       {
         label: 'Reichweite erreichbar', num: true, render: function (r) {
-          return fmt.dec1(r.achievableDays) + ' / ' + fmt.int(res.targetDays) + ' T';
+          return fmt.dec1(r.achievableDays) + ' / ' + fmt.int(res.targetDays) + ' ' + U.t('T');
         }
       },
       {
         label: 'Kapazität', render: function (r) {
-          return r.feasible ? '<span class="badge badge-good">ausreichend</span>' : '<span class="badge badge-crit">zu klein</span>';
+          return r.feasible ? '<span class="badge badge-good">' + U.t('ausreichend') + '</span>' : '<span class="badge badge-crit">' + U.t('zu klein') + '</span>';
         }
       }
     ], rows, {
@@ -261,17 +261,17 @@
       stacked: true,
       horizontal: true,
       valueFormat: function (v) { return fmt.int(v); },
-      tooltipFormat: function (v) { return fmt.dec1(v) + ' Punkte'; },
+      tooltipFormat: function (v) { return U.tf('{0} Punkte', fmt.dec1(v)); },
       tooltipFooter: function (items) {
         var r = top[items[0].dataIndex];
-        return 'Gesamt: ' + fmt.dec1(r.scores.total) + ' / 100';
+        return U.tf('Gesamt: {0} / 100', fmt.dec1(r.scores.total));
       }
     });
 
     NS.charts.legend('#legend-score', [
-      { label: 'Kapazität & Balance (' + fmt.pct(res.weights.capacity) + ')', color: NS.charts.seriesColor(0) },
-      { label: 'Transport / Distanz (' + fmt.pct(res.weights.transport) + ')', color: NS.charts.seriesColor(1) },
-      { label: 'Zielreichweite (' + fmt.pct(res.weights.service) + ')', color: NS.charts.seriesColor(2) }
+      { label: U.tf('Kapazität & Balance ({0})', fmt.pct(res.weights.capacity)), color: NS.charts.seriesColor(0) },
+      { label: U.tf('Transport / Distanz ({0})', fmt.pct(res.weights.transport)), color: NS.charts.seriesColor(1) },
+      { label: U.tf('Zielreichweite ({0})', fmt.pct(res.weights.service)), color: NS.charts.seriesColor(2) }
     ]);
   }
 
@@ -317,7 +317,7 @@
     var inputs = U.$$('#table-split input[data-dc]');
     var total = U.sum(inputs, function (i) { return U.num(i.value, 0); });
     var node = U.$('#split-sum');
-    node.textContent = 'Summe der Anteile: ' + fmt.dec1(total) + ' %';
+    node.textContent = U.tf('Summe der Anteile: {0} %', fmt.dec1(total));
     node.className = Math.abs(total - 100) > 0.5 ? 'hint t-warn' : 'hint';
   }
 
@@ -357,10 +357,10 @@
       {
         label: 'Distanz', num: true, render: function (r) {
           return (isFinite(r.distance) ? fmt.km(r.distance) : '–') +
-            (r.distanceKnown === false ? ' <span class="badge badge-warn">geschätzt</span>' : '');
+            (r.distanceKnown === false ? ' <span class="badge badge-warn">' + U.t('geschätzt') + '</span>' : '');
         }
       },
-      { label: 'Transit', num: true, render: function (r) { return isFinite(r.transitDays) ? fmt.dec1(r.transitDays) + ' T' : '–'; } },
+      { label: 'Transit', num: true, render: function (r) { return isFinite(r.transitDays) ? fmt.dec1(r.transitDays) + ' ' + U.t('T') : '–'; } },
       { label: '€/Palette', num: true, render: function (r) { return fmt.dec2(r.costPerPallet); } },
       { label: 'Transportkosten', num: true, render: function (r) { return fmt.eur(r.cost); } }
     ], rows);
@@ -381,7 +381,7 @@
 
     U.renderTable(U.$('#table-assignments'), [
       { label: 'Produktkategorie', render: function (r) { return '<b>' + U.esc(r.category) + '</b>'; } },
-      { label: 'Modus', render: function (r) { return r.mode === 'single' ? 'Alleinzuordnung' : (r.mode === 'split' ? 'Split' : 'manuell'); } },
+      { label: 'Modus', render: function (r) { return U.t(r.mode === 'single' ? 'Alleinzuordnung' : (r.mode === 'split' ? 'Split' : 'manuell')); } },
       {
         label: 'Zuordnung', wrap: true, render: function (r) {
           return r.parts.map(function (p) {
@@ -390,7 +390,7 @@
           }).join(' ');
         }
       },
-      { label: 'Reichweite', num: true, render: function (r) { return fmt.int(r.targetDays) + ' T'; } },
+      { label: 'Reichweite', num: true, render: function (r) { return fmt.int(r.targetDays) + ' ' + U.t('T'); } },
       { label: 'Volumen (Pal.)', num: true, render: function (r) { return fmt.int(r.metrics.pallets); } },
       { label: 'Ziel-Bestand', num: true, render: function (r) { return fmt.int(r.metrics.requiredSlots); } },
       { label: 'Gesamtkosten', num: true, render: function (r) { return fmt.eur(r.metrics.totalCost); } },
@@ -398,8 +398,8 @@
       {
         label: '', render: function (r) {
           return '<span class="tools">' +
-            '<button class="btn btn-xs" data-act="load" data-cat="' + U.esc(r.category) + '">Erneut simulieren</button>' +
-            '<button class="btn btn-xs btn-danger" data-act="del" data-cat="' + U.esc(r.category) + '">Entfernen</button>' +
+            '<button class="btn btn-xs" data-act="load" data-cat="' + U.esc(r.category) + '">' + U.t('Erneut simulieren') + '</button>' +
+            '<button class="btn btn-xs btn-danger" data-act="del" data-cat="' + U.esc(r.category) + '">' + U.t('Entfernen') + '</button>' +
             '</span>';
         }
       }
@@ -450,14 +450,14 @@
     U.$('#btn-apply-assign').addEventListener('click', function () {
       if (!lastResult) { U.toast('Bitte zuerst eine Simulation ausführen.', 'warn'); return; }
       if (NS.sim.applyResult(lastResult)) {
-        U.toast('Zuordnung für „' + lastResult.category + '“ übernommen.', 'good');
+        U.toast(U.tf('Zuordnung für „{0}“ übernommen.', lastResult.category), 'good');
         renderAssignments();
       }
     });
 
     U.$('#btn-clear-assign').addEventListener('click', function () {
       if (!Object.keys(S.get().assignments).length) return;
-      if (!confirm('Alle übernommenen Zuordnungen zurücksetzen?')) return;
+      if (!U.ask('Alle übernommenen Zuordnungen zurücksetzen?')) return;
       S.clearAssignments();
       renderAssignments();
       U.toast('Zuordnungen zurückgesetzt.', 'warn');
@@ -471,7 +471,7 @@
         delete S.get().assignments[cat];
         S.emit('assignments');
         renderAssignments();
-        U.toast('Zuordnung für „' + cat + '“ entfernt.', 'warn');
+        U.toast(U.tf('Zuordnung für „{0}“ entfernt.', cat), 'warn');
       } else {
         var a = S.get().assignments[cat];
         U.$('#sim-category').value = cat;

@@ -13,7 +13,7 @@
     var st = S.get();
     var rows = [
       ['NetPlan – Auswertung Logistik-Netzwerk'],
-      ['Erstellt am', new Date().toLocaleString('de-DE')],
+      ['Erstellt am', new Date().toLocaleString(NS.i18n ? NS.i18n.locale() : 'de-DE')],
       [],
       ['Kennzahl', 'Wert', 'Einheit'],
       ['Aktive Distributionszentren', S.activeDCs().length, 'Anzahl'],
@@ -48,21 +48,26 @@
       ['Stück je Palette', st.settings.qtyPerPallet, 'Stück'],
       ['Volumen je Palette', st.settings.volPerPallet, 'm³']
     ];
-    return rows;
+    // Erste Spalte (Bezeichnung) und Einheit übersetzen, Zahlen unverändert lassen
+    return rows.map(function (r) {
+      return r.map(function (cell, i) {
+        return (i === 0 || i === 2) && typeof cell === 'string' ? U.t(cell) : cell;
+      });
+    });
   }
 
   function sheetDCs(sum) {
     var head = ['Name', 'Code', 'Region', 'Land', 'Breitengrad', 'Längengrad', 'Aktiv',
       'Kapazität', 'Grundbelegung', 'Zugeordneter Ziel-Bestand', 'Belegt gesamt', 'Frei', 'Auslastung %',
       'Volumen Paletten', 'Transportkosten EUR', 'Lagerkosten EUR', 'Handlingkosten EUR', 'Fixkosten EUR',
-      'Gesamtkosten EUR', 'Ø Distanz km', 'Kategorien'];
+      'Gesamtkosten EUR', 'Ø Distanz km', 'Kategorien'].map(U.t);
     var byId = Object.create(null);
     sum.perDC.forEach(function (d) { byId[d.dcId] = d; });
 
     var rows = S.get().dcs.map(function (dc) {
       var d = byId[dc.id] || {};
       return [dc.name, dc.code, dc.region, dc.country,
-        U.isNum(dc.lat) ? dc.lat : '', U.isNum(dc.lng) ? dc.lng : '', dc.active ? 'ja' : 'nein',
+        U.isNum(dc.lat) ? dc.lat : '', U.isNum(dc.lng) ? dc.lng : '', U.t(dc.active ? 'ja' : 'nein'),
         U.round(dc.capacity, 0), U.round(dc.usedSlots, 0), U.round(d.assignedSlots, 1),
         U.round(d.usedTotal, 1), U.round(d.free, 1), U.round(d.utilization * 100, 2),
         U.round(d.pallets, 1), U.round(d.transportCost, 2), U.round(d.storageCost, 2),
@@ -77,7 +82,7 @@
     var head = ['Produktkategorie', 'Modus', 'Zielreichweite Tage', 'Datenbasis', 'Periode von', 'Periode bis',
       'DC', 'Anteil %', 'Volumen Paletten', 'Ziel-Bestand Stellplätze', 'Transportkosten EUR',
       'Lagerkosten EUR', 'Handlingkosten EUR', 'Gesamtkosten EUR', 'Ø Distanz km', 'Ø Transitzeit Tage',
-      'Score', 'Score Kapazität', 'Score Transport', 'Score Reichweite', 'Kapazität ausreichend'];
+      'Score', 'Score Kapazität', 'Score Transport', 'Score Reichweite', 'Kapazität ausreichend'].map(U.t);
     var rows = [];
     Object.keys(st.assignments).sort().forEach(function (cat) {
       var a = st.assignments[cat];
@@ -88,7 +93,7 @@
           U.round(p.transportCost, 2), U.round(p.storageCost, 2), U.round(p.handlingCost, 2),
           U.round(p.totalCost, 2), U.round(p.avgDistance, 1), U.round(p.avgTransitDays, 2),
           U.round(p.score, 1), U.round(sc.capacity, 1), U.round(sc.transport, 1), U.round(sc.service, 1),
-          p.feasible === false ? 'nein' : 'ja']);
+          U.t(p.feasible === false ? 'nein' : 'ja')]);
       });
     });
     return [head].concat(rows);
@@ -96,7 +101,7 @@
 
   function sheetRegionAssignments() {
     var st = S.get();
-    var head = ['Produktkategorie', 'Kundenregion', 'Beliefert aus DC', 'Volumen Paletten', 'Distanz km', 'Transportkosten EUR'];
+    var head = ['Produktkategorie', 'Kundenregion', 'Beliefert aus DC', 'Volumen Paletten', 'Distanz km', 'Transportkosten EUR'].map(U.t);
     var rows = [];
     Object.keys(st.assignments).sort().forEach(function (cat) {
       (st.assignments[cat].regions || []).forEach(function (r) {
@@ -115,7 +120,7 @@
       var e = stats[r.regionKey] || (stats[r.regionKey] = { n: 0, pallets: 0, qty: 0, revenue: 0 });
       e.n++; e.pallets += S.recordPallets(r); e.qty += r.qty; e.revenue += r.revenue;
     });
-    var head = ['Region', 'Land', 'Breitengrad', 'Längengrad', 'Quelle', 'Datensätze', 'Volumen Paletten', 'Menge Stück', 'Umsatz EUR'];
+    var head = ['Region', 'Land', 'Breitengrad', 'Längengrad', 'Quelle', 'Datensätze', 'Volumen Paletten', 'Menge Stück', 'Umsatz EUR'].map(U.t);
     var rows = Object.keys(st.regions).sort().map(function (k) {
       var info = st.regions[k], s = stats[k] || {};
       return [k, info.country || '', U.isNum(info.lat) ? info.lat : '', U.isNum(info.lng) ? info.lng : '',
@@ -130,7 +135,7 @@
 
   function sheetCoverage() {
     var head = ['Produktkategorie', 'Volumen Paletten', 'Zeitraum Tage', 'Bedarf je Tag',
-      'Zielreichweite Tage', 'Ziel-Bestand Stellplätze'];
+      'Zielreichweite Tage', 'Ziel-Bestand Stellplätze'].map(U.t);
     var s = S.settings();
     var rows = S.categories('all').map(function (cat) {
       var recs = S.get().records.filter(function (r) { return r.category === cat; });
@@ -147,9 +152,9 @@
   function sheetRaw() {
     var st = S.get();
     var head = ['Datensatztyp', 'Periode', 'Produktkategorie', 'Region', 'Land', 'Kunde',
-      'Menge', 'Umsatz EUR', 'Volumen m³', 'Paletten', 'Paletten-Äquivalent', 'Paletten (berechnet)'];
+      'Menge', 'Umsatz EUR', 'Volumen m³', 'Paletten', 'Paletten-Äquivalent', 'Paletten (berechnet)'].map(U.t);
     var rows = st.records.slice(0, MAX_RAW_ROWS).map(function (r) {
-      return [r.dataset === 'forecast' ? 'Forecast' : 'Historie', r.period, r.category, r.regionKey,
+      return [U.t(r.dataset === 'forecast' ? 'Forecast' : 'Historie'), r.period, r.category, r.regionKey,
         r.country, r.customer, U.round(r.qty, 2), U.round(r.revenue, 2), U.round(r.volume, 3),
         U.round(r.pallets, 2), U.round(r.palletEq, 2), U.round(S.recordPallets(r), 2)];
     });
@@ -173,15 +178,15 @@
       XLSX.utils.book_append_sheet(wb, ws, name.slice(0, 31));
     }
 
-    add('KPI', sheetKPI(sum), [38, 20, 18]);
-    add('DCs', sheetDCs(sum));
-    add('Zuordnungen', sheetAssignments());
-    add('Detailergebnisse', NS.dashboard.detailCSV());
-    add('Regionszuordnung', sheetRegionAssignments());
-    add('Zielreichweiten', sheetCoverage());
-    add('Regionen', sheetRegions());
-    add('Szenarien', sheetScenarios());
-    if (S.get().records.length) add('Rohdaten', sheetRaw());
+    add(U.t('KPI'), sheetKPI(sum), [38, 20, 18]);
+    add(U.t('DCs'), sheetDCs(sum));
+    add(U.t('Zuordnungen'), sheetAssignments());
+    add(U.t('Detailergebnisse'), NS.dashboard.detailCSV());
+    add(U.t('Regionszuordnung'), sheetRegionAssignments());
+    add(U.t('Zielreichweiten'), sheetCoverage());
+    add(U.t('Regionen'), sheetRegions());
+    add(U.t('Szenarien'), sheetScenarios());
+    if (S.get().records.length) add(U.t('Rohdaten'), sheetRaw());
 
     XLSX.writeFile(wb, 'netplan_auswertung_' + U.timestamp() + '.xlsx');
     U.toast('Excel-Arbeitsmappe erzeugt.', 'good');
@@ -220,13 +225,13 @@
     reader.onload = function (e) {
       try {
         var obj = JSON.parse(e.target.result);
-        if (!obj || typeof obj !== 'object') throw new Error('Ungültiges Format');
+        if (!obj || typeof obj !== 'object') throw new Error(U.t('Ungültiges Format'));
         S.hydrate(obj);
         S.emit('project');
-        U.toast('Projekt geladen: ' + (obj.dcs || []).length + ' DCs, ' +
-          fmt.int((obj.records || []).length) + ' Datensätze, ' + (obj.scenarios || []).length + ' Szenarien.', 'good');
+        U.toast(U.tf('Projekt geladen: {0} DCs, {1} Datensätze, {2} Szenarien.',
+          (obj.dcs || []).length, fmt.int((obj.records || []).length), (obj.scenarios || []).length), 'good');
       } catch (err) {
-        U.toast('Projektdatei konnte nicht gelesen werden: ' + err.message, 'error');
+        U.toast(U.tf('Projektdatei konnte nicht gelesen werden: {0}', err.message), 'error');
       }
     };
     reader.onerror = function () { U.toast('Datei konnte nicht gelesen werden.', 'error'); };

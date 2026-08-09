@@ -85,11 +85,11 @@
           out.push({
             id: U.id('r'),
             dataset: dataset,
-            customer: customer,
-            country: region.country,
-            region: region.key,
-            regionKey: region.key,
-            category: cat.name,
+            customer: U.t(customer),
+            country: U.t(region.country),
+            region: U.t(region.key),
+            regionKey: U.t(region.key),
+            category: U.t(cat.name),
             period: period,
             periodTs: Date.UTC(year, month, 1),
             periodDays: days,
@@ -110,7 +110,7 @@
   function load() {
     var st = S.get();
     if (st.dcs.length || st.records.length) {
-      if (!confirm('Die Demodaten ersetzen den aktuellen Arbeitsstand (DCs, Daten, Zuordnungen, Szenarien). Fortfahren?')) return;
+      if (!U.ask('Die Demodaten ersetzen den aktuellen Arbeitsstand (DCs, Daten, Zuordnungen, Szenarien). Fortfahren?')) return;
     }
 
     S.hydrate(S.emptyState());
@@ -119,7 +119,7 @@
 
     // Regionsspezifische Sonderkondition als Beispiel für Pauschalpreise
     var poz = S.get().dcs.find(function (d) { return d.code === 'POZ'; });
-    if (poz) poz.regionCosts = { 'Polen': 4.2, 'Tschechien': 6.5 };
+    if (poz) { poz.regionCosts = {}; poz.regionCosts[U.t('Polen')] = 4.2; poz.regionCosts[U.t('Tschechien')] = 6.5; }
 
     var now = new Date();
     var histStart = new Date(Date.UTC(now.getUTCFullYear() - 1, now.getUTCMonth() - 11, 1));
@@ -130,12 +130,12 @@
 
     S.get().records = history.concat(forecast);
 
-    CATEGORIES.forEach(function (c) { S.get().settings.targetDaysByCategory[c.name] = c.targetDays; });
+    CATEGORIES.forEach(function (c) { S.get().settings.targetDaysByCategory[U.t(c.name)] = c.targetDays; });
     S.syncRegions();
 
     S.emit('project');
-    U.toast('Demodaten geladen: 5 DCs, ' + U.fmt.int(history.length + forecast.length) +
-      ' Datensätze über 36 Monate (24 Monate Historie, 12 Monate Forecast).', 'good');
+    U.toast(U.tf('Demodaten geladen: 5 DCs, {0} Datensätze über 36 Monate (24 Monate Historie, 12 Monate Forecast).',
+      U.fmt.int(history.length + forecast.length)), 'good');
   }
 
   NS.demo = { load: load, DEMO_DCS: DEMO_DCS, CATEGORIES: CATEGORIES, REGIONS: REGIONS };

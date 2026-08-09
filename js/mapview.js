@@ -88,9 +88,12 @@
     }
   }
 
-  function note(text) {
+  var noteKey = '';
+  /** Merkt den deutschen Originaltext, damit er bei Sprachwechsel neu übersetzt wird. */
+  function note(textDe) {
+    noteKey = textDe;
     var n = U.$('#map-note');
-    if (n) n.textContent = text;
+    if (n) n.textContent = U.t(textDe);
   }
 
   /* ------------------------------------------------------------ Daten */
@@ -142,6 +145,7 @@
   /* ------------------------------------------------------------ Zeichnen */
   function render() {
     if (!initialized) return;
+    if (noteKey) note(noteKey);          // Sprache des Hinweises aktualisieren
     if (!map) { renderSVG(); return; }
 
     if (layers.marks) map.removeLayer(layers.marks);
@@ -172,7 +176,7 @@
         radius: radiusFor(r.pallets, maxRegion, 4, 11),
         color: c.surface, weight: 2,
         fillColor: c.muted, fillOpacity: 0.75
-      }).bindTooltip('<b>' + U.esc(r.key) + '</b>Kundenregion · ' + U.fmt.int(r.pallets) + ' Paletten',
+      }).bindTooltip('<b>' + U.esc(r.key) + '</b>' + U.tf('Kundenregion · {0} Paletten', U.fmt.int(r.pallets)),
         { className: 'map-tip' }).addTo(layers.marks);
     });
 
@@ -184,8 +188,8 @@
         radius: radiusFor(d.capacity, maxCap, 8, 18),
         color: c.surface, weight: 2,
         fillColor: color, fillOpacity: 0.9
-      }).bindTooltip('<b>' + U.esc(d.name) + '</b>Kapazität ' + U.fmt.int(d.capacity) + ' Stellplätze<br>' +
-        'Belegung ' + (isFinite(load.util) ? U.fmt.pct(load.util) : '–'),
+      }).bindTooltip('<b>' + U.esc(d.name) + '</b>' + U.tf('Kapazität {0} Stellplätze', U.fmt.int(d.capacity)) + '<br>' +
+        U.tf('Belegung {0}', isFinite(load.util) ? U.fmt.pct(load.util) : '–'),
         { className: 'map-tip' }).addTo(layers.marks);
     });
 
@@ -206,7 +210,7 @@
 
     var pts = data.dcs.concat(data.regions);
     if (!pts.length) {
-      box.innerHTML = '<div class="empty-inline" style="padding:20px">Keine Standorte mit Koordinaten vorhanden.</div>';
+      box.innerHTML = '<div class="empty-inline" style="padding:20px">' + U.t('Keine Standorte mit Koordinaten vorhanden.') + '</div>';
       return;
     }
 
@@ -221,7 +225,7 @@
     var maxCap = Math.max.apply(null, [1].concat(data.dcs.map(function (d) { return d.capacity; })));
     var maxRegion = Math.max.apply(null, [1].concat(data.regions.map(function (r) { return r.pallets; })));
 
-    var svg = ['<svg class="map-fallback" viewBox="0 0 ' + w + ' ' + h + '" role="img" aria-label="Schematische Netzwerkkarte">'];
+    var svg = ['<svg class="map-fallback" viewBox="0 0 ' + w + ' ' + h + '" role="img" aria-label="' + U.t('Schematische Netzwerkkarte') + '">'];
     svg.push('<rect width="' + w + '" height="' + h + '" fill="' + NS.charts.cssVar('--surface-3', '#f2f2ef') + '"/>');
     for (var gx = 1; gx < 6; gx++) {
       svg.push('<line x1="' + (gx * w / 6) + '" y1="0" x2="' + (gx * w / 6) + '" y2="' + h + '" stroke="' + c.grid + '"/>');

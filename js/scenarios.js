@@ -17,7 +17,7 @@
 
     return {
       id: U.id('scn'),
-      name: name || ('Szenario ' + (st.scenarios.length + 1)),
+      name: name || U.tf('Szenario {0}', st.scenarios.length + 1),
       createdAt: new Date().toISOString(),
       settings: JSON.parse(JSON.stringify(st.settings)),
       dcs: JSON.parse(JSON.stringify(st.dcs)),
@@ -59,7 +59,7 @@
     S.emit('scenarios');
     U.$('#scn-name').value = '';
     render();
-    U.toast('Szenario „' + scn.name + '“ gespeichert.', 'good');
+    U.toast(U.tf('Szenario „{0}“ gespeichert.', scn.name), 'good');
   }
 
   /* ------------------------------------------------------------ Laden */
@@ -67,19 +67,19 @@
     var st = S.get();
     var scn = st.scenarios.find(function (s) { return s.id === scnId; });
     if (!scn) return;
-    if (!confirm('Szenario „' + scn.name + '“ laden? Die aktuelle DC-Konfiguration, die Einstellungen und die Zuordnungen werden dadurch ersetzt (importierte Daten bleiben erhalten).')) return;
+    if (!window.confirm(U.tf('Szenario „{0}“ laden? Die aktuelle DC-Konfiguration, die Einstellungen und die Zuordnungen werden dadurch ersetzt (importierte Daten bleiben erhalten).', scn.name))) return;
 
     st.settings = Object.assign(S.defaultSettings(), JSON.parse(JSON.stringify(scn.settings)));
     st.dcs = JSON.parse(JSON.stringify(scn.dcs)).map(S.normalizeDC);
     st.assignments = JSON.parse(JSON.stringify(scn.assignments));
     S.emit('project');
-    U.toast('Szenario „' + scn.name + '“ geladen.', 'good');
+    U.toast(U.tf('Szenario „{0}“ geladen.', scn.name), 'good');
   }
 
   function remove(scnId) {
     var st = S.get();
     var scn = st.scenarios.find(function (s) { return s.id === scnId; });
-    if (!scn || !confirm('Szenario „' + scn.name + '“ löschen?')) return;
+    if (!scn || !window.confirm(U.tf('Szenario „{0}“ löschen?', scn.name))) return;
     st.scenarios = st.scenarios.filter(function (s) { return s.id !== scnId; });
     S.emit('scenarios');
     render();
@@ -90,7 +90,7 @@
     var st = S.get();
     var scn = st.scenarios.find(function (s) { return s.id === scnId; });
     if (!scn) return;
-    var name = prompt('Neue Bezeichnung für das Szenario:', scn.name);
+    var name = U.askText('Neue Bezeichnung für das Szenario:', scn.name);
     if (name === null) return;
     scn.name = name.trim() || scn.name;
     S.emit('scenarios');
@@ -101,7 +101,7 @@
   /** Spalten des Vergleichs: aktueller Stand + alle gespeicherten Szenarien. */
   function comparisonSet() {
     var st = S.get();
-    var live = snapshot('Aktueller Stand');
+    var live = snapshot(U.t('Aktueller Stand'));
     live.id = '__live';
     live.isLive = true;
     return [live].concat(st.scenarios);
@@ -132,8 +132,8 @@
 
     U.$('#scn-empty').classList.toggle('hidden', st.scenarios.length > 0);
     U.$('#scn-count-hint').textContent = st.scenarios.length
-      ? st.scenarios.length + ' gespeicherte Szenarien im Vergleich zum aktuellen Stand'
-      : 'Noch kein Szenario gespeichert – angezeigt wird nur der aktuelle Stand.';
+      ? U.tf('{0} gespeicherte Szenarien im Vergleich zum aktuellen Stand', st.scenarios.length)
+      : U.t('Noch kein Szenario gespeichert – angezeigt wird nur der aktuelle Stand.');
 
     renderTable(set);
     renderCharts(set);
@@ -143,8 +143,8 @@
   function renderTable(set) {
     var table = U.$('#table-scenarios');
 
-    var head = '<thead><tr><th>Kennzahl</th>' + set.map(function (s) {
-      return '<th class="num">' + (s.isLive ? '<span class="badge">live</span> ' : '') + U.esc(s.name) + '</th>';
+    var head = '<thead><tr><th>' + U.t('Kennzahl') + '</th>' + set.map(function (s) {
+      return '<th class="num">' + (s.isLive ? '<span class="badge">' + U.t('live') + '</span> ' : '') + U.esc(s.name) + '</th>';
     }).join('') + '</tr></thead>';
 
     var body = METRICS.map(function (m) {
@@ -154,21 +154,21 @@
         var valid = values.filter(function (v) { return isFinite(v); });
         if (valid.length > 1) best = m.lowerBetter ? Math.min.apply(null, valid) : Math.max.apply(null, valid);
       }
-      return '<tr><th style="position:static">' + U.esc(m.label) + '</th>' +
+      return '<tr><th style="position:static">' + U.esc(U.t(m.label)) + '</th>' +
         set.map(function (s) {
           var v = s.kpis[m.key];
           var isBest = best !== null && isFinite(v) && Math.abs(v - best) < 1e-9;
           return '<td class="num' + (isBest ? ' t-good' : '') + '">' + m.fmt(v, s) +
-            (isBest ? ' <span class="badge badge-good">best</span>' : '') + '</td>';
+            (isBest ? ' <span class="badge badge-good">' + U.t('best') + '</span>' : '') + '</td>';
         }).join('') + '</tr>';
     }).join('');
 
-    var actions = '<tr><th style="position:static">Aktionen</th>' + set.map(function (s) {
+    var actions = '<tr><th style="position:static">' + U.t('Aktionen') + '</th>' + set.map(function (s) {
       if (s.isLive) return '<td class="num"><span class="t-muted">–</span></td>';
       return '<td class="num"><span class="tools" style="justify-content:flex-end">' +
-        '<button class="btn btn-xs" data-act="load" data-id="' + s.id + '">Laden</button>' +
-        '<button class="btn btn-xs" data-act="rename" data-id="' + s.id + '">Umbenennen</button>' +
-        '<button class="btn btn-xs btn-danger" data-act="del" data-id="' + s.id + '">Löschen</button>' +
+        '<button class="btn btn-xs" data-act="load" data-id="' + s.id + '">' + U.t('Laden') + '</button>' +
+        '<button class="btn btn-xs" data-act="rename" data-id="' + s.id + '">' + U.t('Umbenennen') + '</button>' +
+        '<button class="btn btn-xs btn-danger" data-act="del" data-id="' + s.id + '">' + U.t('Löschen') + '</button>' +
         '</span></td>';
     }).join('') + '</tr>';
 
@@ -188,7 +188,7 @@
       valueFormat: function (v) { return fmt.eur(v); },
       tooltipFormat: function (v) { return fmt.eurExact(v); },
       tooltipFooter: function (items) {
-        return 'Gesamt: ' + fmt.eur(set[items[0].dataIndex].kpis.totalCost);
+        return U.tf('Gesamt: {0}', fmt.eur(set[items[0].dataIndex].kpis.totalCost));
       }
     });
 
@@ -225,11 +225,11 @@
     var cats = U.unique([].concat.apply([], set.map(function (s) { return Object.keys(s.assignments || {}); }))).sort();
 
     if (!cats.length) {
-      table.innerHTML = '<tbody><tr><td class="t-muted">Noch keine Zuordnungen vorhanden.</td></tr></tbody>';
+      table.innerHTML = '<tbody><tr><td class="t-muted">' + U.t('Noch keine Zuordnungen vorhanden.') + '</td></tr></tbody>';
       return;
     }
 
-    var head = '<thead><tr><th>Produktkategorie</th>' + set.map(function (s) {
+    var head = '<thead><tr><th>' + U.t('Produktkategorie') + '</th>' + set.map(function (s) {
       return '<th>' + U.esc(s.name) + '</th>';
     }).join('') + '</tr></thead>';
 
@@ -251,11 +251,11 @@
   /* ------------------------------------------------------------ Export-Daten */
   function comparisonRows() {
     var set = comparisonSet();
-    var head = ['Kennzahl'].concat(set.map(function (s) { return s.name; }));
+    var head = [U.t('Kennzahl')].concat(set.map(function (s) { return s.name; }));
     var rows = METRICS.map(function (m) {
       // Anteile werden im Export als Prozentwert geschrieben
       var isRatio = m.key === 'utilization';
-      var label = isRatio ? m.label + ' %' : m.label;
+      var label = isRatio ? U.t(m.label) + ' %' : U.t(m.label);
       return [label].concat(set.map(function (s) {
         var v = s.kpis[m.key];
         if (!isFinite(v)) return '';

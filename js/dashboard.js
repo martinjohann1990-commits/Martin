@@ -129,31 +129,31 @@
     var tiles = [
       {
         label: 'Gesamtkapazität', value: fmt.int(sum.capacity), unit: 'Stellplätze',
-        sub: S.activeDCs().length + ' aktive Standorte', accent: 'var(--series-1)'
+        sub: U.tf('{0} aktive Standorte', S.activeDCs().length), accent: 'var(--series-1)'
       },
       {
         label: 'Auslastung', value: isFinite(util) ? fmt.pct1(util) : '–',
-        sub: fmt.int(sum.usedSlots) + ' belegt · ' + fmt.int(Math.max(sum.capacity - sum.usedSlots, 0)) + ' frei',
+        sub: U.tf('{0} belegt · {1} frei', fmt.int(sum.usedSlots), fmt.int(Math.max(sum.capacity - sum.usedSlots, 0))),
         bar: isFinite(util) ? util : 0, accent: utilAccent
       },
       {
         label: 'Ziel-Bestand (zugeordnet)', value: fmt.int(sum.assignedSlots), unit: 'Stellplätze',
-        sub: sum.categoriesAssigned + ' von ' + sum.categoriesTotal + ' Kategorien zugeordnet',
+        sub: U.tf('{0} von {1} Kategorien zugeordnet', sum.categoriesAssigned, sum.categoriesTotal),
         accent: 'var(--series-7)'
       },
       {
         label: 'Transportkosten', value: fmt.eur(sum.transportCost),
-        sub: isFinite(sum.avgDistance) ? 'Ø Distanz ' + fmt.km(sum.avgDistance) : 'im Betrachtungszeitraum',
+        sub: isFinite(sum.avgDistance) ? U.tf('Ø Distanz {0}', fmt.km(sum.avgDistance)) : U.t('im Betrachtungszeitraum'),
         accent: 'var(--series-2)'
       },
       {
         label: 'Lager- & Handlingkosten', value: fmt.eur(sum.storageCost + sum.handlingCost),
-        sub: 'davon Lager ' + fmt.eur(sum.storageCost),
+        sub: U.tf('davon Lager {0}', fmt.eur(sum.storageCost)),
         accent: 'var(--series-4)'
       },
       {
         label: 'Gesamtkosten', value: fmt.eur(sum.totalCost),
-        sub: isFinite(sum.costPerPallet) ? fmt.dec2(sum.costPerPallet) + ' € je Palette' : 'inkl. Fixkosten',
+        sub: isFinite(sum.costPerPallet) ? U.tf('{0} € je Palette', fmt.dec2(sum.costPerPallet)) : U.t('inkl. Fixkosten'),
         accent: 'var(--series-6)'
       }
     ];
@@ -161,7 +161,7 @@
     if (hasResults) {
       tiles.push({
         label: 'Ø Bewertung', value: fmt.dec1(sum.avgScore), unit: '/ 100',
-        sub: sum.infeasible ? sum.infeasible + ' Zuordnung(en) über Kapazität' : 'alle Zuordnungen kapazitätsgerecht',
+        sub: sum.infeasible ? U.tf('{0} Zuordnung(en) über Kapazität', sum.infeasible) : U.t('alle Zuordnungen kapazitätsgerecht'),
         bar: sum.avgScore / 100,
         accent: sum.infeasible ? 'var(--critical)' : 'var(--series-3)'
       });
@@ -183,11 +183,11 @@
     ], {
       stacked: true,
       valueFormat: function (v) { return fmt.int(v); },
-      tooltipFormat: function (v) { return fmt.int(v) + ' Stellplätze'; },
+      tooltipFormat: function (v) { return U.tf('{0} Stellplätze', fmt.int(v)); },
       tooltipFooter: function (items) {
         var d = dcs[items[0].dataIndex];
-        return 'Auslastung: ' + (isFinite(d.utilization) ? fmt.pct1(d.utilization) : '–') +
-          ' · Kapazität: ' + fmt.int(d.capacity);
+        return U.tf('Auslastung: {0} · Kapazität: {1}',
+          isFinite(d.utilization) ? fmt.pct1(d.utilization) : '–', fmt.int(d.capacity));
       }
     });
 
@@ -214,7 +214,7 @@
       tooltipFormat: function (v) { return fmt.eurExact(v); },
       tooltipFooter: function (items) {
         var d = dcs[items[0].dataIndex];
-        return 'Gesamt: ' + fmt.eur(d.totalCost) + (d.pallets > 0 ? ' · ' + fmt.dec2(d.totalCost / d.pallets) + ' €/Palette' : '');
+        return U.tf('Gesamt: {0}', fmt.eur(d.totalCost)) + (d.pallets > 0 ? ' · ' + fmt.dec2(d.totalCost / d.pallets) + ' €/' + U.t('Palette') : '');
       }
     });
 
@@ -247,7 +247,7 @@
       stacked: true,
       horizontal: cats.length > 6,
       valueFormat: function (v) { return fmt.int(v); },
-      tooltipFormat: function (v) { return fmt.int(v) + ' Paletten'; }
+      tooltipFormat: function (v) { return U.tf('{0} Paletten', fmt.int(v)); }
     });
 
     NS.charts.legend('#legend-volume', datasets.map(function (d) {
@@ -269,7 +269,7 @@
             U.esc(r.dcName) + '</span>';
         }
       },
-      { label: 'Modus', render: function (r) { return r.mode === 'single' ? 'Alleinzuordnung' : (r.mode === 'split' ? 'Split' : 'manuell'); } },
+      { label: 'Modus', render: function (r) { return U.t(r.mode === 'single' ? 'Alleinzuordnung' : (r.mode === 'split' ? 'Split' : 'manuell')); } },
       { label: 'Anteil', num: true, render: function (r) { return fmt.pct1(r.share); } },
       { label: 'Volumen (Pal.)', num: true, render: function (r) { return fmt.int(r.pallets); } },
       { label: 'Ziel-Bestand', num: true, render: function (r) { return fmt.int(r.slots); } },
@@ -282,8 +282,8 @@
       { label: 'Score', num: true, render: function (r) { return U.scoreBar(r.score, NS.charts.seriesColor(NS.dcs.dcIndex(r.dcId))); } },
       {
         label: 'Kapazität', render: function (r) {
-          return r.feasible ? '<span class="badge badge-good">ausreichend</span>'
-            : '<span class="badge badge-crit">überschritten</span>';
+          return r.feasible ? '<span class="badge badge-good">' + U.t('ausreichend') + '</span>'
+            : '<span class="badge badge-crit">' + U.t('überschritten') + '</span>';
         }
       }
     ], rows);
@@ -294,12 +294,12 @@
     var sum = networkSummary();
     var head = ['Kategorie', 'DC', 'Modus', 'Anteil %', 'Volumen Paletten', 'Ziel-Bestand Stellplätze',
       'Zielreichweite Tage', 'Ø Distanz km', 'Ø Transitzeit Tage', 'Transportkosten EUR',
-      'Lagerkosten EUR', 'Handlingkosten EUR', 'Gesamtkosten EUR', 'Score', 'Kapazität ausreichend'];
+      'Lagerkosten EUR', 'Handlingkosten EUR', 'Gesamtkosten EUR', 'Score', 'Kapazität ausreichend'].map(U.t);
     var body = sum.rows.map(function (r) {
       return [r.category, r.dcName, r.mode, U.round(r.share * 100, 2), U.round(r.pallets, 1), U.round(r.slots, 1),
         r.targetDays, U.round(r.avgDistance, 1), U.round(r.avgTransitDays, 2), U.round(r.transportCost, 2),
         U.round(r.storageCost, 2), U.round(r.handlingCost, 2), U.round(r.totalCost, 2),
-        U.round(r.score, 1), r.feasible ? 'ja' : 'nein'];
+        U.round(r.score, 1), U.t(r.feasible ? 'ja' : 'nein')];
     });
     return [head].concat(body);
   }

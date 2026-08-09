@@ -37,13 +37,32 @@ js/mapview.js       Netzwerkkarte (Kacheln, Offline-Schema, SVG-Notfallmodus)
 js/scenarios.js     Szenarien anlegen und vergleichen
 js/exporter.js      Excel-/CSV-Export, Projektdatei
 js/demo.js          Beispieldatensatz
+js/i18n.js          Zweisprachigkeit Deutsch/Englisch
 js/app.js           Navigation und Initialisierung
 vendor/             PapaParse, SheetJS, Chart.js, Leaflet (lokal eingebunden)
 vorlagen/           Ausfüllfertige Importvorlagen (Excel und CSV)
+docs/               Dokumentation der Berechnungslogik
 dist/               Einzeldatei-Fassung (aus build-standalone.js erzeugt)
 build-standalone.js Baut die Einzeldatei-Fassung
 make-templates.js   Erzeugt die Importvorlagen neu
 ```
+
+## Sprache
+
+Oben rechts schaltet die Schaltfläche **EN / DE** zwischen Deutsch und Englisch
+um. Umgestellt werden Oberfläche, Meldungen, Diagrammbeschriftungen, die
+Spaltenüberschriften der Exporte sowie das Zahlenformat (1.234,56 bzw.
+1,234.56). Die Auswahl bleibt gespeichert. Bereits importierte Daten werden
+nicht übersetzt – Kategorie-, Regions- und Kundennamen bleiben so, wie sie in
+der Datei stehen.
+
+## Rechenlogik
+
+Eine vollständige Beschreibung aller Formeln, der Wirkung der Gewichtung sowie
+der Grenzen bei Zeithorizont und Datenmenge steht in
+[`docs/berechnungslogik.md`](docs/berechnungslogik.md). Eine Kurzfassung der
+Formeln zeigt das Tool selbst unter *Export & Projekt → Rechenlogik im
+Überblick*.
 
 ## Arbeitsablauf
 

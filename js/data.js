@@ -88,14 +88,14 @@
     var grid = U.$('#mapping-grid');
     var map = pending.map;
     grid.innerHTML = FIELDS.map(function (f) {
-      var opts = ['<option value="">– nicht zugeordnet –</option>'].concat(
+      var opts = ['<option value="">' + U.t('– nicht zugeordnet –') + '</option>'].concat(
         pending.headers.map(function (h) {
           return '<option value="' + U.esc(h) + '"' + (map[f.key] === h ? ' selected' : '') + '>' + U.esc(h) + '</option>';
         })
       ).join('');
       return '<label class="map-field">' +
-        '<span>' + U.esc(f.label) + (f.required ? ' <i class="req">*</i>' : '') +
-        (map[f.key] ? '<i class="auto">erkannt</i>' : '') + '</span>' +
+        '<span>' + U.esc(U.t(f.label)) + (f.required ? ' <i class="req">*</i>' : '') +
+        (map[f.key] ? '<i class="auto">' + U.t('erkannt') + '</i>' : '') + '</span>' +
         '<select class="input input-sm" data-field="' + f.key + '">' + opts + '</select>' +
         '</label>';
     }).join('');
@@ -111,25 +111,25 @@
 
   function validateMapping() {
     var warn = U.$('#mapping-warn');
-    var problems = [];
+    var problems = [];   // { text, blocking }
     var map = pending.map;
 
     FIELDS.filter(function (f) { return f.required; }).forEach(function (f) {
-      if (!map[f.key]) problems.push('Pflichtfeld „' + f.label + '“ ist nicht zugeordnet.');
+      if (!map[f.key]) problems.push({ blocking: true, text: U.tf('Pflichtfeld „{0}“ ist nicht zugeordnet.', U.t(f.label)) });
     });
     if (!map.qty && !map.pallets && !map.palletEq && !map.volume && !map.revenue) {
-      problems.push('Mindestens eine Kennzahl (Menge, Paletten, Paletten-Äquivalent, Volumen oder Umsatz) muss zugeordnet sein.');
+      problems.push({ blocking: true, text: U.t('Mindestens eine Kennzahl (Menge, Paletten, Paletten-Äquivalent, Volumen oder Umsatz) muss zugeordnet sein.') });
     }
     if (!map.region && !map.country && !map.customer) {
-      problems.push('Für die Distanzberechnung wird eine Regions-, Länder- oder Kundenspalte benötigt.');
+      problems.push({ blocking: true, text: U.t('Für die Distanzberechnung wird eine Regions-, Länder- oder Kundenspalte benötigt.') });
     }
     if (!map.pallets && !map.palletEq && !map.volume && map.qty) {
-      problems.push('Hinweis: Paletten werden aus der Menge über „Stück je Palette“ (' + fmt.int(S.settings().qtyPerPallet) + ') umgerechnet.');
+      problems.push({ blocking: false, text: U.tf('Hinweis: Paletten werden aus der Menge über „Stück je Palette“ ({0}) umgerechnet.', fmt.int(S.settings().qtyPerPallet)) });
     }
 
-    var blocking = problems.filter(function (p) { return p.indexOf('Hinweis:') !== 0; });
+    var blocking = problems.filter(function (p) { return p.blocking; });
     warn.classList.toggle('hidden', problems.length === 0);
-    warn.innerHTML = problems.map(function (p) { return '• ' + U.esc(p); }).join('<br>');
+    warn.innerHTML = problems.map(function (p) { return '• ' + U.esc(p.text); }).join('<br>');
     U.$('#btn-confirm-import').disabled = blocking.length > 0;
   }
 
@@ -221,9 +221,9 @@
     S.syncRegions();
     S.emit('regions');
 
-    var msg = fmt.int(before) + ' Zeilen eingelesen';
-    if (doCompact && records.length < before) msg += ', auf ' + fmt.int(records.length) + ' Datensätze verdichtet';
-    if (built.badPeriods) msg += ' – ' + built.badPeriods + ' Zeilen ohne lesbare Periode übersprungen';
+    var msg = U.tf('{0} Zeilen eingelesen', fmt.int(before));
+    if (doCompact && records.length < before) msg += U.tf(', auf {0} Datensätze verdichtet', fmt.int(records.length));
+    if (built.badPeriods) msg += U.tf(' – {0} Zeilen ohne lesbare Periode übersprungen', built.badPeriods);
     U.toast(msg + '.', built.badPeriods ? 'warn' : 'good');
 
     cancelImport();
@@ -239,7 +239,7 @@
 
   function handleFile(file, sheetName) {
     readFile(file, function (err, res) {
-      if (err) { U.toast('Import fehlgeschlagen: ' + err.message, 'error'); return; }
+      if (err) { U.toast(U.tf('Import fehlgeschlagen: {0}', err.message), 'error'); return; }
       if (!res.rows.length) { U.toast('Die Datei enthält keine Datenzeilen.', 'warn'); return; }
 
       pending = {
@@ -259,8 +259,8 @@
       }
 
       U.$('#mapping-file').textContent = file.name +
-        (res.sheetName ? ' · Blatt „' + res.sheetName + '“' : '') +
-        ' · ' + fmt.int(res.rows.length) + ' Zeilen';
+        (res.sheetName ? ' · ' + res.sheetName : '') +
+        ' · ' + U.tf('{0} Zeilen eingelesen', fmt.int(res.rows.length));
       U.$('#card-mapping').classList.remove('hidden');
       renderMapping();
       renderPreview();
@@ -285,15 +285,15 @@
     var pal = U.sum(st.records, function (r) { return S.recordPallets(r); });
 
     var chips = [
-      ['Historie', fmt.int(hist.length) + ' Datensätze'],
-      ['Forecast', fmt.int(fc.length) + ' Datensätze'],
+      ['Historie', U.tf('{0} Datensätze', fmt.int(hist.length))],
+      ['Forecast', U.tf('{0} Datensätze', fmt.int(fc.length))],
       ['Kategorien', fmt.int(cats.length)],
       ['Regionen', fmt.int(regs.length)],
       ['Perioden', fmt.int(pers.length) + (pers.length ? ' (' + pers[0] + ' – ' + pers[pers.length - 1] + ')' : '')],
-      ['Volumen gesamt', fmt.int(pal) + ' Paletten']
+      ['Volumen gesamt', U.tf('{0} Paletten', fmt.int(pal))]
     ];
     wrap.innerHTML = chips.map(function (c) {
-      return '<span class="chip">' + U.esc(c[0]) + ' <b>' + U.esc(c[1]) + '</b></span>';
+      return '<span class="chip">' + U.esc(U.t(c[0])) + ' <b>' + U.esc(c[1]) + '</b></span>';
     }).join('');
   }
 
@@ -303,7 +303,7 @@
     var shown = recs.slice(0, 150);
 
     U.renderTable(U.$('#table-data'), [
-      { label: 'Typ', render: function (r) { return r.dataset === 'forecast' ? '<span class="badge">Forecast</span>' : '<span class="badge">Historie</span>'; } },
+      { label: 'Typ', render: function (r) { return '<span class="badge">' + U.t(r.dataset === 'forecast' ? 'Forecast' : 'Historie') + '</span>'; } },
       { label: 'Periode', render: function (r) { return U.esc(r.period); } },
       { label: 'Kategorie', render: function (r) { return U.esc(r.category); } },
       { label: 'Region', render: function (r) { return U.esc(r.regionKey); } },
@@ -315,8 +315,8 @@
     ], shown);
 
     U.$('#data-foot').textContent = recs.length > shown.length
-      ? 'Anzeige der ersten ' + shown.length + ' von ' + fmt.int(recs.length) + ' Datensätzen.'
-      : (recs.length ? fmt.int(recs.length) + ' Datensätze' : '');
+      ? U.tf('Anzeige der ersten {0} von {1} Datensätzen.', shown.length, fmt.int(recs.length))
+      : (recs.length ? U.tf('{0} Datensätze', fmt.int(recs.length)) : '');
   }
 
   function renderCoverage() {
@@ -397,8 +397,8 @@
       },
       {
         label: 'Quelle', render: function (r) {
-          if (!U.isNum(r.lat) || !U.isNum(r.lng)) return '<span class="badge badge-warn">Koordinaten fehlen</span>';
-          return '<span class="badge">' + U.esc(r.source) + '</span>';
+          if (!U.isNum(r.lat) || !U.isNum(r.lng)) return '<span class="badge badge-warn">' + U.t('Koordinaten fehlen') + '</span>';
+          return '<span class="badge">' + U.esc(U.t(r.source)) + '</span>';
         }
       }
     ], rows);
@@ -426,7 +426,7 @@
     });
     S.emit('regions');
     renderRegions();
-    U.toast(filled + ' Regionen automatisch ergänzt' + (open ? ', ' + open + ' weiterhin offen' : '') + '.', open ? 'warn' : 'good');
+    U.toast(U.tf('{0} Regionen automatisch ergänzt', filled) + (open ? U.tf(', {0} weiterhin offen', open) : '') + '.', open ? 'warn' : 'good');
   }
 
   function syncConfigInputs() {
@@ -491,8 +491,8 @@
 
     U.$('#btn-clear-data').addEventListener('click', function () {
       var filter = U.$('#data-filter-dataset').value;
-      var label = filter === 'history' ? 'der Historie' : (filter === 'forecast' ? 'des Forecasts' : 'aller Datenbestände');
-      if (!confirm('Datensätze ' + label + ' wirklich löschen?')) return;
+      var label = U.t(filter === 'history' ? 'der Historie' : (filter === 'forecast' ? 'des Forecasts' : 'aller Datenbestände'));
+      if (!window.confirm(U.tf('Datensätze {0} wirklich löschen?', label))) return;
       S.clearRecords(filter);
       render();
       U.toast('Datensätze gelöscht.', 'warn');
@@ -509,7 +509,7 @@
       S.categories('all').forEach(function (c) { st.settings.targetDaysByCategory[c] = v; });
       S.emit('settings');
       renderCoverage();
-      U.toast('Zielreichweite von ' + v + ' Tagen auf alle Kategorien angewendet.', 'good');
+      U.toast(U.tf('Zielreichweite von {0} Tagen auf alle Kategorien angewendet.', v), 'good');
     });
 
     S.onChange(function (reason) {

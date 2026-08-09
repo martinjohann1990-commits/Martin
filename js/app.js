@@ -27,8 +27,9 @@
       b.classList.toggle('is-active', b.getAttribute('data-view') === name);
     });
 
-    U.$('#view-title').textContent = VIEWS[name].title;
-    U.$('#view-sub').textContent = VIEWS[name].sub;
+    currentView = name;
+    U.$('#view-title').textContent = U.t(VIEWS[name].title);
+    U.$('#view-sub').textContent = U.t(VIEWS[name].sub);
     window.scrollTo({ top: 0, behavior: 'instant' in window ? 'instant' : 'auto' });
 
     if (name === 'dashboard') { NS.dashboard.render(); NS.mapview.invalidate(); }
@@ -38,6 +39,33 @@
     if (name === 'data') NS.data.render();
 
     try { location.hash = name; } catch (e) { /* file:// ohne Hash-Unterstützung */ }
+  }
+
+  var currentView = 'dashboard';
+
+  /* ------------------------------------------------------------ Sprache */
+  function applyLang(next) {
+    NS.i18n.setLang(next);
+    U.$('#btn-lang').textContent = next === 'de' ? 'EN' : 'DE';
+    // Sämtliche dynamisch erzeugten Inhalte neu aufbauen
+    NS.dcs.render();
+    NS.data.render();
+    NS.dashboard.render();
+    NS.scenarios.render();
+    NS.simui.refreshControls();
+    var last = NS.simui.getLastResult();
+    if (last) NS.simui.simulate();
+    renderFormulas();
+    updateStoragePill();
+    updateSidebar();
+    showView(currentView);
+  }
+
+  function initLang() {
+    U.$('#btn-lang').textContent = NS.i18n.get() === 'de' ? 'EN' : 'DE';
+    U.$('#btn-lang').addEventListener('click', function () {
+      applyLang(NS.i18n.get() === 'de' ? 'en' : 'de');
+    });
   }
 
   /* ------------------------------------------------------------ Theme */
@@ -91,7 +119,8 @@
       } else {
         var v = U.num(raw, NaN);
         if (!isFinite(v) || (o.min !== undefined && v < o.min)) {
-          U.toast('Ungültiger Wert – bitte eine Zahl' + (o.min !== undefined ? ' ≥ ' + o.min : '') + ' eingeben.', 'warn');
+          U.toast(U.tf('Ungültiger Wert – bitte eine Zahl{0} eingeben.',
+            o.min !== undefined ? U.tf(' ≥ {0}', o.min) : ''), 'warn');
           node.value = o.factor ? S.settings()[key] * o.factor : S.settings()[key];
           return;
         }
@@ -126,7 +155,7 @@
     });
 
     U.$('#btn-reset-all').addEventListener('click', function () {
-      if (!confirm('Wirklich alles zurücksetzen? DCs, Daten, Zuordnungen und Szenarien werden gelöscht.')) return;
+      if (!U.ask('Wirklich alles zurücksetzen? DCs, Daten, Zuordnungen und Szenarien werden gelöscht.')) return;
       S.reset();
       U.toast('Arbeitsstand zurückgesetzt.', 'warn');
       showView('dashboard');
@@ -136,7 +165,7 @@
   function updateStoragePill() {
     var on = S.settings().autosave !== false;
     U.$('#storage-pill').classList.toggle('is-off', !on);
-    U.$('#storage-label').textContent = 'Auto-Speichern: ' + (on ? 'an' : 'aus');
+    U.$('#storage-label').textContent = U.t(on ? 'Auto-Speichern: an' : 'Auto-Speichern: aus');
   }
 
   /* ------------------------------------------------------------ Rechenlogik-Übersicht */
@@ -145,17 +174,17 @@
     var items = [
       {
         title: 'Paletten je Datensatz',
-        code: 'Paletten = Paletten-Äquivalent\n      → sonst Paletten\n      → sonst Volumen ÷ ' + fmt.dec1(s.volPerPallet) + ' m³\n      → sonst Menge ÷ ' + fmt.int(s.qtyPerPallet) + ' Stück',
+        code: U.tf('Paletten = Paletten-Äquivalent\n      → sonst Paletten\n      → sonst Volumen ÷ {0} m³\n      → sonst Menge ÷ {1} Stück', fmt.dec1(s.volPerPallet), fmt.int(s.qtyPerPallet)),
         text: 'Die erste verfügbare Größe wird verwendet. So lassen sich Dateien mit unterschiedlichem Detailgrad gemeinsam auswerten.'
       },
       {
         title: 'Ziel-Bestand',
-        code: 'Bedarf/Tag = Paletten im Zeitraum ÷ Zeitraum in Tagen\nZiel-Bestand = Bedarf/Tag × Zielreichweite × ' + fmt.dec2(s.stockFactor),
+        code: U.tf('Bedarf/Tag = Paletten im Zeitraum ÷ Zeitraum in Tagen\nZiel-Bestand = Bedarf/Tag × Zielreichweite × {0}', fmt.dec2(s.stockFactor)),
         text: 'Der Ziel-Bestand belegt Stellplätze im DC und ist damit die kapazitätswirksame Größe.'
       },
       {
         title: 'Transportkosten',
-        code: 'Kosten/Palette = Grundkosten + Kosten/km × Distanz\nDistanz = Luftlinie × ' + fmt.dec2(U.DETOUR) + ' (Umwegfaktor)',
+        code: U.tf('Kosten/Palette = Grundkosten + Kosten/km × Distanz\nDistanz = Luftlinie × {0} (Umwegfaktor)', fmt.dec2(U.DETOUR)),
         text: 'Regionsspezifische Pauschalen im DC überschreiben die distanzbasierte Rechnung.'
       },
       {
@@ -165,7 +194,7 @@
       },
       {
         title: 'Score Kapazität & Balance',
-        code: '100 → leeres DC\n 50 → an der Ziel-Auslastungsgrenze (' + fmt.pct(s.maxUtilization) + ')\n  0 → ab Vollauslastung',
+        code: U.tf('100 → leeres DC\n 50 → an der Ziel-Auslastungsgrenze ({0})\n  0 → ab Vollauslastung', fmt.pct(s.maxUtilization)),
         text: 'Belohnt Reserve und eine ausgeglichene Auslastung im Netzwerk.'
       },
       {
@@ -176,7 +205,7 @@
       {
         title: 'Score Zielreichweite',
         code: 'Score = 100 × (0,7 × Bestandsfähigkeit + 0,3 × Reaktionsfähigkeit)\nBestandsfähigkeit = freie Plätze ÷ Ziel-Bestand (max. 1)\nReaktionsfähigkeit = 1 − Transitzeit ÷ Zielreichweite',
-        text: 'Transitzeit = ' + fmt.dec1(s.handlingDays) + ' Tage Handling + Distanz ÷ ' + fmt.int(s.kmPerDay) + ' km/Tag.'
+        text: U.tf('Transitzeit = {0} Tage Handling + Distanz ÷ {1} km/Tag.', fmt.dec1(s.handlingDays), fmt.int(s.kmPerDay))
       },
       {
         title: 'Gesamt-Score',
@@ -186,7 +215,7 @@
     ];
 
     U.$('#formula-grid').innerHTML = items.map(function (i) {
-      return '<div class="formula"><h4>' + U.esc(i.title) + '</h4><code>' + U.esc(i.code) + '</code><p>' + U.esc(i.text) + '</p></div>';
+      return '<div class="formula"><h4>' + U.esc(U.t(i.title)) + '</h4><code>' + U.esc(U.t(i.code)) + '</code><p>' + U.esc(U.t(i.text)) + '</p></div>';
     }).join('');
   }
 
@@ -200,6 +229,7 @@
 
   /* ------------------------------------------------------------ Start */
   function init() {
+    NS.i18n.init();
     initTheme();
     NS.charts.init();
 
@@ -212,6 +242,8 @@
     NS.scenarios.init();
     NS.exporter.init();
     initSettings();
+
+    initLang();
 
     U.$('#nav').addEventListener('click', function (e) {
       var btn = e.target.closest('.nav-item');

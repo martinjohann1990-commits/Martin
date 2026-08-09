@@ -8,6 +8,7 @@
   'use strict';
 
   var U = NS.util;
+  function t(s) { return NS.i18n ? NS.i18n.t(s) : s; }
   var registry = Object.create(null);   // canvasId -> Chart-Instanz
   var MAX_SERIES = 8;
 
@@ -87,7 +88,7 @@
       stacked: !!o.stacked,
       beginAtZero: true
     };
-    if (o.title) scale.title = { display: true, text: o.title, color: c.muted, font: { size: 11 } };
+    if (o.title) scale.title = { display: true, text: t(o.title), color: c.muted, font: { size: 11 } };
     return scale;
   }
 
@@ -118,7 +119,8 @@
     var horizontal = !!o.horizontal;
 
     var ds = datasets.map(function (d, i) {
-      return Object.assign({
+      return Object.assign({}, d, {
+        label: t(d.label),
         backgroundColor: d.color || seriesColor(i),
         borderColor: c.surface,
         borderWidth: o.stacked ? 2 : 0,
@@ -127,7 +129,7 @@
         barPercentage: 0.78,
         categoryPercentage: 0.8,
         maxBarThickness: o.maxBarThickness || 46
-      }, d);
+      });
     });
 
     return render(canvasId, {
@@ -170,7 +172,7 @@
     node.style.display = '';
     node.innerHTML = items.map(function (it) {
       return '<span class="legend-item"><i class="legend-swatch' + (it.kind === 'line' ? ' line' : '') +
-        '" style="background:' + it.color + '"></i>' + U.esc(it.label) + '</span>';
+        '" style="background:' + it.color + '"></i>' + U.esc(t(it.label)) + '</span>';
     }).join('');
   }
 
@@ -182,14 +184,14 @@
   function renderKPIs(target, tiles) {
     var node = typeof target === 'string' ? U.$(target) : target;
     if (!node) return;
-    node.innerHTML = tiles.map(function (t) {
-      var accent = t.accent || 'var(--accent)';
-      var barHtml = t.bar === undefined || t.bar === null ? '' :
-        '<div class="kpi-bar"><span style="width:' + U.clamp(t.bar * 100, 0, 100).toFixed(1) + '%"></span></div>';
+    node.innerHTML = tiles.map(function (tile) {
+      var accent = tile.accent || 'var(--accent)';
+      var barHtml = tile.bar === undefined || tile.bar === null ? '' :
+        '<div class="kpi-bar"><span style="width:' + U.clamp(tile.bar * 100, 0, 100).toFixed(1) + '%"></span></div>';
       return '<div class="kpi" style="--kpi-accent:' + accent + '">' +
-        '<div class="kpi-label">' + U.esc(t.label) + '</div>' +
-        '<div class="kpi-value">' + t.value + (t.unit ? '<span class="kpi-unit">' + U.esc(t.unit) + '</span>' : '') + '</div>' +
-        (t.sub ? '<div class="kpi-sub">' + t.sub + '</div>' : '') +
+        '<div class="kpi-label">' + U.esc(t(tile.label)) + '</div>' +
+        '<div class="kpi-value">' + tile.value + (tile.unit ? '<span class="kpi-unit">' + U.esc(t(tile.unit)) + '</span>' : '') + '</div>' +
+        (tile.sub ? '<div class="kpi-sub">' + tile.sub + '</div>' : '') +
         barHtml +
         '</div>';
     }).join('');

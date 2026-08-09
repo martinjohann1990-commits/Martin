@@ -8,31 +8,45 @@ window.LNP = window.LNP || {};
   'use strict';
 
   /* ------------------------------------------------------------ Formatierung */
-  var nf0 = new Intl.NumberFormat('de-DE', { maximumFractionDigits: 0 });
-  var nf1 = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
-  var nf2 = new Intl.NumberFormat('de-DE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  /** Übersetzung; vor dem Laden von i18n.js wird der Originaltext geliefert. */
+  function t(s) { return NS.i18n ? NS.i18n.t(s) : s; }
+  function tf() { return NS.i18n ? NS.i18n.tf.apply(null, arguments) : arguments[0]; }
+
+  // Zahlenformate folgen der eingestellten Sprache und werden bei Bedarf neu gebaut
+  var _loc = null, nf0, nf1, nf2;
+  function rebuild() {
+    var loc = NS.i18n ? NS.i18n.locale() : 'de-DE';
+    if (loc === _loc) return;
+    _loc = loc;
+    nf0 = new Intl.NumberFormat(loc, { maximumFractionDigits: 0 });
+    nf1 = new Intl.NumberFormat(loc, { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+    nf2 = new Intl.NumberFormat(loc, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  rebuild();
 
   var fmt = {
-    int: function (v) { return isFinite(v) ? nf0.format(Math.round(v)) : '–'; },
-    dec1: function (v) { return isFinite(v) ? nf1.format(v) : '–'; },
-    dec2: function (v) { return isFinite(v) ? nf2.format(v) : '–'; },
+    int: function (v) { rebuild(); return isFinite(v) ? nf0.format(Math.round(v)) : '–'; },
+    dec1: function (v) { rebuild(); return isFinite(v) ? nf1.format(v) : '–'; },
+    dec2: function (v) { rebuild(); return isFinite(v) ? nf2.format(v) : '–'; },
     /** Kompakte EUR-Darstellung: 1.234 € / 12,3 Tsd. € / 4,5 Mio. € */
     eur: function (v) {
+      rebuild();
       if (!isFinite(v)) return '–';
       var a = Math.abs(v);
-      if (a >= 1e6) return nf1.format(v / 1e6) + ' Mio. €';
-      if (a >= 1e4) return nf0.format(v / 1e3) + ' Tsd. €';
+      if (a >= 1e6) return nf1.format(v / 1e6) + (_loc === 'en-GB' ? ' M €' : ' Mio. €');
+      if (a >= 1e4) return nf0.format(v / 1e3) + (_loc === 'en-GB' ? ' k €' : ' Tsd. €');
       return nf0.format(v) + ' €';
     },
-    eurExact: function (v) { return isFinite(v) ? nf2.format(v) + ' €' : '–'; },
+    eurExact: function (v) { rebuild(); return isFinite(v) ? nf2.format(v) + ' €' : '–'; },
     pct: function (v, digits) {
+      rebuild();
       if (!isFinite(v)) return '–';
       return (digits === 1 ? nf1 : nf0).format(v * 100) + ' %';
     },
-    pct1: function (v) { return isFinite(v) ? nf1.format(v * 100) + ' %' : '–'; },
-    km: function (v) { return isFinite(v) ? nf0.format(v) + ' km' : '–'; },
-    days: function (v) { return isFinite(v) ? nf1.format(v) + ' Tage' : '–'; },
-    score: function (v) { return isFinite(v) ? nf1.format(v) : '–'; }
+    pct1: function (v) { rebuild(); return isFinite(v) ? nf1.format(v * 100) + ' %' : '–'; },
+    km: function (v) { rebuild(); return isFinite(v) ? nf0.format(v) + ' km' : '–'; },
+    days: function (v) { rebuild(); return isFinite(v) ? nf1.format(v) + ' ' + t('Tage') : '–'; },
+    score: function (v) { rebuild(); return isFinite(v) ? nf1.format(v) : '–'; }
   };
 
   /** Robuste Zahlenerkennung: akzeptiert "1.234,56", "1,234.56", "1 234", "45%" */
@@ -211,7 +225,7 @@ window.LNP = window.LNP || {};
   function renderTable(table, columns, rows, options) {
     var opt = options || {};
     var head = '<thead><tr>' + columns.map(function (c) {
-      return '<th class="' + (c.num ? 'num ' : '') + (c.wrap ? 'wrap' : '') + '">' + esc(c.label) + '</th>';
+      return '<th class="' + (c.num ? 'num ' : '') + (c.wrap ? 'wrap' : '') + '">' + esc(t(c.label)) + '</th>';
     }).join('') + '</tr></thead>';
 
     var body = '<tbody>' + (rows.length ? rows.map(function (r, i) {
@@ -221,7 +235,7 @@ window.LNP = window.LNP || {};
           var v = c.render ? c.render(r, i) : esc(r[c.key]);
           return '<td class="' + (c.num ? 'num ' : '') + (c.wrap ? 'wrap ' : '') + (c.cls || '') + '">' + v + '</td>';
         }).join('') + '</tr>';
-    }).join('') : '<tr><td class="t-muted" colspan="' + columns.length + '">Keine Daten vorhanden</td></tr>') + '</tbody>';
+    }).join('') : '<tr><td class="t-muted" colspan="' + columns.length + '">' + esc(t('Keine Daten vorhanden')) + '</td></tr>') + '</tbody>';
 
     table.innerHTML = head + body;
   }
@@ -281,14 +295,18 @@ window.LNP = window.LNP || {};
   function toast(message, kind) {
     var wrap = document.getElementById('toasts');
     if (!wrap) return;
-    var t = el('div', { class: 'toast is-' + (kind || 'good'), text: message });
-    wrap.appendChild(t);
+    var node = el('div', { class: 'toast is-' + (kind || 'good'), text: t(message) });
+    wrap.appendChild(node);
     setTimeout(function () {
-      t.style.transition = 'opacity .25s, transform .25s';
-      t.style.opacity = '0'; t.style.transform = 'translateX(12px)';
-      setTimeout(function () { t.remove(); }, 260);
+      node.style.transition = 'opacity .25s, transform .25s';
+      node.style.opacity = '0'; node.style.transform = 'translateX(12px)';
+      setTimeout(function () { node.remove(); }, 260);
     }, kind === 'error' ? 6000 : 3400);
   }
+
+  /** Rückfrage in der eingestellten Sprache. */
+  function ask(message) { return window.confirm(t(message)); }
+  function askText(message, preset) { return window.prompt(t(message), preset); }
 
   /* ------------------------------------------------------------ Download */
   function download(blob, filename) {
@@ -340,7 +358,7 @@ window.LNP = window.LNP || {};
     fmt: fmt, parseNum: parseNum, num: num, isNum: isNum, clamp: clamp, round: round, id: id, esc: esc, slug: slug,
     parsePeriod: parsePeriod, matchColumns: matchColumns, haversine: haversine, roadDistance: roadDistance, DETOUR: DETOUR,
     $: $, $$: $$, el: el, renderTable: renderTable, scoreBar: scoreBar,
-    toast: toast, download: download, downloadCSV: downloadCSV, timestamp: timestamp,
+    toast: toast, ask: ask, askText: askText, t: t, tf: tf, download: download, downloadCSV: downloadCSV, timestamp: timestamp,
     debounce: debounce, unique: unique, sum: sum
   };
 })(window.LNP);
