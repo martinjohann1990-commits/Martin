@@ -1,0 +1,707 @@
+<!DOCTYPE html>
+<html lang="de" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>NetPlan – Logistik-Netzwerkplanung</title>
+<link rel="stylesheet" href="vendor/leaflet.css">
+<link rel="stylesheet" href="css/app.css">
+</head>
+<body data-palette="#2a78d6,#eb6834,#1baf7a,#eda100,#e87ba4,#008300,#4a3aa7,#e34948">
+
+<div class="app">
+
+  <!-- ============ SIDEBAR ============ -->
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="brand-mark">NP</div>
+      <div class="brand-text">
+        <strong>NetPlan</strong>
+        <span>Logistik-Netzwerkplanung</span>
+      </div>
+    </div>
+
+    <nav class="nav" id="nav">
+      <button class="nav-item is-active" data-view="dashboard">
+        <span class="nav-ico" aria-hidden="true">▦</span> Dashboard
+      </button>
+      <button class="nav-item" data-view="data">
+        <span class="nav-ico" aria-hidden="true">▤</span> Daten &amp; Import
+      </button>
+      <button class="nav-item" data-view="dcs">
+        <span class="nav-ico" aria-hidden="true">▣</span> DC-Verwaltung
+      </button>
+      <button class="nav-item" data-view="sim">
+        <span class="nav-ico" aria-hidden="true">◎</span> Simulation
+      </button>
+      <button class="nav-item" data-view="scenarios">
+        <span class="nav-ico" aria-hidden="true">⧉</span> Szenarien
+      </button>
+      <button class="nav-item" data-view="export">
+        <span class="nav-ico" aria-hidden="true">↧</span> Export &amp; Projekt
+      </button>
+    </nav>
+
+    <div class="sidebar-foot">
+      <div class="stat-mini">
+        <span>DCs</span><b id="side-dc-count">0</b>
+      </div>
+      <div class="stat-mini">
+        <span>Datensätze</span><b id="side-rec-count">0</b>
+      </div>
+      <div class="stat-mini">
+        <span>Szenarien</span><b id="side-scn-count">0</b>
+      </div>
+      <p class="sidebar-note">Alle Daten bleiben im Browser. Es werden keine Daten an einen Server gesendet.</p>
+    </div>
+  </aside>
+
+  <!-- ============ MAIN ============ -->
+  <main class="main">
+    <header class="topbar">
+      <div>
+        <h1 id="view-title">Dashboard</h1>
+        <p class="topbar-sub" id="view-sub">Überblick über Netzwerk, Auslastung und Kosten</p>
+      </div>
+      <div class="topbar-actions">
+        <span class="pill" id="storage-pill" title="Zwischenspeicherung im Browser (localStorage)">
+          <span class="dot"></span><span id="storage-label">Auto-Speichern: an</span>
+        </span>
+        <button class="btn btn-ghost" id="btn-theme" title="Hell/Dunkel umschalten">◐ Theme</button>
+        <button class="btn btn-ghost" id="btn-demo">Demodaten laden</button>
+      </div>
+    </header>
+
+    <div class="content">
+
+      <!-- ---------- DASHBOARD ---------- -->
+      <section class="view is-active" id="view-dashboard">
+        <div id="dash-empty" class="empty-state">
+          <h2>Noch keine Auswertung vorhanden</h2>
+          <p>Legen Sie Distributionszentren an und importieren Sie Versand- oder Forecast-Daten.
+             Anschließend simulieren Sie die Zuordnung der Produktkategorien.</p>
+          <div class="empty-actions">
+            <button class="btn btn-primary" data-goto="dcs">DC anlegen</button>
+            <button class="btn" data-goto="data">Daten importieren</button>
+            <button class="btn btn-ghost" id="btn-demo-2">Demodaten laden</button>
+          </div>
+        </div>
+
+        <div id="dash-body" class="hidden">
+          <div class="kpi-grid" id="kpi-grid"></div>
+
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-head">
+                <h3>Ziel-Bestand vs. Kapazität je DC</h3>
+                <span class="card-hint">Stellplätze (Paletten)</span>
+              </div>
+              <div class="chart-box"><canvas id="chart-capacity"></canvas></div>
+              <div class="legend" id="legend-capacity"></div>
+            </div>
+            <div class="card">
+              <div class="card-head">
+                <h3>Kostenverteilung je DC</h3>
+                <span class="card-hint">EUR im Betrachtungszeitraum</span>
+              </div>
+              <div class="chart-box"><canvas id="chart-cost"></canvas></div>
+              <div class="legend" id="legend-cost"></div>
+            </div>
+          </div>
+
+          <div class="grid-2">
+            <div class="card">
+              <div class="card-head">
+                <h3>Volumenverteilung Kategorie → DC</h3>
+                <span class="card-hint">Paletten im Betrachtungszeitraum</span>
+              </div>
+              <div class="chart-box"><canvas id="chart-volume"></canvas></div>
+              <div class="legend" id="legend-volume"></div>
+            </div>
+            <div class="card">
+              <div class="card-head">
+                <h3>Netzwerkkarte</h3>
+                <div class="inline-controls">
+                  <label class="lbl-sm" for="map-mode">Darstellung</label>
+                  <select id="map-mode" class="input input-sm">
+                    <option value="auto">Automatisch</option>
+                    <option value="tiles">Kartenkacheln (online)</option>
+                    <option value="schema">Schema (offline)</option>
+                  </select>
+                </div>
+              </div>
+              <div id="map" class="map-box"></div>
+              <div class="map-note" id="map-note"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <div class="card-head">
+              <h3>Detailergebnisse je DC und Kategorie</h3>
+              <button class="btn btn-sm" id="btn-export-detail">CSV</button>
+            </div>
+            <div class="table-wrap"><table class="table" id="table-detail"></table></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------- DATEN & IMPORT ---------- -->
+      <section class="view" id="view-data">
+        <div class="card">
+          <div class="card-head">
+            <h3>1 · Datei einlesen</h3>
+            <span class="card-hint">CSV, XLSX, XLS – Verarbeitung ausschließlich lokal im Browser</span>
+          </div>
+          <div class="import-grid">
+            <div>
+              <label class="lbl">Datensatz-Typ</label>
+              <div class="seg" id="seg-dataset">
+                <button class="seg-btn is-active" data-value="history">Historie</button>
+                <button class="seg-btn" data-value="forecast">Forecast</button>
+              </div>
+              <p class="hint">Historische Versanddaten oder extern erstellter Forecast. Beide nutzen dasselbe Schema.</p>
+            </div>
+            <div>
+              <label class="lbl">Import-Modus</label>
+              <div class="seg" id="seg-mode">
+                <button class="seg-btn is-active" data-value="append">Anhängen</button>
+                <button class="seg-btn" data-value="replace">Ersetzen</button>
+              </div>
+              <p class="hint">„Ersetzen“ löscht vorhandene Datensätze des gewählten Typs.</p>
+            </div>
+            <div>
+              <label class="lbl">Datenebene</label>
+              <div class="seg" id="seg-level">
+                <button class="seg-btn is-active" data-value="auto">Automatisch</button>
+                <button class="seg-btn" data-value="transaction">Einzeltransaktion</button>
+                <button class="seg-btn" data-value="aggregated">Aggregiert</button>
+              </div>
+              <p class="hint">Einzellieferungen und bereits aggregierte Zeilen (z.B. je Monat/Kunde) werden beide unterstützt.</p>
+            </div>
+          </div>
+
+          <div class="dropzone" id="dropzone">
+            <input type="file" id="file-input" accept=".csv,.txt,.xlsx,.xls,.xlsm" hidden>
+            <div class="dz-inner">
+              <div class="dz-ico">⇪</div>
+              <p><b>Datei hierher ziehen</b> oder <button class="link" id="btn-browse">Datei auswählen</button></p>
+              <p class="hint">Unterstützt: .csv, .txt (Trennzeichen wird erkannt), .xlsx, .xls</p>
+            </div>
+          </div>
+          <div id="sheet-picker" class="hidden inline-row">
+            <label class="lbl-sm" for="sel-sheet">Tabellenblatt</label>
+            <select id="sel-sheet" class="input input-sm"></select>
+          </div>
+        </div>
+
+        <div class="card hidden" id="card-mapping">
+          <div class="card-head">
+            <h3>2 · Spalten zuordnen</h3>
+            <span class="card-hint" id="mapping-file"></span>
+          </div>
+          <p class="hint">Ordnen Sie die Spalten Ihrer Datei den Feldern des Datenmodells zu. Erkannte Zuordnungen sind vorbelegt.</p>
+          <div class="mapping-grid" id="mapping-grid"></div>
+
+          <details class="details">
+            <summary>Vorschau der Datei (erste 8 Zeilen)</summary>
+            <div class="table-wrap"><table class="table table-compact" id="table-preview"></table></div>
+          </details>
+
+          <div class="row-end">
+            <button class="btn btn-ghost" id="btn-cancel-import">Abbrechen</button>
+            <button class="btn btn-primary" id="btn-confirm-import">Import ausführen</button>
+          </div>
+          <div id="mapping-warn" class="alert alert-warn hidden"></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h3>3 · Mengenlogik &amp; Umrechnung</h3>
+            <span class="card-hint">Wird angewandt, wenn Paletten nicht direkt in den Daten stehen</span>
+          </div>
+          <div class="form-grid form-grid-4" id="conv-grid">
+            <label class="field">
+              <span>Stück je Palette</span>
+              <input type="number" min="1" step="1" id="cfg-qtyPerPallet" class="input">
+            </label>
+            <label class="field">
+              <span>Volumen je Palette (m³)</span>
+              <input type="number" min="0.1" step="0.1" id="cfg-volPerPallet" class="input">
+            </label>
+            <label class="field">
+              <span>Betrachtungszeitraum (Tage)</span>
+              <input type="number" min="1" step="1" id="cfg-horizon" class="input" placeholder="automatisch">
+            </label>
+            <label class="field">
+              <span>Umschlagfaktor Bestand</span>
+              <input type="number" min="0.1" step="0.05" id="cfg-stockFactor" class="input">
+              <small>Aufschlag auf den Ziel-Bestand (z.B. 1,1 für Sicherheitspuffer)</small>
+            </label>
+          </div>
+          <p class="hint">Priorität der Palettenermittlung: <b>Paletten-Äquivalent</b> → <b>Paletten</b> → <b>Volumen ÷ Volumen je Palette</b> → <b>Menge ÷ Stück je Palette</b>.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h3>4 · Zielreichweite je Kategorie</h3>
+            <span class="card-hint">Ziel-Bestand = Bedarf pro Tag × Zielreichweite</span>
+          </div>
+          <div class="inline-row">
+            <label class="field field-inline">
+              <span>Globale Zielreichweite (Tage)</span>
+              <input type="number" min="1" step="1" id="cfg-targetDays" class="input input-sm">
+            </label>
+            <button class="btn btn-sm" id="btn-apply-target-all">Auf alle Kategorien anwenden</button>
+          </div>
+          <p class="hint">Diese Übersicht rechnet über <b>alle importierten Daten</b> (Historie und Forecast zusammen).
+             Die Simulation verwendet dagegen die dort gewählte Datenbasis und den gewählten Zeitraum – der Bedarf je Tag
+             kann daher abweichen.</p>
+          <div class="table-wrap"><table class="table" id="table-coverage"></table></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h3>5 · Regionen &amp; Koordinaten</h3>
+            <div class="inline-controls">
+              <button class="btn btn-sm" id="btn-autofill-coords">Koordinaten automatisch ergänzen</button>
+            </div>
+          </div>
+          <p class="hint">Für Distanz- und Kartendarstellung benötigt jede Kundenregion Koordinaten. Bekannte Länder/Regionen werden automatisch erkannt, alle Werte sind manuell überschreibbar.</p>
+          <div class="table-wrap"><table class="table" id="table-regions"></table></div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h3>Datenbestand</h3>
+            <div class="inline-controls">
+              <select id="data-filter-dataset" class="input input-sm">
+                <option value="all">Alle Datensätze</option>
+                <option value="history">Nur Historie</option>
+                <option value="forecast">Nur Forecast</option>
+              </select>
+              <button class="btn btn-sm btn-danger" id="btn-clear-data">Daten löschen</button>
+            </div>
+          </div>
+          <div class="chip-row" id="data-summary"></div>
+          <div class="table-wrap"><table class="table table-compact" id="table-data"></table></div>
+          <div class="table-foot" id="data-foot"></div>
+        </div>
+      </section>
+
+      <!-- ---------- DC-VERWALTUNG ---------- -->
+      <section class="view" id="view-dcs">
+        <div class="card">
+          <div class="card-head">
+            <h3>Distributionszentren</h3>
+            <div class="inline-controls">
+              <button class="btn btn-sm" id="btn-dc-import">DCs aus Datei importieren</button>
+              <input type="file" id="dc-file-input" accept=".csv,.xlsx,.xls" hidden>
+              <button class="btn btn-primary btn-sm" id="btn-dc-new">+ Neues DC</button>
+            </div>
+          </div>
+          <div class="table-wrap"><table class="table" id="table-dcs"></table></div>
+          <div id="dc-empty" class="empty-inline">Noch keine Distributionszentren angelegt.</div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h3>Netzwerk-Kennzahlen</h3>
+            <span class="card-hint">Summen über alle aktiven DCs</span>
+          </div>
+          <div class="kpi-grid" id="dc-kpis"></div>
+        </div>
+      </section>
+
+      <!-- ---------- SIMULATION ---------- -->
+      <section class="view" id="view-sim">
+        <div class="grid-sim">
+          <div class="card card-sticky">
+            <div class="card-head"><h3>Simulationsparameter</h3></div>
+
+            <label class="field">
+              <span>Produktkategorie</span>
+              <select id="sim-category" class="input"></select>
+            </label>
+
+            <label class="field">
+              <span>Datenbasis</span>
+              <select id="sim-dataset" class="input">
+                <option value="forecast">Forecast</option>
+                <option value="history">Historie</option>
+                <option value="all">Historie + Forecast</option>
+              </select>
+            </label>
+
+            <div class="field-row">
+              <label class="field">
+                <span>Periode von</span>
+                <select id="sim-period-from" class="input input-sm"></select>
+              </label>
+              <label class="field">
+                <span>Periode bis</span>
+                <select id="sim-period-to" class="input input-sm"></select>
+              </label>
+            </div>
+
+            <label class="field">
+              <span>Zuordnungsmodus</span>
+              <div class="seg seg-full" id="seg-simmode">
+                <button class="seg-btn is-active" data-value="single">Alleinzuordnung</button>
+                <button class="seg-btn" data-value="split">Splitting</button>
+              </div>
+            </label>
+
+            <div class="field hidden" id="field-maxdc">
+              <span>Max. Anzahl DCs im Split</span>
+              <input type="number" id="sim-maxdc" class="input input-sm" min="2" max="8" step="1" value="2">
+            </div>
+
+            <label class="field">
+              <span>Zielreichweite dieser Kategorie (Tage)</span>
+              <input type="number" id="sim-targetdays" class="input input-sm" min="1" step="1">
+            </label>
+
+            <div class="weights">
+              <div class="weights-head">
+                <h4>Gewichtung der Kriterien</h4>
+                <button class="btn btn-xs" id="btn-weights-reset">Zurücksetzen</button>
+              </div>
+              <div class="slider-row">
+                <label for="w-capacity">Kapazität &amp; Balance</label>
+                <input type="range" id="w-capacity" min="0" max="100" step="5" value="30">
+                <output id="w-capacity-out">30 %</output>
+              </div>
+              <div class="slider-row">
+                <label for="w-transport">Transportkosten / Distanz</label>
+                <input type="range" id="w-transport" min="0" max="100" step="5" value="45">
+                <output id="w-transport-out">45 %</output>
+              </div>
+              <div class="slider-row">
+                <label for="w-service">Zielreichweite / Bestand</label>
+                <input type="range" id="w-service" min="0" max="100" step="5" value="25">
+                <output id="w-service-out">25 %</output>
+              </div>
+              <p class="hint" id="weights-note"></p>
+            </div>
+
+            <label class="field">
+              <span>Ziel-Auslastungsgrenze</span>
+              <div class="slider-row slider-row-tight">
+                <input type="range" id="cfg-maxutil" min="50" max="100" step="5" value="85">
+                <output id="cfg-maxutil-out">85 %</output>
+              </div>
+              <small>Ab dieser Auslastung wird ein DC im Kapazitäts-Score abgewertet.</small>
+            </label>
+
+            <button class="btn btn-primary btn-block" id="btn-simulate">Simulation starten</button>
+            <button class="btn btn-block" id="btn-simulate-all">Alle Kategorien simulieren</button>
+          </div>
+
+          <div class="sim-results">
+            <div id="sim-empty" class="empty-state">
+              <h2>Simulation noch nicht ausgeführt</h2>
+              <p>Wählen Sie links eine Produktkategorie und starten Sie die Simulation.</p>
+            </div>
+
+            <div id="sim-output" class="hidden">
+              <div class="reco" id="reco-card"></div>
+
+              <div class="card">
+                <div class="card-head">
+                  <h3>Bewertung aller Standorte</h3>
+                  <span class="card-hint">Gewichteter Gesamt-Score aus drei Teil-Scores</span>
+                </div>
+                <div class="table-wrap"><table class="table" id="table-rank"></table></div>
+              </div>
+
+              <div class="card">
+                <div class="card-head">
+                  <h3>Score-Zusammensetzung</h3>
+                  <span class="card-hint">Beiträge der gewichteten Kriterien</span>
+                </div>
+                <div class="chart-box chart-box-sm"><canvas id="chart-score"></canvas></div>
+                <div class="legend" id="legend-score"></div>
+              </div>
+
+              <div class="card" id="card-split">
+                <div class="card-head">
+                  <h3>Aufteilung der Kategorie</h3>
+                  <span class="card-hint">Anteile lassen sich manuell überschreiben</span>
+                </div>
+                <div class="table-wrap"><table class="table" id="table-split"></table></div>
+                <div class="row-end">
+                  <span class="hint" id="split-sum"></span>
+                  <button class="btn btn-sm" id="btn-recalc-split">Mit manuellen Anteilen neu rechnen</button>
+                </div>
+              </div>
+
+              <div class="card">
+                <div class="card-head">
+                  <h3>Regionale Zuordnung</h3>
+                  <span class="card-hint">Welche Kundenregion wird aus welchem DC beliefert?</span>
+                </div>
+                <div class="table-wrap"><table class="table table-compact" id="table-regionassign"></table></div>
+              </div>
+
+              <div class="row-end">
+                <button class="btn btn-primary" id="btn-apply-assign">Zuordnung übernehmen</button>
+              </div>
+            </div>
+
+            <div class="card">
+              <div class="card-head">
+                <h3>Aktuelle Zuordnungen</h3>
+                <button class="btn btn-sm btn-danger" id="btn-clear-assign">Alle zurücksetzen</button>
+              </div>
+              <div class="table-wrap"><table class="table" id="table-assignments"></table></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ---------- SZENARIEN ---------- -->
+      <section class="view" id="view-scenarios">
+        <div class="card">
+          <div class="card-head">
+            <h3>Szenario aus aktuellem Stand erzeugen</h3>
+          </div>
+          <p class="hint">Ein Szenario friert DC-Konfiguration, Gewichtungen, Zielreichweiten und Zuordnungen ein und macht sie vergleichbar.</p>
+          <div class="inline-row">
+            <label class="field field-grow">
+              <span>Bezeichnung</span>
+              <input type="text" id="scn-name" class="input" placeholder="z.B. Zentralisiert, 21 Tage Reichweite">
+            </label>
+            <button class="btn btn-primary" id="btn-scn-save">Szenario speichern</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h3>Szenario-Vergleich</h3>
+            <span class="card-hint" id="scn-count-hint"></span>
+          </div>
+          <div class="table-wrap"><table class="table" id="table-scenarios"></table></div>
+          <div id="scn-empty" class="empty-inline">Noch keine Szenarien gespeichert.</div>
+          <p class="hint">Die Markierung „best“ kennzeichnet je Zeile den günstigsten bzw. höchsten Wert.
+             Die Ø Bewertung wird mit der jeweils im Szenario hinterlegten Gewichtung berechnet – bei
+             unterschiedlichen Gewichtungen sind Kosten und Auslastung die belastbareren Vergleichsgrößen.</p>
+        </div>
+
+        <div class="grid-2" id="scn-charts">
+          <div class="card">
+            <div class="card-head">
+              <h3>Gesamtkosten je Szenario</h3>
+              <span class="card-hint">EUR im Betrachtungszeitraum</span>
+            </div>
+            <div class="chart-box"><canvas id="chart-scn-cost"></canvas></div>
+            <div class="legend" id="legend-scn-cost"></div>
+          </div>
+          <div class="card">
+            <div class="card-head">
+              <h3>Auslastung &amp; Service je Szenario</h3>
+              <span class="card-hint">Prozent</span>
+            </div>
+            <div class="chart-box"><canvas id="chart-scn-kpi"></canvas></div>
+            <div class="legend" id="legend-scn-kpi"></div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h3>Zuordnungen im Vergleich</h3>
+            <span class="card-hint">Kategorie → DC je Szenario</span>
+          </div>
+          <div class="table-wrap"><table class="table" id="table-scn-matrix"></table></div>
+        </div>
+      </section>
+
+      <!-- ---------- EXPORT ---------- -->
+      <section class="view" id="view-export">
+        <div class="grid-2">
+          <div class="card">
+            <div class="card-head"><h3>Ergebnisse exportieren</h3></div>
+            <p class="hint">Der Download wird vollständig im Browser erzeugt – es findet kein Server-Roundtrip statt.</p>
+            <div class="btn-stack">
+              <button class="btn btn-primary" id="btn-export-xlsx">Excel-Arbeitsmappe (.xlsx)</button>
+              <button class="btn" id="btn-export-csv-results">Ergebnisse als CSV</button>
+              <button class="btn" id="btn-export-csv-assign">Zuordnungen als CSV</button>
+              <button class="btn" id="btn-export-csv-scn">Szenario-Vergleich als CSV</button>
+            </div>
+            <p class="hint">Die Excel-Mappe enthält die Blätter: KPI, DCs, Zuordnungen, Simulationsdetails, Regionen, Szenarien und Rohdaten.</p>
+          </div>
+
+          <div class="card">
+            <div class="card-head"><h3>Projekt sichern &amp; laden</h3></div>
+            <p class="hint">Speichert bzw. lädt den kompletten Arbeitsstand (DCs, Daten, Einstellungen, Szenarien) als JSON-Datei.</p>
+            <div class="btn-stack">
+              <button class="btn" id="btn-project-save">Projekt als JSON speichern</button>
+              <button class="btn" id="btn-project-load">Projekt aus JSON laden</button>
+              <input type="file" id="project-file-input" accept=".json" hidden>
+            </div>
+            <hr class="rule">
+            <label class="check">
+              <input type="checkbox" id="cfg-autosave" checked>
+              <span>Automatisch im Browser zwischenspeichern (localStorage)</span>
+            </label>
+            <div class="btn-stack">
+              <button class="btn btn-danger" id="btn-reset-all">Alles zurücksetzen</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h3>Kostenparameter des Netzwerks</h3></div>
+          <div class="form-grid form-grid-4">
+            <label class="field">
+              <span>Transportkosten je Paletten-km (EUR)</span>
+              <input type="number" step="0.001" min="0" id="cfg-costPerKm" class="input">
+            </label>
+            <label class="field">
+              <span>Transport-Grundkosten je Palette (EUR)</span>
+              <input type="number" step="0.5" min="0" id="cfg-costBase" class="input">
+            </label>
+            <label class="field">
+              <span>Lagerkosten je Stellplatz/Monat (EUR)</span>
+              <input type="number" step="0.5" min="0" id="cfg-storageCost" class="input">
+              <small>Fallback, wenn im DC kein Wert hinterlegt ist</small>
+            </label>
+            <label class="field">
+              <span>Handlingkosten je Palette (EUR)</span>
+              <input type="number" step="0.5" min="0" id="cfg-handlingCost" class="input">
+            </label>
+            <label class="field">
+              <span>Ø Transportleistung (km/Tag)</span>
+              <input type="number" step="50" min="50" id="cfg-kmPerDay" class="input">
+              <small>Für die Ermittlung der Transitzeit aus der Distanz</small>
+            </label>
+            <label class="field">
+              <span>Fixe Handlingzeit (Tage)</span>
+              <input type="number" step="0.1" min="0" id="cfg-handlingDays" class="input">
+            </label>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head"><h3>Rechenlogik im Überblick</h3></div>
+          <div class="formula-grid" id="formula-grid"></div>
+        </div>
+      </section>
+
+    </div>
+  </main>
+</div>
+
+<!-- ============ MODAL: DC bearbeiten ============ -->
+<div class="modal-backdrop hidden" id="dc-modal">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="dc-modal-title">
+    <div class="modal-head">
+      <h3 id="dc-modal-title">Distributionszentrum</h3>
+      <button class="icon-btn" id="dc-modal-close" aria-label="Schließen">✕</button>
+    </div>
+    <div class="modal-body">
+      <div class="form-grid form-grid-2">
+        <label class="field">
+          <span>Name *</span>
+          <input type="text" id="dc-name" class="input" placeholder="z.B. DC Duisburg">
+        </label>
+        <label class="field">
+          <span>Kurzcode</span>
+          <input type="text" id="dc-code" class="input" placeholder="z.B. DUI" maxlength="8">
+        </label>
+        <label class="field">
+          <span>Region / Standort</span>
+          <input type="text" id="dc-region" class="input" placeholder="z.B. Nordrhein-Westfalen">
+        </label>
+        <label class="field">
+          <span>Land</span>
+          <input type="text" id="dc-country" class="input" placeholder="z.B. Deutschland">
+        </label>
+        <label class="field">
+          <span>Breitengrad (lat)</span>
+          <input type="number" step="0.0001" id="dc-lat" class="input" placeholder="51.4344">
+        </label>
+        <label class="field">
+          <span>Längengrad (lng)</span>
+          <input type="number" step="0.0001" id="dc-lng" class="input" placeholder="6.7623">
+        </label>
+        <label class="field">
+          <span>Kapazität (Stellplätze)</span>
+          <input type="number" min="0" step="100" id="dc-capacity" class="input" placeholder="12000">
+        </label>
+        <label class="field">
+          <span>Bereits belegte Stellplätze</span>
+          <input type="number" min="0" step="100" id="dc-used" class="input" placeholder="0">
+          <small>Vorbelegung durch nicht simulierte Sortimente</small>
+        </label>
+        <label class="field">
+          <span>Lagerkosten je Stellplatz/Monat (EUR)</span>
+          <input type="number" min="0" step="0.5" id="dc-storage" class="input">
+        </label>
+        <label class="field">
+          <span>Handlingkosten je Palette (EUR)</span>
+          <input type="number" min="0" step="0.5" id="dc-handling" class="input">
+        </label>
+        <label class="field">
+          <span>Transport-Grundkosten je Palette (EUR)</span>
+          <input type="number" min="0" step="0.5" id="dc-transportBase" class="input">
+          <small>Leer = Netzwerk-Standardwert</small>
+        </label>
+        <label class="field">
+          <span>Transportkosten je Paletten-km (EUR)</span>
+          <input type="number" min="0" step="0.001" id="dc-transportKm" class="input">
+          <small>Leer = Netzwerk-Standardwert</small>
+        </label>
+        <label class="field">
+          <span>Fixkosten je Periode (EUR)</span>
+          <input type="number" min="0" step="100" id="dc-fixed" class="input" placeholder="0">
+        </label>
+        <label class="field">
+          <span>Status</span>
+          <select id="dc-active" class="input">
+            <option value="true">Aktiv</option>
+            <option value="false">Inaktiv (nicht in Simulation)</option>
+          </select>
+        </label>
+      </div>
+
+      <div class="sub-block">
+        <div class="sub-head">
+          <h4>Regionsspezifische Transportkosten (EUR je Palette)</h4>
+          <button class="btn btn-xs" id="btn-add-override">+ Region hinzufügen</button>
+        </div>
+        <p class="hint">Pauschale je Zielregion. Überschreibt die distanzbasierte Berechnung für diese Region.</p>
+        <div id="dc-overrides"></div>
+      </div>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn-ghost" id="dc-cancel">Abbrechen</button>
+      <button class="btn btn-primary" id="dc-save">Speichern</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toasts"></div>
+
+<!-- Vendor (lokal, keine externen Aufrufe) -->
+<script src="vendor/papaparse.min.js"></script>
+<script src="vendor/xlsx.full.min.js"></script>
+<script src="vendor/chart.umd.js"></script>
+<script src="vendor/leaflet.js"></script>
+
+<!-- App -->
+<script src="js/util.js"></script>
+<script src="js/state.js"></script>
+<script src="js/geo.js"></script>
+<script src="js/dcs.js"></script>
+<script src="js/data.js"></script>
+<script src="js/sim.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/simui.js"></script>
+<script src="js/mapview.js"></script>
+<script src="js/dashboard.js"></script>
+<script src="js/scenarios.js"></script>
+<script src="js/exporter.js"></script>
+<script src="js/demo.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
