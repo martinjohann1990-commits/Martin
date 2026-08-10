@@ -1,0 +1,29 @@
+# Vertical profile: 3D printing.
+# Print time is the capacity driver instead of hand-labor minutes, and
+# a scrap/failure rate inflates both material and time requirements.
+key: printing3d
+cure_time_enabled: false
+cure_days_default: 0
+batch_label_key: batch_size_print_job
+capacity_driver: print_minutes
+scrap_rate_enabled: true
+scrap_rate_default: 0.05
+high_variant_count: false
+small_material_quantities: false
+
+seasonality_index_cap:
+  min: 0.3
+  max: 4.0
+
+bom_components:
+  - filament_or_resin
+  - hardware_inserts
+  - packaging
+
+sample_products:
+  - sku: P3D-001
+    name_key: sample_product_printing3d_1
+  - sku: P3D-002
+    name_key: sample_product_printing3d_2
+  - sku: P3D-003
+    name_key: sample_product_printing3d_3

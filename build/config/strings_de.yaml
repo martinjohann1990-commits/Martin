@@ -1,0 +1,286 @@
+# Deutsche Oberflächentexte. Es steht kein Nutzertext im Python-Code -
+# jede Bezeichnung, Überschrift und jeder Hinweis kommt aus dieser Datei
+# (bzw. aus strings_en.yaml für die englische Variante).
+meta:
+  workbook_title: "Peak Season Planner"
+  file_suffix: DE
+
+common:
+  yes: "Ja"
+  no: "Nein"
+  active: "Aktiv"
+  inactive: "Inaktiv"
+  na: "k. A."
+  currency_symbol: "€"
+
+start:
+  sheet_title: "Start"
+  heading: "Peak Season Planner"
+  intro: >-
+    Diese Arbeitsmappe macht aus deiner Etsy-Bestellhistorie einen
+    Wochenplan: wie viel du je Artikel in den nächsten Wochen verkaufst,
+    wann du produzieren musst, wann du Material bestellst, ob deine
+    Arbeitszeit reicht und wie viel Kapital das bindet.
+  steps_heading: "Drei Schritte"
+  steps:
+    - "Füge deinen Etsy-Bestellexport in das Blatt Import ein (oder trage Monatswerte von Hand ein)."
+    - "Trage deine Artikel und Materialien in Products und Materials ein."
+    - "Lies Forecast, Production, Materials, Cash und Dashboard - alles aktualisiert sich automatisch."
+  example_note: "Ein vollständig ausgefülltes Beispiel findest du im Blatt Example."
+  method_note: "Jede Berechnung ist im ausgeblendeten Blatt Method in Klartext erklärt."
+
+settings:
+  sheet_title: "Settings"
+  heading: "Einstellungen"
+  intro: "Diese Werte steuern jede Berechnung in dieser Arbeitsmappe. Ändere sie hier, nicht in einer Formel."
+  section_general: "Allgemein"
+  section_planning: "Planung"
+  section_service: "Servicegrad & Wachstum"
+  section_production: "Produktion"
+  labels:
+    currency: "Währung"
+    start_date: "Startdatum der Planung"
+    horizon_weeks: "Planungshorizont (Wochen)"
+    work_hours_week: "Verfügbare Arbeitsstunden je Woche"
+    work_hours_overrides: "Wochen-Override (z. B. Urlaub)"
+    service_level: "Servicegrad"
+    service_z: "z-Wert des Servicegrads"
+    growth_pct: "Wachstumsannahme"
+    cure_days: "Aushärtezeit (Tage)"
+    lead_time_buffer_days: "Sicherheitspuffer auf Lieferzeiten (Tage)"
+    fee_rate: "Verkaufsgebühr"
+    scenario: "Szenario"
+    scenario_z: "Bandbreiten-Koeffizient des Szenarios"
+  service_level_options:
+    cautious: "Vorsichtig (95%)"
+    normal: "Normal (90%)"
+    lean: "Schlank (80%)"
+  scenario_options:
+    low: "Niedrig"
+    expected: "Erwartet"
+    high: "Hoch"
+  units:
+    days: "Tage"
+    hours_per_week: "Std./Woche"
+    weeks: "Wochen"
+    percent: "%"
+
+import:
+  sheet_title: "Import"
+  heading: "Import"
+  intro: "Füge deinen Etsy-Bestellexport ab Zelle A1 unten ein. Die Spaltenreihenfolge spielt keine Rolle - Kopfzeilen werden automatisch erkannt."
+  detection_heading: "Erkannte Spalten"
+  detection_labels:
+    date_column: "Datumsspalte"
+    item_column: "Artikel-/SKU-Spalte"
+    quantity_column: "Mengenspalte"
+    amount_column: "Betragsspalte"
+    rows_found: "Gefundene Zeilen"
+    date_range: "Abgedeckter Zeitraum"
+    unreadable_rows: "Unlesbare Zeilen"
+    status: "Status"
+  status_messages:
+    waiting: "Warte auf Daten - füge deinen Export unten ein."
+    ok: "Sieht gut aus."
+    missing_columns: "Nicht alle benötigten Spalten gefunden. Prüfe die Kopfzeile deines Exports."
+  paste_area_heading: "Etsy-Bestellexport hier einfügen"
+  fallback_heading: "Kein Export zur Hand? Monatswerte von Hand eintragen"
+  fallback_intro: "Trage 12-24 Monatswerte je Artikel ein. Die Prognose funktioniert allein damit."
+  derived_heading: "Abgeleitet: Absatzmenge und Umsatz je Artikel und Monat"
+
+products:
+  sheet_title: "Products"
+  heading: "Artikel"
+  intro: "Eine Zeile je Artikel. Zeilen werden, wo möglich, aus Import vorbelegt - prüfe und ergänze den Rest."
+  headers:
+    sku: "SKU"
+    name: "Bezeichnung"
+    price: "Verkaufspreis"
+    material_cost: "Materialkosten / Stück"
+    minutes_per_unit: "Fertigungsminuten / Stück"
+    stock_on_hand: "Aktueller Bestand"
+    batch_size: "Losgröße"
+    cure_days_override: "Aushärtezeit-Override (Tage)"
+    active: "Aktiv"
+
+forecast:
+  sheet_title: "Forecast"
+  heading: "Prognose"
+  intro: "Saisonalität, Basisniveau, Wochenprognose, Szenarien, Sicherheitsbestand - jede Stufe im eigenen Block."
+  section_seasonality: "(a) Saisonalitätsindex je Artikel und Monat"
+  section_base_level: "(b) Basisniveau"
+  section_weekly: "(c) Wochenprognose"
+  section_scenarios: "(d) Szenarien"
+  section_safety_stock: "(e) Sicherheitsbestand & Meldebestand"
+  headers:
+    sku: "SKU"
+    month: "Monat"
+    seasonality_index: "Saisonalitätsindex"
+    index_source: "Indexquelle"
+    base_level: "Basisniveau / Woche"
+    week: "Woche"
+    forecast_units: "Prognose (Stück)"
+    forecast_revenue: "Prognose (Umsatz)"
+    cv: "Variationskoeffizient"
+    low: "Niedrig"
+    expected: "Erwartet"
+    high: "Hoch"
+    sigma_week: "Streuung Wochenabsatz"
+    lead_time_weeks: "Wiederbeschaffungszeit (Wochen)"
+    safety_stock: "Sicherheitsbestand"
+    reorder_point: "Meldebestand"
+  index_source_values:
+    own: "eigen"
+    shop: "Shop"
+    default: "Standard"
+
+production:
+  sheet_title: "Production"
+  heading: "Produktion"
+  intro: "Nettobedarf je Artikel und Woche, kumulativer Kapazitätsabgleich, und was bei Engpass zuerst gestrichen wird."
+  section_net_need: "Nettobedarf & Chargen"
+  section_start_week: "Startwoche"
+  section_capacity: "Kumulativer Kapazitätsabgleich"
+  section_priority: "Bei Engpass zuerst streichen"
+  headers:
+    sku: "SKU"
+    week: "Woche"
+    forecast: "Prognose"
+    safety_stock: "Sicherheitsbestand"
+    stock_end_prior: "Bestand Ende Vorwoche"
+    in_progress: "In Arbeit"
+    net_need: "Nettobedarf"
+    batch_qty: "Chargenmenge"
+    start_week: "Startwoche"
+    status: "Status"
+    cum_demand_hours: "Kumulierter Bedarf (Stunden)"
+    cum_capacity_hours: "Kumulierte Kapazität (Stunden)"
+    gap_hours: "Lücke (Stunden)"
+    margin_per_minute: "Deckungsbeitrag / Fertigungsminute"
+  status_values:
+    on_track: "Im Plan"
+    overdue: "Überfällig - Startwoche in der Vergangenheit"
+  dashboard_terms:
+    first_bottleneck_week: "Erste Engpasswoche"
+    missing_hours: "Fehlende Stunden"
+
+materials:
+  sheet_title: "Materials"
+  heading: "Material"
+  intro: "Stückliste je Artikel, Materialstammdaten und eine versandfertige Bestellliste, sortiert nach Bestelldatum."
+  section_bom: "Stückliste"
+  section_master: "Materialstammdaten"
+  section_orders: "Bestellliste"
+  bom_headers:
+    sku: "SKU"
+    material: "Material"
+    qty_per_unit: "Menge / Stück"
+    unit: "Einheit"
+  master_headers:
+    material: "Material"
+    unit: "Einheit"
+    price_per_unit: "Preis / Einheit"
+    lead_time_days: "Lieferzeit (Tage)"
+    moq: "Mindestbestellmenge"
+    pack_size: "Gebindegröße"
+    stock_on_hand: "Aktueller Bestand"
+    supplier: "Lieferant"
+  order_headers:
+    material: "Material"
+    week: "Benötigt für Woche"
+    order_by: "Bestellen bis"
+    quantity: "Bestellmenge"
+    est_cost: "Geschätzte Kosten"
+    supplier: "Lieferant"
+
+cash:
+  sheet_title: "Cash"
+  heading: "Liquidität"
+  intro: "Materialausgaben in der Bestellwoche, Umsatz in der Absatzwoche (nach Verkaufsgebühren), und die daraus resultierende Liquiditätslinie."
+  headers:
+    week: "Woche"
+    material_spend: "Materialausgaben"
+    revenue_gross: "Umsatz (brutto)"
+    fees: "Verkaufsgebühren"
+    revenue_net: "Umsatz (netto)"
+    net_cash_flow: "Netto-Cashflow"
+    cumulative_cash: "Kumulierte Liquidität"
+  summary:
+    lowest_point: "Tiefster Punkt"
+    lowest_point_week: "Woche des tiefsten Punkts"
+
+dashboard:
+  sheet_title: "Dashboard"
+  heading: "Dashboard"
+  tiles:
+    forecast_revenue: "Prognoseumsatz (Horizont)"
+    hours_needed_vs_available: "Benötigte vs. verfügbare Stunden"
+    material_budget: "Materialbudget"
+    lowest_cash_point: "Tiefster Liquiditätspunkt"
+  chart_capacity_title: "Bedarf vs. Kapazität (kumuliert)"
+  top_products_heading: "Top 10 Artikel nach Prognoseumsatz"
+  bottleneck_heading: "Engpass-Status"
+  bottleneck_ok: "Kein Engpass im Planungshorizont"
+  bottleneck_warning: "Kapazitätsengpass voraus"
+
+actionplan:
+  sheet_title: "Action Plan"
+  heading: "Aktionsplan"
+  intro: "Alle datierten Handlungen aus Production und Materials, sortiert nach Datum."
+  headers:
+    date: "Datum"
+    action: "Aktion"
+    sku_or_material: "Artikel / Material"
+    quantity: "Menge"
+    due_by: "Fällig bis"
+    status: "Status"
+
+method:
+  sheet_title: "Method"
+  heading: "Methode"
+  intro: "Eine Zeile je Berechnung: Blatt, Feld, Erklärung in einem Satz, und die Formel in Klartext."
+  headers:
+    sheet: "Blatt"
+    field: "Feld"
+    explanation: "Erklärung"
+    formula: "Formel (Klartext)"
+
+example:
+  sheet_title: "Example"
+  heading: "Beispiel"
+  intro: "Ein vollständig ausgefülltes Beispiel mit den Demo-Daten. Dieses Blatt ist schreibgeschützt."
+  placeholder_note: "Wird in einem späteren Bauschritt befüllt."
+
+vertical:
+  batch_labels:
+    batch_size_pour: "Losgröße (Guss)"
+    batch_size_run: "Losgröße (Fertigungslauf)"
+    batch_size_print_job: "Losgröße (Druckauftrag)"
+    batch_size_generic: "Losgröße"
+  bom_component_labels:
+    wax: "Wachs"
+    wick: "Docht"
+    fragrance_oil: "Duftöl"
+    vessel: "Gefäß"
+    label: "Etikett"
+    packaging: "Verpackung"
+    findings: "Fassungen"
+    beads_or_stones: "Perlen / Steine"
+    chain_or_cord: "Kette / Band"
+    clasp: "Verschluss"
+    filament_or_resin: "Filament / Harz"
+    hardware_inserts: "Einlegeteile"
+    material_a: "Material"
+  sample_products:
+    sample_product_candle_1: "Lavendelfeld Duftkerze im Glas"
+    sample_product_candle_2: "Vanille Wachsmelt"
+    sample_product_candle_3: "Meersalz & Salbei Seife"
+    sample_product_jewelry_1: "Silberne Creolen"
+    sample_product_jewelry_2: "Perlen-Layer-Kette"
+    sample_product_jewelry_3: "Drahtumwickelter Ring"
+    sample_product_printing3d_1: "Beweglicher Schreibtisch-Fidget"
+    sample_product_printing3d_2: "Blumentopf, klein"
+    sample_product_printing3d_3: "Kabelclip"
+    sample_product_generic_1: "Beispielartikel A"
+    sample_product_generic_2: "Beispielartikel B"
+    sample_product_generic_3: "Beispielartikel C"

@@ -1,0 +1,30 @@
+# Vertical profile: handmade jewelry.
+# No cure time, many small variants, small per-unit material quantities.
+key: jewelry
+cure_time_enabled: false
+cure_days_default: 0
+batch_label_key: batch_size_run
+capacity_driver: labor_minutes
+scrap_rate_enabled: false
+scrap_rate_default: 0.0
+high_variant_count: true
+small_material_quantities: true
+
+seasonality_index_cap:
+  min: 0.3
+  max: 4.0
+
+bom_components:
+  - findings
+  - beads_or_stones
+  - chain_or_cord
+  - clasp
+  - packaging
+
+sample_products:
+  - sku: JWL-001
+    name_key: sample_product_jewelry_1
+  - sku: JWL-002
+    name_key: sample_product_jewelry_2
+  - sku: JWL-003
+    name_key: sample_product_jewelry_3

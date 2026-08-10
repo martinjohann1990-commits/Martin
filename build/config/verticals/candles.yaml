@@ -1,0 +1,33 @@
+# Vertical profile: candles, wax melts, soaps.
+# This is the primary, default profile: multi-part bill of materials,
+# long lead times on wax/glassware, a strong Q4 season, and a real
+# process constraint (cure time) between production and ship-readiness.
+key: candles
+cure_time_enabled: true
+cure_days_default: 10
+batch_label_key: batch_size_pour
+capacity_driver: labor_minutes
+scrap_rate_enabled: false
+scrap_rate_default: 0.0
+high_variant_count: false
+small_material_quantities: false
+
+seasonality_index_cap:
+  min: 0.25
+  max: 4.5
+
+bom_components:
+  - wax
+  - wick
+  - fragrance_oil
+  - vessel
+  - label
+  - packaging
+
+sample_products:
+  - sku: CND-001
+    name_key: sample_product_candle_1
+  - sku: CND-002
+    name_key: sample_product_candle_2
+  - sku: CND-003
+    name_key: sample_product_candle_3

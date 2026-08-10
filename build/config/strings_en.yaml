@@ -1,0 +1,285 @@
+# English UI strings. No user-facing text may live in the Python code -
+# every label, heading and note comes from this file (or strings_de.yaml).
+meta:
+  workbook_title: "Peak Season Planner"
+  file_suffix: EN
+
+common:
+  yes: "Yes"
+  no: "No"
+  active: "Active"
+  inactive: "Inactive"
+  na: "n/a"
+  currency_symbol: "$"
+
+start:
+  sheet_title: "Start"
+  heading: "Peak Season Planner"
+  intro: >-
+    This workbook turns your Etsy order history into a week-by-week plan:
+    how much of each product you will sell over the coming weeks, when you
+    need to produce it, when to order materials, whether your work hours
+    are enough, and how much capital it ties up.
+  steps_heading: "Three steps"
+  steps:
+    - "Paste your Etsy order export into the Import sheet (or enter monthly totals by hand)."
+    - "Fill in your products and materials on the Products and Materials sheets."
+    - "Read Forecast, Production, Materials, Cash and Dashboard - everything updates automatically."
+  example_note: "See the Example sheet for a fully filled-in walkthrough with sample data."
+  method_note: "Every calculation is explained in plain language on the hidden Method sheet."
+
+settings:
+  sheet_title: "Settings"
+  heading: "Settings"
+  intro: "These values drive every calculation in this workbook. Change them here, not in a formula."
+  section_general: "General"
+  section_planning: "Planning"
+  section_service: "Service level & growth"
+  section_production: "Production"
+  labels:
+    currency: "Currency"
+    start_date: "Planning start date"
+    horizon_weeks: "Planning horizon (weeks)"
+    work_hours_week: "Available work hours per week"
+    work_hours_overrides: "Week overrides (holidays etc.)"
+    service_level: "Service level"
+    service_z: "Service level z-value"
+    growth_pct: "Growth assumption"
+    cure_days: "Cure time (days)"
+    lead_time_buffer_days: "Lead time safety buffer (days)"
+    fee_rate: "Marketplace fee rate"
+    scenario: "Scenario"
+    scenario_z: "Scenario band coefficient"
+  service_level_options:
+    cautious: "Cautious (95%)"
+    normal: "Normal (90%)"
+    lean: "Lean (80%)"
+  scenario_options:
+    low: "Low"
+    expected: "Expected"
+    high: "High"
+  units:
+    days: "days"
+    hours_per_week: "hours/week"
+    weeks: "weeks"
+    percent: "%"
+
+import:
+  sheet_title: "Import"
+  heading: "Import"
+  intro: "Paste your Etsy order export starting in cell A1 below. Column order does not matter - headers are detected automatically."
+  detection_heading: "Detected columns"
+  detection_labels:
+    date_column: "Date column"
+    item_column: "Item / SKU column"
+    quantity_column: "Quantity column"
+    amount_column: "Amount column"
+    rows_found: "Rows found"
+    date_range: "Date range covered"
+    unreadable_rows: "Unreadable rows"
+    status: "Status"
+  status_messages:
+    waiting: "Waiting for data - paste your export below."
+    ok: "Looks good."
+    missing_columns: "Could not find all required columns. Check the header row of your export."
+  paste_area_heading: "Paste your Etsy order export here"
+  fallback_heading: "No export handy? Enter monthly totals by hand"
+  fallback_intro: "Enter 12-24 months of totals per product. The forecast works from this alone."
+  derived_heading: "Derived: units sold and revenue per product and month"
+
+products:
+  sheet_title: "Products"
+  heading: "Products"
+  intro: "One row per product. Rows are pre-filled from Import where possible - review and complete the rest."
+  headers:
+    sku: "SKU"
+    name: "Name"
+    price: "Sale price"
+    material_cost: "Material cost / unit"
+    minutes_per_unit: "Production minutes / unit"
+    stock_on_hand: "Current stock"
+    batch_size: "Batch size"
+    cure_days_override: "Cure time override (days)"
+    active: "Active"
+
+forecast:
+  sheet_title: "Forecast"
+  heading: "Forecast"
+  intro: "Seasonality, base level, weekly forecast, scenarios, safety stock - each step in its own block below."
+  section_seasonality: "(a) Seasonality index by product and month"
+  section_base_level: "(b) Base level"
+  section_weekly: "(c) Weekly forecast"
+  section_scenarios: "(d) Scenarios"
+  section_safety_stock: "(e) Safety stock & reorder point"
+  headers:
+    sku: "SKU"
+    month: "Month"
+    seasonality_index: "Seasonality index"
+    index_source: "Index source"
+    base_level: "Base level / week"
+    week: "Week"
+    forecast_units: "Forecast (units)"
+    forecast_revenue: "Forecast (revenue)"
+    cv: "Coefficient of variation"
+    low: "Low"
+    expected: "Expected"
+    high: "High"
+    sigma_week: "Weekly demand std. dev."
+    lead_time_weeks: "Lead time (weeks)"
+    safety_stock: "Safety stock"
+    reorder_point: "Reorder point"
+  index_source_values:
+    own: "own"
+    shop: "shop"
+    default: "default"
+
+production:
+  sheet_title: "Production"
+  heading: "Production"
+  intro: "Net requirement per product and week, cumulative capacity check, and what to cut first if capacity is short."
+  section_net_need: "Net requirement & batches"
+  section_start_week: "Start week"
+  section_capacity: "Cumulative capacity check"
+  section_priority: "If capacity is short, cut these first"
+  headers:
+    sku: "SKU"
+    week: "Week"
+    forecast: "Forecast"
+    safety_stock: "Safety stock"
+    stock_end_prior: "Stock at end of prior week"
+    in_progress: "In progress"
+    net_need: "Net requirement"
+    batch_qty: "Batch quantity"
+    start_week: "Start week"
+    status: "Status"
+    cum_demand_hours: "Cumulative required hours"
+    cum_capacity_hours: "Cumulative available hours"
+    gap_hours: "Gap (hours)"
+    margin_per_minute: "Contribution / production minute"
+  status_values:
+    on_track: "On track"
+    overdue: "Overdue - start week in the past"
+  dashboard_terms:
+    first_bottleneck_week: "First bottleneck week"
+    missing_hours: "Missing hours"
+
+materials:
+  sheet_title: "Materials"
+  heading: "Materials"
+  intro: "Bill of materials per product, material master data, and a ready-to-send order list sorted by order date."
+  section_bom: "Bill of materials"
+  section_master: "Material master data"
+  section_orders: "Order list"
+  bom_headers:
+    sku: "SKU"
+    material: "Material"
+    qty_per_unit: "Quantity / unit"
+    unit: "Unit"
+  master_headers:
+    material: "Material"
+    unit: "Unit"
+    price_per_unit: "Price / unit"
+    lead_time_days: "Lead time (days)"
+    moq: "Minimum order quantity"
+    pack_size: "Pack size"
+    stock_on_hand: "Current stock"
+    supplier: "Supplier"
+  order_headers:
+    material: "Material"
+    week: "Needed for week"
+    order_by: "Order by"
+    quantity: "Order quantity"
+    est_cost: "Estimated cost"
+    supplier: "Supplier"
+
+cash:
+  sheet_title: "Cash"
+  heading: "Cash"
+  intro: "Material spend in the order week, revenue in the sales week (net of marketplace fees), and the resulting cash line."
+  headers:
+    week: "Week"
+    material_spend: "Material spend"
+    revenue_gross: "Revenue (gross)"
+    fees: "Marketplace fees"
+    revenue_net: "Revenue (net)"
+    net_cash_flow: "Net cash flow"
+    cumulative_cash: "Cumulative cash"
+  summary:
+    lowest_point: "Lowest point"
+    lowest_point_week: "Week of lowest point"
+
+dashboard:
+  sheet_title: "Dashboard"
+  heading: "Dashboard"
+  tiles:
+    forecast_revenue: "Forecast revenue (horizon)"
+    hours_needed_vs_available: "Hours needed vs. available"
+    material_budget: "Material budget"
+    lowest_cash_point: "Lowest cash point"
+  chart_capacity_title: "Demand vs. capacity (cumulative)"
+  top_products_heading: "Top 10 products by forecast revenue"
+  bottleneck_heading: "Bottleneck status"
+  bottleneck_ok: "No bottleneck in the planning horizon"
+  bottleneck_warning: "Capacity bottleneck ahead"
+
+actionplan:
+  sheet_title: "Action Plan"
+  heading: "Action Plan"
+  intro: "Every dated action from Production and Materials, sorted by date."
+  headers:
+    date: "Date"
+    action: "Action"
+    sku_or_material: "Product / material"
+    quantity: "Quantity"
+    due_by: "Due by"
+    status: "Status"
+
+method:
+  sheet_title: "Method"
+  heading: "Method"
+  intro: "One row per calculation: which sheet, which field, a one-sentence explanation, and the formula in plain language."
+  headers:
+    sheet: "Sheet"
+    field: "Field"
+    explanation: "Explanation"
+    formula: "Formula (plain language)"
+
+example:
+  sheet_title: "Example"
+  heading: "Example"
+  intro: "A fully filled-in example using the sample data set. This sheet is read-only."
+  placeholder_note: "Populated in a later build step."
+
+vertical:
+  batch_labels:
+    batch_size_pour: "Batch size (pour)"
+    batch_size_run: "Batch size (run)"
+    batch_size_print_job: "Batch size (print job)"
+    batch_size_generic: "Batch size"
+  bom_component_labels:
+    wax: "Wax"
+    wick: "Wick"
+    fragrance_oil: "Fragrance oil"
+    vessel: "Vessel"
+    label: "Label"
+    packaging: "Packaging"
+    findings: "Findings"
+    beads_or_stones: "Beads / stones"
+    chain_or_cord: "Chain / cord"
+    clasp: "Clasp"
+    filament_or_resin: "Filament / resin"
+    hardware_inserts: "Hardware inserts"
+    material_a: "Material"
+  sample_products:
+    sample_product_candle_1: "Lavender Fields Jar Candle"
+    sample_product_candle_2: "Vanilla Bean Wax Melt"
+    sample_product_candle_3: "Sea Salt & Sage Soap Bar"
+    sample_product_jewelry_1: "Silver Hoop Earrings"
+    sample_product_jewelry_2: "Beaded Layer Necklace"
+    sample_product_jewelry_3: "Wire-Wrapped Ring"
+    sample_product_printing3d_1: "Articulated Desk Fidget"
+    sample_product_printing3d_2: "Planter Pot, Small"
+    sample_product_printing3d_3: "Cable Organizer Clip"
+    sample_product_generic_1: "Sample Product A"
+    sample_product_generic_2: "Sample Product B"
+    sample_product_generic_3: "Sample Product C"

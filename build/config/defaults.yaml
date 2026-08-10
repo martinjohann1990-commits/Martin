@@ -1,0 +1,63 @@
+# Cross-vertical default parameters.
+# Verticals may override individual keys (see config/verticals/*.yaml);
+# the calculation logic never hardcodes these values, it always reads
+# them back from the named cells on the Settings sheet that are seeded
+# from this file at build time.
+
+service_levels:
+  order: [cautious, normal, lean]
+  cautious:
+    z: 1.64
+  normal:
+    z: 1.28
+  lean:
+    z: 0.84
+
+growth_options_pct: [-20, -10, 0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+
+# Cap applied to every seasonality index (Forecast sheet, step a) so a
+# single thin/noisy month can't blow up the whole forecast. Verticals
+# with a very peaky season (candles) may widen this range.
+seasonality_index_cap:
+  min: 0.3
+  max: 4.0
+
+# One-sided normal-loss coefficient used to derive the low/high scenario
+# band from the coefficient of variation (CV). 0.674 corresponds to the
+# 25th/75th percentile of a normal distribution.
+scenario_z: 0.674
+scenario_cv_cap: 1.0
+
+# How weekly demand variance (sigma_week) is derived. Etsy order exports
+# give per-transaction dates, so real weekly figures exist, but for small
+# shops a handful of weekly data points overstates the spread. Default:
+# derive sigma from monthly figures and scale down by sqrt(weeks/month).
+sigma_week_method: monthly_scaled
+weeks_per_month: 4.33
+
+fee_rate_default: 0.13
+lead_time_buffer_days_default: 7
+horizon_weeks_default: 20
+work_hours_per_week_default: 20
+
+products_max_rows: 60
+
+# Relative (not yet normalized) week-of-month weights for the two months
+# that need a non-uniform profile. Index 0 = first week of the month.
+# Normalization to sum(weights in that month) = 1.0 happens at formula
+# build time (Milestone 3) once the actual calendar weeks are known.
+week_weights:
+  default_profile: uniform
+  overrides:
+    "11":
+      - 0.95
+      - 1.00
+      - 1.35
+      - 1.35
+      - 1.00
+    "12":
+      - 1.30
+      - 1.30
+      - 1.15
+      - 0.90
+      - 0.35

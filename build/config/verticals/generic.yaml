@@ -1,0 +1,28 @@
+# Vertical profile: generic / neutral defaults.
+# No industry-specific fields switched on; a safe starting point for a
+# handmade category that doesn't fit candles, jewelry, or 3D printing.
+key: generic
+cure_time_enabled: false
+cure_days_default: 0
+batch_label_key: batch_size_generic
+capacity_driver: labor_minutes
+scrap_rate_enabled: false
+scrap_rate_default: 0.0
+high_variant_count: false
+small_material_quantities: false
+
+seasonality_index_cap:
+  min: 0.3
+  max: 4.0
+
+bom_components:
+  - material_a
+  - packaging
+
+sample_products:
+  - sku: GEN-001
+    name_key: sample_product_generic_1
+  - sku: GEN-002
+    name_key: sample_product_generic_2
+  - sku: GEN-003
+    name_key: sample_product_generic_3
