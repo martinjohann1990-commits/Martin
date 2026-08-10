@@ -1224,6 +1224,16 @@ select.input { cursor: pointer; }
 }
 .formula p { font-size: 12px; color: var(--text-secondary); margin: 0; }
 
+/* ---------------------------------------------------------------- Branding */
+.brand-mark img { width: 100%; height: 100%; object-fit: contain; display: block; }
+.brand-mark.has-logo { background: none; }
+
+.branding-row { display: flex; gap: 18px; align-items: flex-start; flex-wrap: wrap; }
+.branding-preview { flex: none; }
+.branding-fields { flex: 1; min-width: 300px; }
+.brand-mark-lg { width: 72px; height: 72px; border-radius: 16px; font-size: 24px; }
+.brand-mark-lg img { border-radius: 14px; }
+
 /* ---------------------------------------------------------------- Utility */
 .tools { display: flex; gap: 4px; }
 .pct-input { width: 78px; }
@@ -1254,10 +1264,10 @@ select.input { cursor: pointer; }
   <!-- ============ SIDEBAR ============ -->
   <aside class="sidebar">
     <div class="brand">
-      <div class="brand-mark">NP</div>
+      <div class="brand-mark" id="brand-mark">NP</div>
       <div class="brand-text">
-        <strong>NetPlan</strong>
-        <span>Logistik-Netzwerkplanung</span>
+        <strong id="brand-name">NetPlan</strong>
+        <span id="brand-subtitle">Logistik-Netzwerkplanung</span>
       </div>
     </div>
 
@@ -1786,6 +1796,42 @@ select.input { cursor: pointer; }
             </label>
             <div class="btn-stack">
               <button class="btn btn-danger" id="btn-reset-all">Alles zurücksetzen</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h3>Erscheinungsbild</h3>
+            <span class="card-hint">Logo und Bezeichnung der Anwendung</span>
+          </div>
+          <div class="branding-row">
+            <div class="branding-preview">
+              <div class="brand-mark brand-mark-lg" id="brand-preview">NP</div>
+            </div>
+            <div class="branding-fields">
+              <div class="form-grid form-grid-2">
+                <label class="field">
+                  <span>Anwendungsname</span>
+                  <input type="text" id="cfg-appName" class="input" maxlength="40" placeholder="NetPlan">
+                </label>
+                <label class="field">
+                  <span>Untertitel</span>
+                  <input type="text" id="cfg-appSubtitle" class="input" maxlength="60" placeholder="Logistik-Netzwerkplanung">
+                </label>
+                <label class="field">
+                  <span>Kürzel (falls kein Logo hinterlegt)</span>
+                  <input type="text" id="cfg-appInitials" class="input" maxlength="4" placeholder="NP">
+                </label>
+              </div>
+              <div class="inline-controls">
+                <button class="btn btn-sm" id="btn-logo-pick">Logo hochladen</button>
+                <input type="file" id="logo-file-input" accept="image/png,image/jpeg,image/svg+xml,image/webp,image/gif" hidden>
+                <button class="btn btn-sm" id="btn-logo-clear">Logo entfernen</button>
+                <button class="btn btn-sm btn-ghost" id="btn-branding-reset">Zurücksetzen</button>
+              </div>
+              <p class="hint">PNG, JPG, SVG, WebP oder GIF bis 300 kB. Das Bild wird in die Projektdatei
+                 eingebettet und bleibt damit auch beim Weitergeben erhalten – es wird nichts hochgeladen.</p>
             </div>
           </div>
         </div>
@@ -2636,6 +2682,21 @@ window.LNP = window.LNP || {};
     'Elektro Partner': 'Electro Partner', 'Fachhandel Süd': 'Southern Specialists',
     'Online Retail EU': 'Online Retail EU', 'Möbelkette West': 'Furniture Chain West',
     'Discount Kette': 'Discount Chain', 'Regionalhändler': 'Regional Dealer',
+    'Erscheinungsbild': 'Appearance',
+    'Logo und Bezeichnung der Anwendung': 'Logo and name of the application',
+    'Anwendungsname': 'Application name',
+    'Untertitel': 'Subtitle',
+    'Kürzel (falls kein Logo hinterlegt)': 'Initials (when no logo is set)',
+    'Logo hochladen': 'Upload logo',
+    'Logo entfernen': 'Remove logo',
+    'PNG, JPG, SVG, WebP oder GIF bis 300 kB. Das Bild wird in die Projektdatei eingebettet und bleibt damit auch beim Weitergeben erhalten – es wird nichts hochgeladen.':
+      'PNG, JPG, SVG, WebP or GIF up to 300 kB. The image is embedded in the project file and travels with it – nothing is uploaded.',
+    'Logo übernommen.': 'Logo applied.',
+    'Logo entfernt.': 'Logo removed.',
+    'Erscheinungsbild zurückgesetzt.': 'Appearance reset.',
+    'Das Logo ist zu groß ({0} kB). Bitte eine Datei bis 300 kB verwenden.':
+      'The logo is too large ({0} kB). Please use a file of up to 300 kB.',
+    'Auswertung Logistik-Netzwerk': 'logistics network analysis',
     'KPI': 'KPI'
   };
 
@@ -3150,6 +3211,14 @@ window.LNP = window.LNP || {};
       weights: { capacity: 30, transport: 45, service: 25 },
       maxUtilization: 0.85,
 
+      // Erscheinungsbild
+      branding: {
+        appName: 'NetPlan',
+        appSubtitle: 'Logistik-Netzwerkplanung',
+        initials: 'NP',
+        logo: null            // Bild als data:-URI, damit es in der Projektdatei mitreist
+      },
+
       // Sonstiges
       autosave: true,
       mapMode: 'auto'
@@ -3227,6 +3296,7 @@ window.LNP = window.LNP || {};
     state.scenarios = Array.isArray(obj.scenarios) ? obj.scenarios : [];
     state.settings = Object.assign(fresh.settings, obj.settings || {});
     state.settings.weights = Object.assign(fresh.settings.weights, (obj.settings || {}).weights || {});
+    state.settings.branding = Object.assign(fresh.settings.branding, (obj.settings || {}).branding || {});
     state.lastSim = null;
   }
 
@@ -6197,6 +6267,11 @@ window.LNP = window.LNP || {};
       minZoom: 2, maxZoom: 12
     }).setView([50.5, 10.0], 4);
 
+    // Voreingestellten Leaflet-Verweis entfernen; der Quellenhinweis der
+    // Kartenkacheln bleibt als reiner Text erhalten. Die Anwendung enthält
+    // damit keinen einzigen Link nach außen.
+    if (map.attributionControl) map.attributionControl.setPrefix('');
+
     var pref = S.settings().mapMode || 'auto';
     setMode(pref === 'schema' ? 'schema' : 'tiles', true);
     bindModeSelect(false);
@@ -6864,7 +6939,7 @@ window.LNP = window.LNP || {};
   function sheetKPI(sum) {
     var st = S.get();
     var rows = [
-      ['NetPlan – Auswertung Logistik-Netzwerk'],
+      [(S.settings().branding && S.settings().branding.appName || 'NetPlan') + ' – ' + U.t('Auswertung Logistik-Netzwerk')],
       ['Erstellt am', new Date().toLocaleString(NS.i18n ? NS.i18n.locale() : 'de-DE')],
       [],
       ['Kennzahl', 'Wert', 'Einheit'],
@@ -7321,6 +7396,7 @@ window.LNP = window.LNP || {};
     renderFormulas();
     updateStoragePill();
     updateSidebar();
+    applyBranding();
     showView(currentView);
   }
 
@@ -7329,6 +7405,100 @@ window.LNP = window.LNP || {};
     U.$('#btn-lang').addEventListener('click', function () {
       applyLang(NS.i18n.get() === 'de' ? 'en' : 'de');
     });
+  }
+
+  /* ------------------------------------------------------------ Erscheinungsbild */
+  var MAX_LOGO_BYTES = 300 * 1024;
+
+  /** Überträgt Logo, Name und Untertitel in Seitenleiste, Vorschau und Titelzeile. */
+  function applyBranding() {
+    var d = S.defaultSettings().branding;
+    var b = S.settings().branding || d;
+    var name = (b.appName || '').trim() || d.appName;
+    var subtitle = (b.appSubtitle || '').trim() || d.appSubtitle;
+    // Nur der Standard-Untertitel folgt der Sprache; eigene Texte bleiben unangetastet
+    if (subtitle === d.appSubtitle) subtitle = U.t(subtitle);
+    var initials = (b.initials || '').trim() || name.slice(0, 2).toUpperCase();
+
+    U.$('#brand-name').textContent = name;
+    U.$('#brand-subtitle').textContent = subtitle;
+    document.title = name + ' – ' + subtitle;
+
+    [U.$('#brand-mark'), U.$('#brand-preview')].forEach(function (node) {
+      if (!node) return;
+      if (b.logo) {
+        node.innerHTML = '<img src="' + U.esc(b.logo) + '" alt="' + U.esc(name) + '">';
+        node.classList.add('has-logo');
+      } else {
+        node.textContent = initials;
+        node.classList.remove('has-logo');
+      }
+    });
+  }
+
+  function readLogo(file) {
+    if (file.size > MAX_LOGO_BYTES) {
+      U.toast(U.tf('Das Logo ist zu groß ({0} kB). Bitte eine Datei bis 300 kB verwenden.',
+        Math.round(file.size / 1024)), 'warn');
+      return;
+    }
+    var reader = new FileReader();
+    reader.onload = function (e) {
+      S.settings().branding.logo = e.target.result;
+      S.emit('settings');
+      applyBranding();
+      U.toast('Logo übernommen.', 'good');
+    };
+    reader.onerror = function () { U.toast('Datei konnte nicht gelesen werden', 'error'); };
+    reader.readAsDataURL(file);
+  }
+
+  function bindBrandingText(sel, key) {
+    var node = U.$(sel);
+    if (!node) return;
+    node.addEventListener('input', function () {
+      S.settings().branding[key] = node.value;
+      applyBranding();
+    });
+    node.addEventListener('change', function () { S.emit('settings'); });
+  }
+
+  function initBranding() {
+    var b = S.settings().branding;
+    U.$('#cfg-appName').value = b.appName || '';
+    U.$('#cfg-appSubtitle').value = b.appSubtitle || '';
+    U.$('#cfg-appInitials').value = b.initials || '';
+
+    bindBrandingText('#cfg-appName', 'appName');
+    bindBrandingText('#cfg-appSubtitle', 'appSubtitle');
+    bindBrandingText('#cfg-appInitials', 'initials');
+
+    U.$('#btn-logo-pick').addEventListener('click', function () { U.$('#logo-file-input').click(); });
+    U.$('#logo-file-input').addEventListener('change', function (e) {
+      var f = e.target.files && e.target.files[0];
+      if (f) readLogo(f);
+      e.target.value = '';
+    });
+
+    U.$('#btn-logo-clear').addEventListener('click', function () {
+      S.settings().branding.logo = null;
+      S.emit('settings');
+      applyBranding();
+      U.toast('Logo entfernt.', 'warn');
+    });
+
+    U.$('#btn-branding-reset').addEventListener('click', function () {
+      S.settings().branding = S.defaultSettings().branding;
+      S.emit('settings');
+      var d = S.settings().branding;
+      U.$('#cfg-appName').value = d.appName;
+      U.$('#cfg-appSubtitle').value = d.appSubtitle;
+      U.$('#cfg-appInitials').value = d.initials;
+      applyBranding();
+      U.toast('Erscheinungsbild zurückgesetzt.', 'good');
+    });
+
+    applyBranding();
   }
 
   /* ------------------------------------------------------------ Theme */
@@ -7507,6 +7677,7 @@ window.LNP = window.LNP || {};
     initSettings();
 
     initLang();
+    initBranding();
 
     U.$('#nav').addEventListener('click', function (e) {
       var btn = e.target.closest('.nav-item');
@@ -7525,9 +7696,16 @@ window.LNP = window.LNP || {};
       });
     });
 
-    S.onChange(function () {
+    S.onChange(function (reason) {
       updateSidebar();
       renderFormulas();
+      if (reason === 'project' || reason === 'reset') {
+        var b = S.settings().branding;
+        U.$('#cfg-appName').value = b.appName || '';
+        U.$('#cfg-appSubtitle').value = b.appSubtitle || '';
+        U.$('#cfg-appInitials').value = b.initials || '';
+        applyBranding();
+      }
     });
 
     NS.mapview.init();

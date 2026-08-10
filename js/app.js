@@ -58,6 +58,7 @@
     renderFormulas();
     updateStoragePill();
     updateSidebar();
+    applyBranding();
     showView(currentView);
   }
 
@@ -66,6 +67,100 @@
     U.$('#btn-lang').addEventListener('click', function () {
       applyLang(NS.i18n.get() === 'de' ? 'en' : 'de');
     });
+  }
+
+  /* ------------------------------------------------------------ Erscheinungsbild */
+  var MAX_LOGO_BYTES = 300 * 1024;
+
+  /** Überträgt Logo, Name und Untertitel in Seitenleiste, Vorschau und Titelzeile. */
+  function applyBranding() {
+    var d = S.defaultSettings().branding;
+    var b = S.settings().branding || d;
+    var name = (b.appName || '').trim() || d.appName;
+    var subtitle = (b.appSubtitle || '').trim() || d.appSubtitle;
+    // Nur der Standard-Untertitel folgt der Sprache; eigene Texte bleiben unangetastet
+    if (subtitle === d.appSubtitle) subtitle = U.t(subtitle);
+    var initials = (b.initials || '').trim() || name.slice(0, 2).toUpperCase();
+
+    U.$('#brand-name').textContent = name;
+    U.$('#brand-subtitle').textContent = subtitle;
+    document.title = name + ' – ' + subtitle;
+
+    [U.$('#brand-mark'), U.$('#brand-preview')].forEach(function (node) {
+      if (!node) return;
+      if (b.logo) {
+        node.innerHTML = '<img src="' + U.esc(b.logo) + '" alt="' + U.esc(name) + '">';
+        node.classList.add('has-logo');
+      } else {
+        node.textContent = initials;
+        node.classList.remove('has-logo');
+      }
+    });
+  }
+
+  function readLogo(file) {
+    if (file.size > MAX_LOGO_BYTES) {
+      U.toast(U.tf('Das Logo ist zu groß ({0} kB). Bitte eine Datei bis 300 kB verwenden.',
+        Math.round(file.size / 1024)), 'warn');
+      return;
+    }
+    var reader = new FileReader();
+    reader.onload = function (e) {
+      S.settings().branding.logo = e.target.result;
+      S.emit('settings');
+      applyBranding();
+      U.toast('Logo übernommen.', 'good');
+    };
+    reader.onerror = function () { U.toast('Datei konnte nicht gelesen werden', 'error'); };
+    reader.readAsDataURL(file);
+  }
+
+  function bindBrandingText(sel, key) {
+    var node = U.$(sel);
+    if (!node) return;
+    node.addEventListener('input', function () {
+      S.settings().branding[key] = node.value;
+      applyBranding();
+    });
+    node.addEventListener('change', function () { S.emit('settings'); });
+  }
+
+  function initBranding() {
+    var b = S.settings().branding;
+    U.$('#cfg-appName').value = b.appName || '';
+    U.$('#cfg-appSubtitle').value = b.appSubtitle || '';
+    U.$('#cfg-appInitials').value = b.initials || '';
+
+    bindBrandingText('#cfg-appName', 'appName');
+    bindBrandingText('#cfg-appSubtitle', 'appSubtitle');
+    bindBrandingText('#cfg-appInitials', 'initials');
+
+    U.$('#btn-logo-pick').addEventListener('click', function () { U.$('#logo-file-input').click(); });
+    U.$('#logo-file-input').addEventListener('change', function (e) {
+      var f = e.target.files && e.target.files[0];
+      if (f) readLogo(f);
+      e.target.value = '';
+    });
+
+    U.$('#btn-logo-clear').addEventListener('click', function () {
+      S.settings().branding.logo = null;
+      S.emit('settings');
+      applyBranding();
+      U.toast('Logo entfernt.', 'warn');
+    });
+
+    U.$('#btn-branding-reset').addEventListener('click', function () {
+      S.settings().branding = S.defaultSettings().branding;
+      S.emit('settings');
+      var d = S.settings().branding;
+      U.$('#cfg-appName').value = d.appName;
+      U.$('#cfg-appSubtitle').value = d.appSubtitle;
+      U.$('#cfg-appInitials').value = d.initials;
+      applyBranding();
+      U.toast('Erscheinungsbild zurückgesetzt.', 'good');
+    });
+
+    applyBranding();
   }
 
   /* ------------------------------------------------------------ Theme */
@@ -244,6 +339,7 @@
     initSettings();
 
     initLang();
+    initBranding();
 
     U.$('#nav').addEventListener('click', function (e) {
       var btn = e.target.closest('.nav-item');
@@ -262,9 +358,16 @@
       });
     });
 
-    S.onChange(function () {
+    S.onChange(function (reason) {
       updateSidebar();
       renderFormulas();
+      if (reason === 'project' || reason === 'reset') {
+        var b = S.settings().branding;
+        U.$('#cfg-appName').value = b.appName || '';
+        U.$('#cfg-appSubtitle').value = b.appSubtitle || '';
+        U.$('#cfg-appInitials').value = b.initials || '';
+        applyBranding();
+      }
     });
 
     NS.mapview.init();

@@ -56,6 +56,21 @@ Spaltenüberschriften der Exporte sowie das Zahlenformat (1.234,56 bzw.
 nicht übersetzt – Kategorie-, Regions- und Kundennamen bleiben so, wie sie in
 der Datei stehen.
 
+## Erscheinungsbild anpassen
+
+Unter *Export & Projekt → Erscheinungsbild* lassen sich **Logo, Anwendungsname,
+Untertitel und Kürzel** ändern. Das Logo wird als Bild (PNG, JPG, SVG, WebP oder
+GIF bis 300 kB) eingelesen und direkt in den Arbeitsstand eingebettet – es reist
+damit in der Projektdatei mit und wird nirgendwohin hochgeladen. Ohne Logo zeigt
+die Marke das Kürzel. Der Anwendungsname erscheint zusätzlich in der Titelzeile
+des Browsers und als Überschrift der Excel-Auswertung.
+
+## Keine externen Aufrufe
+
+Die Anwendung enthält keinen einzigen Link nach außen. Der einzige optionale
+Außenkontakt sind die Kartenkacheln von OpenStreetMap; wird die Karte auf
+*Schema (offline)* gestellt, findet überhaupt kein Netzzugriff mehr statt.
+
 ## Rechenlogik
 
 Eine vollständige Beschreibung aller Formeln, der Wirkung der Gewichtung sowie

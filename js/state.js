@@ -35,6 +35,14 @@
       weights: { capacity: 30, transport: 45, service: 25 },
       maxUtilization: 0.85,
 
+      // Erscheinungsbild
+      branding: {
+        appName: 'NetPlan',
+        appSubtitle: 'Logistik-Netzwerkplanung',
+        initials: 'NP',
+        logo: null            // Bild als data:-URI, damit es in der Projektdatei mitreist
+      },
+
       // Sonstiges
       autosave: true,
       mapMode: 'auto'
@@ -112,6 +120,7 @@
     state.scenarios = Array.isArray(obj.scenarios) ? obj.scenarios : [];
     state.settings = Object.assign(fresh.settings, obj.settings || {});
     state.settings.weights = Object.assign(fresh.settings.weights, (obj.settings || {}).weights || {});
+    state.settings.branding = Object.assign(fresh.settings.branding, (obj.settings || {}).branding || {});
     state.lastSim = null;
   }
 

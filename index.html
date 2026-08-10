@@ -26,10 +26,10 @@
   <!-- ============ SIDEBAR ============ -->
   <aside class="sidebar">
     <div class="brand">
-      <div class="brand-mark">NP</div>
+      <div class="brand-mark" id="brand-mark">NP</div>
       <div class="brand-text">
-        <strong>NetPlan</strong>
-        <span>Logistik-Netzwerkplanung</span>
+        <strong id="brand-name">NetPlan</strong>
+        <span id="brand-subtitle">Logistik-Netzwerkplanung</span>
       </div>
     </div>
 
@@ -558,6 +558,42 @@
             </label>
             <div class="btn-stack">
               <button class="btn btn-danger" id="btn-reset-all">Alles zurücksetzen</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-head">
+            <h3>Erscheinungsbild</h3>
+            <span class="card-hint">Logo und Bezeichnung der Anwendung</span>
+          </div>
+          <div class="branding-row">
+            <div class="branding-preview">
+              <div class="brand-mark brand-mark-lg" id="brand-preview">NP</div>
+            </div>
+            <div class="branding-fields">
+              <div class="form-grid form-grid-2">
+                <label class="field">
+                  <span>Anwendungsname</span>
+                  <input type="text" id="cfg-appName" class="input" maxlength="40" placeholder="NetPlan">
+                </label>
+                <label class="field">
+                  <span>Untertitel</span>
+                  <input type="text" id="cfg-appSubtitle" class="input" maxlength="60" placeholder="Logistik-Netzwerkplanung">
+                </label>
+                <label class="field">
+                  <span>Kürzel (falls kein Logo hinterlegt)</span>
+                  <input type="text" id="cfg-appInitials" class="input" maxlength="4" placeholder="NP">
+                </label>
+              </div>
+              <div class="inline-controls">
+                <button class="btn btn-sm" id="btn-logo-pick">Logo hochladen</button>
+                <input type="file" id="logo-file-input" accept="image/png,image/jpeg,image/svg+xml,image/webp,image/gif" hidden>
+                <button class="btn btn-sm" id="btn-logo-clear">Logo entfernen</button>
+                <button class="btn btn-sm btn-ghost" id="btn-branding-reset">Zurücksetzen</button>
+              </div>
+              <p class="hint">PNG, JPG, SVG, WebP oder GIF bis 300 kB. Das Bild wird in die Projektdatei
+                 eingebettet und bleibt damit auch beim Weitergeben erhalten – es wird nichts hochgeladen.</p>
             </div>
           </div>
         </div>

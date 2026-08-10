@@ -650,6 +650,21 @@ window.LNP = window.LNP || {};
     'Elektro Partner': 'Electro Partner', 'Fachhandel Süd': 'Southern Specialists',
     'Online Retail EU': 'Online Retail EU', 'Möbelkette West': 'Furniture Chain West',
     'Discount Kette': 'Discount Chain', 'Regionalhändler': 'Regional Dealer',
+    'Erscheinungsbild': 'Appearance',
+    'Logo und Bezeichnung der Anwendung': 'Logo and name of the application',
+    'Anwendungsname': 'Application name',
+    'Untertitel': 'Subtitle',
+    'Kürzel (falls kein Logo hinterlegt)': 'Initials (when no logo is set)',
+    'Logo hochladen': 'Upload logo',
+    'Logo entfernen': 'Remove logo',
+    'PNG, JPG, SVG, WebP oder GIF bis 300 kB. Das Bild wird in die Projektdatei eingebettet und bleibt damit auch beim Weitergeben erhalten – es wird nichts hochgeladen.':
+      'PNG, JPG, SVG, WebP or GIF up to 300 kB. The image is embedded in the project file and travels with it – nothing is uploaded.',
+    'Logo übernommen.': 'Logo applied.',
+    'Logo entfernt.': 'Logo removed.',
+    'Erscheinungsbild zurückgesetzt.': 'Appearance reset.',
+    'Das Logo ist zu groß ({0} kB). Bitte eine Datei bis 300 kB verwenden.':
+      'The logo is too large ({0} kB). Please use a file of up to 300 kB.',
+    'Auswertung Logistik-Netzwerk': 'logistics network analysis',
     'KPI': 'KPI'
   };
 

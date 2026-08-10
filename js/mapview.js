@@ -281,6 +281,11 @@
       minZoom: 2, maxZoom: 12
     }).setView([50.5, 10.0], 4);
 
+    // Voreingestellten Leaflet-Verweis entfernen; der Quellenhinweis der
+    // Kartenkacheln bleibt als reiner Text erhalten. Die Anwendung enthält
+    // damit keinen einzigen Link nach außen.
+    if (map.attributionControl) map.attributionControl.setPrefix('');
+
     var pref = S.settings().mapMode || 'auto';
     setMode(pref === 'schema' ? 'schema' : 'tiles', true);
     bindModeSelect(false);

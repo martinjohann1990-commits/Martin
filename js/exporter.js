@@ -12,7 +12,7 @@
   function sheetKPI(sum) {
     var st = S.get();
     var rows = [
-      ['NetPlan – Auswertung Logistik-Netzwerk'],
+      [(S.settings().branding && S.settings().branding.appName || 'NetPlan') + ' – ' + U.t('Auswertung Logistik-Netzwerk')],
       ['Erstellt am', new Date().toLocaleString(NS.i18n ? NS.i18n.locale() : 'de-DE')],
       [],
       ['Kennzahl', 'Wert', 'Einheit'],
