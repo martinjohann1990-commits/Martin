@@ -1,0 +1,6 @@
+__pycache__/
+*.pyc
+*.tmp.xlsx
+~$*.xls*
+Beispieldaten_Historie.csv
+Beispieldaten_Forecast.csv
