@@ -37,6 +37,12 @@ export function RoutineForm({ initial, onSubmit, onCancel }: RoutineFormProps) {
   const [weeklyCount, setWeeklyCount] = useState(
     initial?.frequency.type === 'x_pro_woche' ? initial.frequency.count : 3,
   );
+  const [monthlyCount, setMonthlyCount] = useState(
+    initial?.frequency.type === 'x_pro_monat' ? initial.frequency.count : 1,
+  );
+  const [intervalDays, setIntervalDays] = useState(
+    initial?.frequency.type === 'alle_n_tage' ? initial.frequency.intervalDays : 14,
+  );
 
   function toggleWeekday(day: WeekdayIndex) {
     setWeekdays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]));
@@ -52,8 +58,12 @@ export function RoutineForm({ initial, onSubmit, onCancel }: RoutineFormProps) {
     } else if (frequencyType === 'wochentage') {
       if (weekdays.length === 0) return;
       frequency = { type: 'wochentage', days: weekdays };
-    } else {
+    } else if (frequencyType === 'x_pro_woche') {
       frequency = { type: 'x_pro_woche', count: Math.max(1, weeklyCount) };
+    } else if (frequencyType === 'x_pro_monat') {
+      frequency = { type: 'x_pro_monat', count: Math.max(1, monthlyCount) };
+    } else {
+      frequency = { type: 'alle_n_tage', intervalDays: Math.max(2, intervalDays) };
     }
 
     onSubmit({ title: title.trim(), category: category.trim() || 'Allgemein', frequency, timeWindow, difficulty });
@@ -84,19 +94,21 @@ export function RoutineForm({ initial, onSubmit, onCancel }: RoutineFormProps) {
 
       <div className="flex flex-col gap-2">
         <span className="text-sm text-[var(--color-text-muted)]">Frequenz</span>
-        <div className="flex gap-2">
+        <div className="grid grid-cols-3 gap-2">
           {(
             [
               { id: 'taeglich', label: 'Täglich' },
               { id: 'wochentage', label: 'Wochentage' },
               { id: 'x_pro_woche', label: 'X × Woche' },
+              { id: 'x_pro_monat', label: 'X × Monat' },
+              { id: 'alle_n_tage', label: 'Alle N Tage' },
             ] as const
           ).map((opt) => (
             <button
               key={opt.id}
               type="button"
               onClick={() => setFrequencyType(opt.id)}
-              className={`flex-1 rounded-lg border p-2 text-sm ${
+              className={`rounded-lg border p-2 text-sm ${
                 frequencyType === opt.id
                   ? 'border-[var(--color-accent-strong)] bg-[var(--color-accent-bg)]'
                   : 'border-[var(--color-border)]'
@@ -138,6 +150,58 @@ export function RoutineForm({ initial, onSubmit, onCancel }: RoutineFormProps) {
               className="w-16 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-2"
             />
           </label>
+        )}
+
+        {frequencyType === 'x_pro_monat' && (
+          <label className="flex items-center gap-2 text-sm">
+            <span>Anzahl pro Monat</span>
+            <input
+              type="number"
+              min={1}
+              max={31}
+              value={monthlyCount}
+              onChange={(e) => setMonthlyCount(Number(e.target.value))}
+              className="w-16 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-2"
+            />
+          </label>
+        )}
+
+        {frequencyType === 'alle_n_tage' && (
+          <div className="flex flex-col gap-2">
+            <div className="flex gap-2">
+              {(
+                [
+                  { label: 'Zweiwöchentlich', days: 14 },
+                  { label: 'Monatlich', days: 30 },
+                ] as const
+              ).map((preset) => (
+                <button
+                  key={preset.days}
+                  type="button"
+                  onClick={() => setIntervalDays(preset.days)}
+                  className={`flex-1 rounded-lg border p-2 text-sm ${
+                    intervalDays === preset.days
+                      ? 'border-[var(--color-accent-strong)] bg-[var(--color-accent-bg)]'
+                      : 'border-[var(--color-border)]'
+                  }`}
+                >
+                  {preset.label}
+                </button>
+              ))}
+            </div>
+            <label className="flex items-center gap-2 text-sm">
+              <span>Alle</span>
+              <input
+                type="number"
+                min={2}
+                max={365}
+                value={intervalDays}
+                onChange={(e) => setIntervalDays(Number(e.target.value))}
+                className="w-16 rounded-lg border border-[var(--color-border)] bg-[var(--color-surface-raised)] p-2"
+              />
+              <span>Tage</span>
+            </label>
+          </div>
         )}
       </div>
 

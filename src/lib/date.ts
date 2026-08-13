@@ -71,3 +71,20 @@ export function getWeekDates(dateKey: string): string[] {
   const start = getWeekStart(dateKey);
   return dateKeyRange(start, addDaysToDateKey(start, 6));
 }
+
+/** Erster und letzter dateKey des Kalendermonats, in dem dateKey liegt. */
+export function getMonthRange(dateKey: string): { start: string; end: string } {
+  const [year, month] = dateKey.split('-').map(Number);
+  const start = `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-01`;
+  const lastDay = new Date(Date.UTC(year, month, 0)).getUTCDate(); // Tag 0 des Folgemonats
+  const end = `${String(year).padStart(4, '0')}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+  return { start, end };
+}
+
+/** Anzahl Tage zwischen zwei dateKeys (b - a). */
+export function daysBetween(a: string, b: string): number {
+  const [ay, am, ad] = a.split('-').map(Number);
+  const [by, bm, bd] = b.split('-').map(Number);
+  const diffMs = Date.UTC(by, bm - 1, bd) - Date.UTC(ay, am - 1, ad);
+  return Math.round(diffMs / 86_400_000);
+}

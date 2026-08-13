@@ -88,11 +88,12 @@ export function DailyPage({
             <h2 className="text-sm font-medium text-[var(--color-text-muted)]">
               {timeWindowLabel(window)}
             </h2>
-            {grouped[window].map(({ routine, completed }) => (
+            {grouped[window].map(({ routine, completed, progress }) => (
               <RoutineCheckRow
                 key={routine.id}
                 routine={routine}
                 completed={completed}
+                progress={progress}
                 onToggle={() => toggle(routine.id, todayKey, completed)}
               />
             ))}
@@ -111,11 +112,12 @@ export function DailyPage({
           </button>
           {showYesterday && (
             <div className="mt-2 flex flex-col gap-2">
-              {yesterday.map(({ routine, completed }) => (
+              {yesterday.map(({ routine, completed, progress }) => (
                 <RoutineCheckRow
                   key={routine.id}
                   routine={routine}
                   completed={completed}
+                  progress={progress}
                   onToggle={() => toggle(routine.id, yesterdayKey, completed)}
                 />
               ))}

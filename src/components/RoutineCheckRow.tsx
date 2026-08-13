@@ -1,13 +1,14 @@
 import type { Routine } from '../types';
-import { difficultyLabel } from '../lib/routines';
+import { difficultyLabel, frequencyLabel, progressLabel, type RoutineProgress } from '../lib/routines';
 
 interface RoutineCheckRowProps {
   routine: Routine;
   completed: boolean;
+  progress?: RoutineProgress;
   onToggle: () => void;
 }
 
-export function RoutineCheckRow({ routine, completed, onToggle }: RoutineCheckRowProps) {
+export function RoutineCheckRow({ routine, completed, progress, onToggle }: RoutineCheckRowProps) {
   return (
     <button
       type="button"
@@ -32,7 +33,8 @@ export function RoutineCheckRow({ routine, completed, onToggle }: RoutineCheckRo
           {routine.title}
         </span>
         <span className="text-xs text-[var(--color-text-muted)]">
-          {routine.category} · {difficultyLabel(routine.difficulty)}
+          {routine.category} · {frequencyLabel(routine)} · {difficultyLabel(routine.difficulty)}
+          {progress && ` · ${progressLabel(progress)}`}
         </span>
       </span>
     </button>

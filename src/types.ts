@@ -5,7 +5,9 @@ export type WeekdayIndex = 0 | 1 | 2 | 3 | 4 | 5 | 6; // 0 = Montag
 export type RoutineFrequency =
   | { type: 'taeglich' }
   | { type: 'wochentage'; days: WeekdayIndex[] }
-  | { type: 'x_pro_woche'; count: number };
+  | { type: 'x_pro_woche'; count: number }
+  | { type: 'x_pro_monat'; count: number }
+  | { type: 'alle_n_tage'; intervalDays: number };
 
 export type TimeWindow = 'morgen' | 'mittag' | 'abend';
 

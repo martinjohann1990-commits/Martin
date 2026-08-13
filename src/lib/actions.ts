@@ -1,6 +1,6 @@
 import { db, createId } from './db';
 import { calculateRoutineXp } from './scoring';
-import { getWeekStart, getAppDateKey, addDaysToDateKey } from './date';
+import { getAppDateKey, addDaysToDateKey } from './date';
 import type { Routine, RoutineFrequency, TimeWindow, Difficulty } from '../types';
 
 export interface NewRoutineInput {
@@ -28,15 +28,6 @@ export async function updateRoutine(id: string, patch: Partial<NewRoutineInput>)
 
 export async function archiveRoutine(id: string): Promise<void> {
   await db.routines.update(id, { archivedAt: Date.now() });
-}
-
-export async function getCompletionsEarlierThisWeek(
-  routineId: string,
-  dateKey: string,
-): Promise<number> {
-  const weekStart = getWeekStart(dateKey);
-  const completions = await db.routineCompletions.where('routineId').equals(routineId).toArray();
-  return completions.filter((c) => c.dateKey >= weekStart && c.dateKey < dateKey).length;
 }
 
 /** Nachtragen ist nur für heute und den Vortag erlaubt. */

@@ -1,6 +1,6 @@
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../lib/db';
-import { addDaysToDateKey, getAppDateKey, getWeekStart } from '../lib/date';
+import { addDaysToDateKey, getAppDateKey } from '../lib/date';
 import { isRoutineDueOnDate } from '../lib/routines';
 import {
   DIFFICULTY_FACTORS,
@@ -32,13 +32,7 @@ function consistencyScoreForWindow(
     let completedWeight = 0;
     for (const routine of routines) {
       if (!isRoutinePlannableOnDate(routine, dateKey)) continue;
-      const earlier = completions.filter(
-        (c) =>
-          c.routineId === routine.id &&
-          c.dateKey >= getWeekStart(dateKey) &&
-          c.dateKey < dateKey,
-      ).length;
-      if (!isRoutineDueOnDate(routine, dateKey, earlier)) continue;
+      if (!isRoutineDueOnDate(routine, dateKey, completions)) continue;
       const weight = DIFFICULTY_FACTORS[routine.difficulty];
       plannedWeight += weight;
       const done = completions.some((c) => c.routineId === routine.id && c.dateKey === dateKey);
