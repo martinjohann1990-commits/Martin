@@ -45,6 +45,7 @@ docs/               Dokumentation der Berechnungslogik
 dist/               Einzeldatei-Fassung (aus build-standalone.js erzeugt)
 build-standalone.js Baut die Einzeldatei-Fassung
 make-templates.js   Erzeugt die Importvorlagen neu
+make-docs-pdf.js    Erzeugt die PDF-Fassungen der Dokumentation
 ```
 
 ## Sprache
@@ -74,10 +75,16 @@ Außenkontakt sind die Kartenkacheln von OpenStreetMap; wird die Karte auf
 ## Rechenlogik
 
 Eine vollständige Beschreibung aller Formeln, der Wirkung der Gewichtung sowie
-der Grenzen bei Zeithorizont und Datenmenge steht in
-[`docs/berechnungslogik.md`](docs/berechnungslogik.md). Eine Kurzfassung der
-Formeln zeigt das Tool selbst unter *Export & Projekt → Rechenlogik im
-Überblick*.
+der Grenzen bei Zeithorizont und Datenmenge:
+
+| Fassung | Markdown | PDF |
+|---|---|---|
+| Deutsch | [`docs/berechnungslogik.md`](docs/berechnungslogik.md) | [`docs/NetPlan-Berechnungslogik.pdf`](docs/NetPlan-Berechnungslogik.pdf) |
+| English | [`docs/calculation-methodology.md`](docs/calculation-methodology.md) | [`docs/NetPlan-Calculation-Methodology.pdf`](docs/NetPlan-Calculation-Methodology.pdf) |
+
+Die PDF-Fassungen werden mit `node make-docs-pdf.js` neu erzeugt (benötigt
+Playwright, nur für die Entwicklung). Eine Kurzfassung der Formeln zeigt das
+Tool selbst unter *Export & Projekt → Rechenlogik im Überblick*.
 
 ## Arbeitsablauf
 
@@ -201,6 +208,10 @@ gegenübergestellt. Szenarien lassen sich wieder laden, umbenennen und löschen.
 * **Excel-Arbeitsmappe** mit den Blättern KPI, DCs, Zuordnungen,
   Detailergebnisse, Regionszuordnung, Zielreichweiten, Regionen, Szenarien und
   Rohdaten
+* **PDF-Bericht** mit Kennzahlen, Diagrammen, Standort- und Zuordnungstabellen
+  sowie den verwendeten Parametern. Der Bericht wird als Druckansicht aufgebaut;
+  im Druckdialog des Browsers wählt man „Als PDF speichern“. Es wird keine
+  zusätzliche Bibliothek benötigt.
 * **CSV-Exporte** für Ergebnisse, Zuordnungen und Szenario-Vergleich
 * **Projektdatei (JSON)** zum Sichern und Weitergeben des kompletten
   Arbeitsstandes

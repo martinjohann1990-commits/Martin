@@ -536,6 +536,7 @@
             <p class="hint">Der Download wird vollständig im Browser erzeugt – es findet kein Server-Roundtrip statt.</p>
             <div class="btn-stack">
               <button class="btn btn-primary" id="btn-export-xlsx">Excel-Arbeitsmappe (.xlsx)</button>
+              <button class="btn" id="btn-export-pdf">Bericht als PDF</button>
               <button class="btn" id="btn-export-csv-results">Ergebnisse als CSV</button>
               <button class="btn" id="btn-export-csv-assign">Zuordnungen als CSV</button>
               <button class="btn" id="btn-export-csv-scn">Szenario-Vergleich als CSV</button>
@@ -728,6 +729,9 @@
     </div>
   </div>
 </div>
+
+<!-- Druckansicht: nur beim Erzeugen des PDF-Berichts sichtbar -->
+<div id="print-report" aria-hidden="true"></div>
 
 <div class="toast-wrap" id="toasts"></div>
 

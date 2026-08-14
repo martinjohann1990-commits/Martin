@@ -208,6 +208,137 @@
     U.toast('CSV-Datei erzeugt.', 'good');
   }
 
+  /* ------------------------------------------------------------ PDF-Bericht */
+  /**
+   * Baut eine druckfertige Berichtsseite und öffnet den Druckdialog. Über
+   * „Als PDF speichern“ entsteht daraus eine PDF-Datei – ohne zusätzliche
+   * Bibliothek und ohne Server.
+   */
+  function reportHtml() {
+    var sum = NS.dashboard.networkSummary();
+    var st = S.get();
+    var b = st.settings.branding || {};
+    var appName = (b.appName || '').trim() || 'NetPlan';
+
+    function tbl(head, rows) {
+      return '<table><thead><tr>' + head.map(function (h, i) {
+        return '<th' + (i > 0 ? ' class="num"' : '') + '>' + U.esc(U.t(h)) + '</th>';
+      }).join('') + '</tr></thead><tbody>' + rows.map(function (r) {
+        return '<tr>' + r.map(function (c, i) {
+          return '<td' + (i > 0 ? ' class="num"' : '') + '>' + c + '</td>';
+        }).join('') + '</tr>';
+      }).join('') + '</tbody></table>';
+    }
+
+    /* Kopf */
+    var logo = b.logo
+      ? '<div class="pr-logo"><img src="' + U.esc(b.logo) + '" alt=""></div>'
+      : '<div class="pr-logo">' + U.esc((b.initials || 'NP')) + '</div>';
+
+    var html = '<div class="pr-head">' + logo + '<div><h1>' + U.esc(appName) + ' – ' +
+      U.t('Auswertung Logistik-Netzwerk') + '</h1><div class="pr-meta">' +
+      U.t('Erstellt am') + ' ' + new Date().toLocaleString(NS.i18n ? NS.i18n.locale() : 'de-DE') +
+      '</div></div></div>';
+
+    /* Kennzahlen */
+    var kpis = [
+      ['Gesamtkapazität', fmt.int(sum.capacity)],
+      ['Auslastung', isFinite(sum.utilization) ? fmt.pct1(sum.utilization) : '–'],
+      ['Ziel-Bestand (zugeordnet)', fmt.int(sum.assignedSlots)],
+      ['Volumen (Paletten)', fmt.int(sum.pallets)],
+      ['Transportkosten', fmt.eur(sum.transportCost)],
+      ['Lagerkosten', fmt.eur(sum.storageCost)],
+      ['Gesamtkosten', fmt.eur(sum.totalCost)],
+      ['Ø Bewertung (0–100)', isFinite(sum.avgScore) ? fmt.dec1(sum.avgScore) : '–']
+    ];
+    html += '<div class="pr-kpis">' + kpis.map(function (k) {
+      return '<div class="pr-kpi"><span>' + U.esc(U.t(k[0])) + '</span><b>' + k[1] + '</b></div>';
+    }).join('') + '</div>';
+
+    /* Diagramme aus den vorhandenen Zeichenflächen übernehmen */
+    var charts = [
+      ['Ziel-Bestand vs. Kapazität je DC', 'chart-capacity'],
+      ['Kostenverteilung je DC', 'chart-cost'],
+      ['Volumenverteilung Kategorie → DC', 'chart-volume']
+    ].map(function (c) {
+      var canvas = document.getElementById(c[1]);
+      if (!canvas || !canvas.width) return '';
+      try {
+        return '<div class="pr-chart"><h3>' + U.esc(U.t(c[0])) + '</h3><img src="' +
+          canvas.toDataURL('image/png') + '"></div>';
+      } catch (e) { return ''; }
+    }).filter(Boolean).join('');
+    if (charts) html += '<h2>' + U.t('Diagramme') + '</h2><div class="pr-charts">' + charts + '</div>';
+
+    /* Standorte */
+    html += '<h2>' + U.t('Distributionszentren') + '</h2>' + tbl(
+      ['DC', 'Kapazität', 'Belegt gesamt', 'Auslastung %', 'Volumen Paletten', 'Gesamtkosten EUR'],
+      sum.perDC.map(function (d) {
+        return [U.esc(d.name), fmt.int(d.capacity), fmt.int(d.usedTotal),
+          isFinite(d.utilization) ? fmt.dec1(d.utilization * 100) : '–',
+          fmt.int(d.pallets), fmt.int(d.totalCost)];
+      }));
+
+    /* Zuordnungen */
+    if (sum.rows.length) {
+      html += '<h2>' + U.t('Zuordnungen') + '</h2>' + tbl(
+        ['Produktkategorie', 'DC', 'Anteil %', 'Volumen (Pal.)', 'Ziel-Bestand', 'Gesamtkosten', 'Score'],
+        sum.rows.map(function (r) {
+          return [U.esc(r.category), U.esc(r.dcName), fmt.dec1(r.share * 100),
+            fmt.int(r.pallets), fmt.int(r.slots), fmt.eur(r.totalCost), fmt.dec1(r.score)];
+        }));
+    }
+
+    /* Parameter */
+    var s = st.settings;
+    html += '<h2>' + U.t('Parameter') + '</h2>' + tbl(['Kennzahl', 'Wert'], [
+      [U.t('Zielreichweite global'), fmt.int(s.targetDaysGlobal) + ' ' + U.t('Tage')],
+      [U.t('Sicherheitsaufschlag Bestand'), fmt.dec2(s.stockFactor)],
+      [U.t('Gewichtung Kapazität'), s.weights.capacity + ' %'],
+      [U.t('Gewichtung Transport'), s.weights.transport + ' %'],
+      [U.t('Gewichtung Zielreichweite'), s.weights.service + ' %'],
+      [U.t('Ziel-Auslastungsgrenze'), fmt.int(s.maxUtilization * 100) + ' %'],
+      [U.t('Transportkosten je Paletten-km'), fmt.dec2(s.costPerPalletKm) + ' EUR'],
+      [U.t('Transport-Grundkosten je Palette'), fmt.dec2(s.costBasePerPallet) + ' EUR'],
+      [U.t('Lagerkosten je Stellplatz/Monat'), fmt.dec2(s.storageCostPerSlotMonth) + ' EUR'],
+      [U.t('Handlingkosten je Palette'), fmt.dec2(s.handlingCostPerPallet) + ' EUR']
+    ]);
+
+    html += '<div class="pr-note">' + U.t('Erzeugt im Browser ohne Serverübertragung.') + '</div>';
+    return html;
+  }
+
+  function exportPDF() {
+    if (!S.activeDCs().length) {
+      U.toast('Es ist kein aktives Distributionszentrum vorhanden.', 'warn');
+      return;
+    }
+    U.toast('Bericht wird vorbereitet – im Druckdialog bitte „Als PDF speichern“ wählen.', 'good');
+
+    // Chart.js zeichnet nur in eine sichtbare Fläche. Ist das Dashboard
+    // ausgeblendet, sind die Zeichenflächen 0 Pixel breit und die Diagramme
+    // fehlten im Bericht – deshalb kurz einblenden und danach zurückschalten.
+    var active = document.querySelector('.view.is-active');
+    var previous = active ? active.id.replace('view-', '') : 'dashboard';
+    if (previous !== 'dashboard') NS.app.showView('dashboard');
+    else NS.dashboard.render();
+
+    setTimeout(function () {
+      var node = document.getElementById('print-report');
+      node.innerHTML = reportHtml();
+
+      var cleanup = function () {
+        node.innerHTML = '';
+        window.removeEventListener('afterprint', cleanup);
+        if (previous !== 'dashboard') NS.app.showView(previous);
+      };
+      window.addEventListener('afterprint', cleanup);
+      window.print();
+      // Rückfallebene, falls afterprint nicht ausgelöst wird
+      setTimeout(cleanup, 60000);
+    }, 700);
+  }
+
   /* ------------------------------------------------------------ Projekt */
   function saveProject() {
     var st = S.get();
@@ -241,6 +372,7 @@
   /* ------------------------------------------------------------ Events */
   function init() {
     U.$('#btn-export-xlsx').addEventListener('click', exportXLSX);
+    U.$('#btn-export-pdf').addEventListener('click', exportPDF);
     U.$('#btn-export-csv-results').addEventListener('click', exportResultsCSV);
     U.$('#btn-export-csv-assign').addEventListener('click', exportAssignmentsCSV);
     U.$('#btn-export-csv-scn').addEventListener('click', exportScenariosCSV);
@@ -255,7 +387,8 @@
   }
 
   NS.exporter = {
-    init: init, exportXLSX: exportXLSX, saveProject: saveProject, loadProject: loadProject,
+    init: init, exportXLSX: exportXLSX, exportPDF: exportPDF, reportHtml: reportHtml,
+    saveProject: saveProject, loadProject: loadProject,
     sheetAssignments: sheetAssignments, sheetDCs: sheetDCs, sheetRegions: sheetRegions
   };
 })(window.LNP);

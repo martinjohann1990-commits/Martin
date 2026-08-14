@@ -1234,6 +1234,49 @@ select.input { cursor: pointer; }
 .brand-mark-lg { width: 72px; height: 72px; border-radius: 16px; font-size: 24px; }
 .brand-mark-lg img { border-radius: 14px; }
 
+/* ---------------------------------------------------------------- Druckbericht */
+#print-report { display: none; }
+
+@media print {
+  @page { size: A4; margin: 16mm 14mm; }
+  .app, .toast-wrap, .modal-backdrop { display: none !important; }
+  #print-report { display: block !important; }
+  body { background: #fff; color: #0b0b0b; }
+}
+
+/* Der Bericht wird bewusst mit festen Farben gesetzt, damit er unabhängig
+   vom gewählten Farbschema druckbar bleibt. */
+#print-report { font-size: 10pt; line-height: 1.5; color: #0b0b0b; background: #fff; }
+#print-report .pr-head { display: flex; align-items: center; gap: 12px;
+  border-bottom: 2px solid #2a78d6; padding-bottom: 10px; margin-bottom: 16px; }
+#print-report .pr-logo { width: 44px; height: 44px; border-radius: 10px; flex: none;
+  display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 15px;
+  background: linear-gradient(140deg, #2a78d6, #4a3aa7); }
+#print-report .pr-logo img { width: 100%; height: 100%; object-fit: contain; }
+#print-report h1 { font-size: 18pt; margin: 0; }
+#print-report .pr-meta { font-size: 8.5pt; color: #52514e; margin-top: 2px; }
+#print-report h2 { font-size: 12pt; margin: 16pt 0 6pt; padding-top: 6pt;
+  border-top: 1px solid #e1e0d9; break-after: avoid; }
+#print-report table { border-collapse: collapse; width: 100%; font-size: 8.6pt;
+  margin-bottom: 10pt; break-inside: avoid; }
+#print-report th, #print-report td { border-bottom: 1px solid #e1e0d9;
+  padding: 3.5pt 5pt; text-align: left; }
+#print-report th { background: #f2f2ef; font-size: 7.6pt; text-transform: uppercase;
+  letter-spacing: .03em; color: #52514e; font-weight: 600; }
+#print-report td.num, #print-report th.num { text-align: right; font-variant-numeric: tabular-nums; }
+#print-report .pr-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8pt; margin-bottom: 12pt; }
+#print-report .pr-kpi { border: 1px solid #e1e0d9; border-left: 3px solid #2a78d6;
+  border-radius: 5px; padding: 6pt 8pt; break-inside: avoid; }
+#print-report .pr-kpi span { display: block; font-size: 7.6pt; color: #52514e;
+  text-transform: uppercase; letter-spacing: .03em; }
+#print-report .pr-kpi b { font-size: 13pt; font-variant-numeric: tabular-nums; }
+#print-report .pr-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 10pt; }
+#print-report .pr-chart { break-inside: avoid; }
+#print-report .pr-chart h3 { font-size: 9pt; margin: 0 0 3pt; color: #52514e; }
+#print-report .pr-chart img { width: 100%; border: 1px solid #e1e0d9; border-radius: 4px; }
+#print-report .pr-note { font-size: 8pt; color: #898781; margin-top: 12pt;
+  border-top: 1px solid #e1e0d9; padding-top: 6pt; }
+
 /* ---------------------------------------------------------------- Utility */
 .tools { display: flex; gap: 4px; }
 .pct-input { width: 78px; }
@@ -1774,6 +1817,7 @@ select.input { cursor: pointer; }
             <p class="hint">Der Download wird vollständig im Browser erzeugt – es findet kein Server-Roundtrip statt.</p>
             <div class="btn-stack">
               <button class="btn btn-primary" id="btn-export-xlsx">Excel-Arbeitsmappe (.xlsx)</button>
+              <button class="btn" id="btn-export-pdf">Bericht als PDF</button>
               <button class="btn" id="btn-export-csv-results">Ergebnisse als CSV</button>
               <button class="btn" id="btn-export-csv-assign">Zuordnungen als CSV</button>
               <button class="btn" id="btn-export-csv-scn">Szenario-Vergleich als CSV</button>
@@ -1966,6 +2010,9 @@ select.input { cursor: pointer; }
     </div>
   </div>
 </div>
+
+<!-- Druckansicht: nur beim Erzeugen des PDF-Berichts sichtbar -->
+<div id="print-report" aria-hidden="true"></div>
 
 <div class="toast-wrap" id="toasts"></div>
 
@@ -2697,6 +2744,11 @@ window.LNP = window.LNP || {};
     'Das Logo ist zu groß ({0} kB). Bitte eine Datei bis 300 kB verwenden.':
       'The logo is too large ({0} kB). Please use a file of up to 300 kB.',
     'Auswertung Logistik-Netzwerk': 'logistics network analysis',
+    'Bericht als PDF': 'Report as PDF',
+    'Diagramme': 'Charts',
+    'Erzeugt im Browser ohne Serverübertragung.': 'Generated in the browser, nothing transmitted.',
+    'Bericht wird vorbereitet – im Druckdialog bitte „Als PDF speichern“ wählen.':
+      'Preparing the report – choose “Save as PDF” in the print dialog.',
     'KPI': 'KPI'
   };
 
@@ -7135,6 +7187,137 @@ window.LNP = window.LNP || {};
     U.toast('CSV-Datei erzeugt.', 'good');
   }
 
+  /* ------------------------------------------------------------ PDF-Bericht */
+  /**
+   * Baut eine druckfertige Berichtsseite und öffnet den Druckdialog. Über
+   * „Als PDF speichern“ entsteht daraus eine PDF-Datei – ohne zusätzliche
+   * Bibliothek und ohne Server.
+   */
+  function reportHtml() {
+    var sum = NS.dashboard.networkSummary();
+    var st = S.get();
+    var b = st.settings.branding || {};
+    var appName = (b.appName || '').trim() || 'NetPlan';
+
+    function tbl(head, rows) {
+      return '<table><thead><tr>' + head.map(function (h, i) {
+        return '<th' + (i > 0 ? ' class="num"' : '') + '>' + U.esc(U.t(h)) + '</th>';
+      }).join('') + '</tr></thead><tbody>' + rows.map(function (r) {
+        return '<tr>' + r.map(function (c, i) {
+          return '<td' + (i > 0 ? ' class="num"' : '') + '>' + c + '</td>';
+        }).join('') + '</tr>';
+      }).join('') + '</tbody></table>';
+    }
+
+    /* Kopf */
+    var logo = b.logo
+      ? '<div class="pr-logo"><img src="' + U.esc(b.logo) + '" alt=""></div>'
+      : '<div class="pr-logo">' + U.esc((b.initials || 'NP')) + '</div>';
+
+    var html = '<div class="pr-head">' + logo + '<div><h1>' + U.esc(appName) + ' – ' +
+      U.t('Auswertung Logistik-Netzwerk') + '</h1><div class="pr-meta">' +
+      U.t('Erstellt am') + ' ' + new Date().toLocaleString(NS.i18n ? NS.i18n.locale() : 'de-DE') +
+      '</div></div></div>';
+
+    /* Kennzahlen */
+    var kpis = [
+      ['Gesamtkapazität', fmt.int(sum.capacity)],
+      ['Auslastung', isFinite(sum.utilization) ? fmt.pct1(sum.utilization) : '–'],
+      ['Ziel-Bestand (zugeordnet)', fmt.int(sum.assignedSlots)],
+      ['Volumen (Paletten)', fmt.int(sum.pallets)],
+      ['Transportkosten', fmt.eur(sum.transportCost)],
+      ['Lagerkosten', fmt.eur(sum.storageCost)],
+      ['Gesamtkosten', fmt.eur(sum.totalCost)],
+      ['Ø Bewertung (0–100)', isFinite(sum.avgScore) ? fmt.dec1(sum.avgScore) : '–']
+    ];
+    html += '<div class="pr-kpis">' + kpis.map(function (k) {
+      return '<div class="pr-kpi"><span>' + U.esc(U.t(k[0])) + '</span><b>' + k[1] + '</b></div>';
+    }).join('') + '</div>';
+
+    /* Diagramme aus den vorhandenen Zeichenflächen übernehmen */
+    var charts = [
+      ['Ziel-Bestand vs. Kapazität je DC', 'chart-capacity'],
+      ['Kostenverteilung je DC', 'chart-cost'],
+      ['Volumenverteilung Kategorie → DC', 'chart-volume']
+    ].map(function (c) {
+      var canvas = document.getElementById(c[1]);
+      if (!canvas || !canvas.width) return '';
+      try {
+        return '<div class="pr-chart"><h3>' + U.esc(U.t(c[0])) + '</h3><img src="' +
+          canvas.toDataURL('image/png') + '"></div>';
+      } catch (e) { return ''; }
+    }).filter(Boolean).join('');
+    if (charts) html += '<h2>' + U.t('Diagramme') + '</h2><div class="pr-charts">' + charts + '</div>';
+
+    /* Standorte */
+    html += '<h2>' + U.t('Distributionszentren') + '</h2>' + tbl(
+      ['DC', 'Kapazität', 'Belegt gesamt', 'Auslastung %', 'Volumen Paletten', 'Gesamtkosten EUR'],
+      sum.perDC.map(function (d) {
+        return [U.esc(d.name), fmt.int(d.capacity), fmt.int(d.usedTotal),
+          isFinite(d.utilization) ? fmt.dec1(d.utilization * 100) : '–',
+          fmt.int(d.pallets), fmt.int(d.totalCost)];
+      }));
+
+    /* Zuordnungen */
+    if (sum.rows.length) {
+      html += '<h2>' + U.t('Zuordnungen') + '</h2>' + tbl(
+        ['Produktkategorie', 'DC', 'Anteil %', 'Volumen (Pal.)', 'Ziel-Bestand', 'Gesamtkosten', 'Score'],
+        sum.rows.map(function (r) {
+          return [U.esc(r.category), U.esc(r.dcName), fmt.dec1(r.share * 100),
+            fmt.int(r.pallets), fmt.int(r.slots), fmt.eur(r.totalCost), fmt.dec1(r.score)];
+        }));
+    }
+
+    /* Parameter */
+    var s = st.settings;
+    html += '<h2>' + U.t('Parameter') + '</h2>' + tbl(['Kennzahl', 'Wert'], [
+      [U.t('Zielreichweite global'), fmt.int(s.targetDaysGlobal) + ' ' + U.t('Tage')],
+      [U.t('Sicherheitsaufschlag Bestand'), fmt.dec2(s.stockFactor)],
+      [U.t('Gewichtung Kapazität'), s.weights.capacity + ' %'],
+      [U.t('Gewichtung Transport'), s.weights.transport + ' %'],
+      [U.t('Gewichtung Zielreichweite'), s.weights.service + ' %'],
+      [U.t('Ziel-Auslastungsgrenze'), fmt.int(s.maxUtilization * 100) + ' %'],
+      [U.t('Transportkosten je Paletten-km'), fmt.dec2(s.costPerPalletKm) + ' EUR'],
+      [U.t('Transport-Grundkosten je Palette'), fmt.dec2(s.costBasePerPallet) + ' EUR'],
+      [U.t('Lagerkosten je Stellplatz/Monat'), fmt.dec2(s.storageCostPerSlotMonth) + ' EUR'],
+      [U.t('Handlingkosten je Palette'), fmt.dec2(s.handlingCostPerPallet) + ' EUR']
+    ]);
+
+    html += '<div class="pr-note">' + U.t('Erzeugt im Browser ohne Serverübertragung.') + '</div>';
+    return html;
+  }
+
+  function exportPDF() {
+    if (!S.activeDCs().length) {
+      U.toast('Es ist kein aktives Distributionszentrum vorhanden.', 'warn');
+      return;
+    }
+    U.toast('Bericht wird vorbereitet – im Druckdialog bitte „Als PDF speichern“ wählen.', 'good');
+
+    // Chart.js zeichnet nur in eine sichtbare Fläche. Ist das Dashboard
+    // ausgeblendet, sind die Zeichenflächen 0 Pixel breit und die Diagramme
+    // fehlten im Bericht – deshalb kurz einblenden und danach zurückschalten.
+    var active = document.querySelector('.view.is-active');
+    var previous = active ? active.id.replace('view-', '') : 'dashboard';
+    if (previous !== 'dashboard') NS.app.showView('dashboard');
+    else NS.dashboard.render();
+
+    setTimeout(function () {
+      var node = document.getElementById('print-report');
+      node.innerHTML = reportHtml();
+
+      var cleanup = function () {
+        node.innerHTML = '';
+        window.removeEventListener('afterprint', cleanup);
+        if (previous !== 'dashboard') NS.app.showView(previous);
+      };
+      window.addEventListener('afterprint', cleanup);
+      window.print();
+      // Rückfallebene, falls afterprint nicht ausgelöst wird
+      setTimeout(cleanup, 60000);
+    }, 700);
+  }
+
   /* ------------------------------------------------------------ Projekt */
   function saveProject() {
     var st = S.get();
@@ -7168,6 +7351,7 @@ window.LNP = window.LNP || {};
   /* ------------------------------------------------------------ Events */
   function init() {
     U.$('#btn-export-xlsx').addEventListener('click', exportXLSX);
+    U.$('#btn-export-pdf').addEventListener('click', exportPDF);
     U.$('#btn-export-csv-results').addEventListener('click', exportResultsCSV);
     U.$('#btn-export-csv-assign').addEventListener('click', exportAssignmentsCSV);
     U.$('#btn-export-csv-scn').addEventListener('click', exportScenariosCSV);
@@ -7182,7 +7366,8 @@ window.LNP = window.LNP || {};
   }
 
   NS.exporter = {
-    init: init, exportXLSX: exportXLSX, saveProject: saveProject, loadProject: loadProject,
+    init: init, exportXLSX: exportXLSX, exportPDF: exportPDF, reportHtml: reportHtml,
+    saveProject: saveProject, loadProject: loadProject,
     sheetAssignments: sheetAssignments, sheetDCs: sheetDCs, sheetRegions: sheetRegions
   };
 })(window.LNP);

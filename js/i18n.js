@@ -665,6 +665,11 @@ window.LNP = window.LNP || {};
     'Das Logo ist zu groß ({0} kB). Bitte eine Datei bis 300 kB verwenden.':
       'The logo is too large ({0} kB). Please use a file of up to 300 kB.',
     'Auswertung Logistik-Netzwerk': 'logistics network analysis',
+    'Bericht als PDF': 'Report as PDF',
+    'Diagramme': 'Charts',
+    'Erzeugt im Browser ohne Serverübertragung.': 'Generated in the browser, nothing transmitted.',
+    'Bericht wird vorbereitet – im Druckdialog bitte „Als PDF speichern“ wählen.':
+      'Preparing the report – choose “Save as PDF” in the print dialog.',
     'KPI': 'KPI'
   };
 

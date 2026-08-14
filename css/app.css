@@ -561,6 +561,49 @@ select.input { cursor: pointer; }
 .brand-mark-lg { width: 72px; height: 72px; border-radius: 16px; font-size: 24px; }
 .brand-mark-lg img { border-radius: 14px; }
 
+/* ---------------------------------------------------------------- Druckbericht */
+#print-report { display: none; }
+
+@media print {
+  @page { size: A4; margin: 16mm 14mm; }
+  .app, .toast-wrap, .modal-backdrop { display: none !important; }
+  #print-report { display: block !important; }
+  body { background: #fff; color: #0b0b0b; }
+}
+
+/* Der Bericht wird bewusst mit festen Farben gesetzt, damit er unabhängig
+   vom gewählten Farbschema druckbar bleibt. */
+#print-report { font-size: 10pt; line-height: 1.5; color: #0b0b0b; background: #fff; }
+#print-report .pr-head { display: flex; align-items: center; gap: 12px;
+  border-bottom: 2px solid #2a78d6; padding-bottom: 10px; margin-bottom: 16px; }
+#print-report .pr-logo { width: 44px; height: 44px; border-radius: 10px; flex: none;
+  display: grid; place-items: center; color: #fff; font-weight: 700; font-size: 15px;
+  background: linear-gradient(140deg, #2a78d6, #4a3aa7); }
+#print-report .pr-logo img { width: 100%; height: 100%; object-fit: contain; }
+#print-report h1 { font-size: 18pt; margin: 0; }
+#print-report .pr-meta { font-size: 8.5pt; color: #52514e; margin-top: 2px; }
+#print-report h2 { font-size: 12pt; margin: 16pt 0 6pt; padding-top: 6pt;
+  border-top: 1px solid #e1e0d9; break-after: avoid; }
+#print-report table { border-collapse: collapse; width: 100%; font-size: 8.6pt;
+  margin-bottom: 10pt; break-inside: avoid; }
+#print-report th, #print-report td { border-bottom: 1px solid #e1e0d9;
+  padding: 3.5pt 5pt; text-align: left; }
+#print-report th { background: #f2f2ef; font-size: 7.6pt; text-transform: uppercase;
+  letter-spacing: .03em; color: #52514e; font-weight: 600; }
+#print-report td.num, #print-report th.num { text-align: right; font-variant-numeric: tabular-nums; }
+#print-report .pr-kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8pt; margin-bottom: 12pt; }
+#print-report .pr-kpi { border: 1px solid #e1e0d9; border-left: 3px solid #2a78d6;
+  border-radius: 5px; padding: 6pt 8pt; break-inside: avoid; }
+#print-report .pr-kpi span { display: block; font-size: 7.6pt; color: #52514e;
+  text-transform: uppercase; letter-spacing: .03em; }
+#print-report .pr-kpi b { font-size: 13pt; font-variant-numeric: tabular-nums; }
+#print-report .pr-charts { display: grid; grid-template-columns: 1fr 1fr; gap: 10pt; }
+#print-report .pr-chart { break-inside: avoid; }
+#print-report .pr-chart h3 { font-size: 9pt; margin: 0 0 3pt; color: #52514e; }
+#print-report .pr-chart img { width: 100%; border: 1px solid #e1e0d9; border-radius: 4px; }
+#print-report .pr-note { font-size: 8pt; color: #898781; margin-top: 12pt;
+  border-top: 1px solid #e1e0d9; padding-top: 6pt; }
+
 /* ---------------------------------------------------------------- Utility */
 .tools { display: flex; gap: 4px; }
 .pct-input { width: 78px; }
