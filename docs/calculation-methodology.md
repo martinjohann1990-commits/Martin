@@ -112,15 +112,16 @@ Target coverage acts **linearly**: doubling it from 21 to 42 days doubles the
 positions required. It is therefore the single strongest lever in the whole
 model — stronger than any weighting.
 
-**Example** (demo data, category Refrigeration, forecast over 12 months):
+**Example** (the example network from section 8, category “Bath Taps”, forecast
+over 12 months):
 
 | Figure | Value |
 |---|---|
-| Pallets in the period | 140,016 |
+| Pallets in the period | 153,776 |
 | Period length | 365 days |
-| Demand per day | 383.6 pallets |
+| Demand per day | 421.3 pallets |
 | Target coverage | 28 days |
-| Target stock | 10,741 positions |
+| Target stock | 11,797 positions |
 
 ---
 
@@ -275,43 +276,76 @@ always visible which criterion carried the decision.
 
 ## 8. What the weighting actually does – measured
 
-The table below comes from a run over the bundled demo data set (category
-Refrigeration, data basis forecast, single allocation, empty network). “Gap” is
-the lead of the first-placed site over the second.
+### The example network
 
-| Weights (cap./transp./cov.) | Recommendation | Score | Gap | Avg. distance |
+Every figure in this section comes from real runs over the network below. It is
+documented deliberately, so the values stay reproducible.
+
+| DC | Location (lat / lon) | Capacity | Base occupancy | Storage €/pos./mth | Transport €/pal. + €/km |
+|---|---|---|---|---|---|
+| DC Losheim | 49.51 / 6.75 (Saarland) | 18,000 | 2,000 | 13.50 | 5.50 + 0.042 |
+| DC Armitage | 52.74 / −1.88 (Staffordshire) | 14,000 | 1,500 | 15.50 | 6.00 + 0.046 |
+| DC Venlo | 51.37 / 6.17 (Limburg) | 16,000 | 1,800 | 12.80 | 5.80 + 0.044 |
+| DC Milano | 45.46 / 9.19 (Lombardia) | 11,000 | 900 | 14.20 | 6.40 + 0.048 |
+
+Demand: category **“Bath Taps”**, eight customer regions (Germany West and
+South, United Kingdom, France, Benelux, Italy, Spain, Poland), 24 months of
+history and 12 months of forecast, target coverage 28 days, target utilisation
+limit 85 %.
+
+### The measurement series
+
+Single allocation, data basis forecast, empty network. “Gap” is the lead of the
+first-placed site over the second.
+
+| Weights (cap./transp./cov.) | Recommendation | Score | Gap | Ranking (score) |
 |---|---|---|---|---|
-| 100 / 0 / 0 | **DC Poznań** | 68.9 | 0.4 | 868 km |
-| 0 / 100 / 0 | DC Duisburg | 100.0 | 13.5 | 628 km |
-| 0 / 0 / 100 | DC Duisburg | 98.1 | 0.1 | 628 km |
-| 30 / 45 / 25 (default) | DC Duisburg | 90.1 | 6.1 | 628 km |
-| 60 / 20 / 20 | DC Duisburg | 80.7 | 2.5 | 628 km |
-| 20 / 60 / 20 | DC Duisburg | 93.3 | 8.1 | 628 km |
-| 20 / 20 / 60 | DC Duisburg | 92.6 | 2.9 | 628 km |
-| 50 / 0 / 50 | DC Duisburg | 83.3 | 0.0 | 628 km |
+| 100 / 0 / 0 | DC Losheim | 54.9 | 4.9 | Losheim 54.9 · Venlo 50.0 · Armitage 16.7 · Milano 0.0 |
+| 0 / 100 / 0 | DC Losheim | 100.0 | 4.4 | Losheim 100.0 · Venlo 95.6 · Armitage 69.2 · Milano 68.2 |
+| 0 / 0 / 100 | **DC Venlo** | 97.9 | 0.0 | Venlo 97.9 · Losheim 97.9 · Armitage 97.4 · Milano 87.4 |
+| 30 / 45 / 25 (default) | DC Losheim | 86.0 | 3.4 | Losheim 86.0 · Venlo 82.5 · Armitage 60.5 · Milano 52.5 |
+| 60 / 20 / 20 | DC Losheim | 72.5 | 3.8 | Losheim 72.5 · Venlo 68.7 · Armitage 43.4 · Milano 31.1 |
+| 20 / 60 / 20 | DC Losheim | 90.6 | 3.6 | Losheim 90.6 · Venlo 87.0 · Armitage 64.4 · Milano 58.4 |
+| 20 / 20 / 60 | DC Losheim | 89.7 | 1.9 | Losheim 89.7 · Venlo 87.9 · Armitage 75.6 · Milano 66.0 |
+| 50 / 0 / 50 | DC Losheim | 76.4 | 2.4 | Losheim 76.4 · Venlo 74.0 · Armitage 57.1 · Milano 43.7 |
 
-Four patterns emerge that hold generally:
+Average distance of the recommendation: 712 km in every case won by DC Losheim,
+710 km for DC Venlo. Four patterns emerge that hold generally:
 
-**First: the weighting decides less often than you would expect.** In eight of
-ten combinations tested the same site wins. In a transport-cost-dominated
-network — and most are — proximity to customers overrides the other criteria
-almost every time. The recommendation only changes at 100 % capacity weight, and
-then by 0.4 points, which is effectively a tie.
+**First: the weighting decides less often than you would expect.** In seven of
+eight combinations tested the same site wins, DC Losheim. In a
+transport-cost-dominated network — and most are — proximity to customers
+overrides the other criteria almost every time. The recommendation only changes
+at 100 % coverage weight, and there DC Venlo and DC Losheim are level at 97.9 to
+97.9. The recommendation does not change because another site is better, but
+because sorting decides a tie.
 
-**Second: the gap says more than the score.** A result with an 8.1-point lead is
-robust; one with a 0.0 to 0.4-point lead is a coin toss where other criteria
-should decide. Always check the row below the winner in the ranking.
+**Second: the gap says more than the score.** In this network the lead stays
+between 0.0 and 4.9 points throughout — the two leading sites are practically
+equivalent, and the choice between them should rest on criteria the model does
+not know. The gap to third place is clear-cut, though: DC Armitage trails by 14
+to 38 points in the cost-oriented weightings and only closes to 0.5 points under
+pure coverage weighting, where capacity barely differentiates any more. DC Milano
+stays furthest behind the field, trailing by 10 to 55 points. Always check the row
+below the winner in the ranking.
 
 **Third: capacity weight lowers the level, not the order.** Because the capacity
 score already sits well below 100 at moderate utilisation, the total score drops
-as soon as you raise that criterion (90.1 → 80.7 at 60 % weight). That is not a
+as soon as you raise that criterion (86.0 → 72.5 at 60 % weight). That is not a
 worse result, it is a different scale.
 
+The curve from section 6.1 is clearly visible here too: a target stock of 11,797
+positions puts DC Losheim at 76.7 % utilisation (score 54.9), DC Venlo exactly
+on the 85 % limit (score 50.0) and DC Armitage at 95 % (score 16.7). At
+DC Milano the target stock exceeds the 10,100 free positions — the capacity
+score falls to 0 and the ranking flags the site as “too small”.
+
 **Fourth: the coverage score separates weakly while capacity suffices.** At
-0/0/100 the top three sites lie within 0.1 points of each other, because stock
-capability is 1.0 for all of them and only transit time differentiates. This
-criterion only develops its effect once capacity becomes scarce — then stock
-capability falls below 1 and the score drops quickly.
+0/0/100 the top three sites lie within 0.5 points of each other, because stock
+capability is 1.0 for each and only transit time differentiates. Only DC Milano
+drops off at 87.4, because capacity there is insufficient. This criterion only
+develops its effect once capacity becomes scarce — then stock capability falls
+below 1 and the score drops quickly.
 
 ### Which weighting to use when
 
@@ -374,13 +408,17 @@ Both data sets use the same schema and are processed identically. The difference
 lies **solely in which periods feed into demand per day**. The tool produces no
 forecast of its own and does not extrapolate.
 
-Measured on the demo data set (category Refrigeration, default weighting):
+Measured on the example network from section 8 (category “Bath Taps”, default
+weighting, 4 % annual growth in the forecast):
 
 | Data basis | Periods | Length | Pallets | Demand/day | Target stock | Recommendation |
 |---|---|---|---|---|---|---|
-| History | 24 | 730 days | 276,190 | 378.3 | 10,594 | DC Duisburg |
-| Forecast | 12 | 365 days | 140,016 | 383.6 | 10,741 | DC Duisburg |
-| History + forecast | 35 | 1,064 days | 416,205 | 391.2 | 10,953 | DC Duisburg |
+| History | 24 | 730 days | 289,512 | 396.6 | 11,105 | DC Losheim |
+| Forecast | 12 | 365 days | 153,776 | 421.3 | 11,797 | DC Losheim |
+| History + forecast | 36 | 1,095 days | 443,289 | 404.8 | 11,335 | DC Losheim |
+
+Target stock varies by roughly 700 positions depending on the data basis chosen
+— just under 6 %, and in the order of magnitude of half an aisle.
 
 ### What the choice does
 
@@ -485,7 +523,7 @@ Required per row:
 
 | Field | Example |
 |---|---|
-| Product category | Refrigeration |
+| Product category | Bath Taps |
 | Period | 2027-03 |
 | one quantity measure | quantity, pallets, pallet equivalent, volume or revenue |
 | one location reference | region, country or customer |

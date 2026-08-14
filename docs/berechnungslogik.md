@@ -112,15 +112,16 @@ Die Zielreichweite wirkt **linear**: Verdoppelt man sie von 21 auf 42 Tage,
 verdoppelt sich der Stellplatzbedarf. Sie ist damit der stärkste einzelne Hebel
 im gesamten Modell — stärker als jede Gewichtung.
 
-**Beispiel** (Demodaten, Kategorie Kühlgeräte, Forecast über 12 Monate):
+**Beispiel** (Beispielnetz aus Abschnitt 8, Kategorie „Bath Taps“, Forecast über
+12 Monate):
 
 | Größe | Wert |
 |---|---|
-| Paletten im Zeitraum | 140.016 |
+| Paletten im Zeitraum | 153.776 |
 | Zeitraum | 365 Tage |
-| Bedarf pro Tag | 383,6 Paletten |
+| Bedarf pro Tag | 421,3 Paletten |
 | Zielreichweite | 28 Tage |
-| Ziel-Bestand | 10.741 Stellplätze |
+| Ziel-Bestand | 11.797 Stellplätze |
 
 ---
 
@@ -274,45 +275,80 @@ jederzeit ablesbar, welches Kriterium die Entscheidung getragen hat.
 
 ## 8. Wirkung der Gewichtung – gemessen
 
-Die folgende Tabelle stammt aus einem Durchlauf über den mitgelieferten
-Demodatensatz (Kategorie Kühlgeräte, Datenbasis Forecast, Alleinzuordnung, leeres
-Netz). „Abstand" ist der Punktevorsprung des Ersten vor dem Zweiten.
+### Das Beispielnetz
 
-| Gewichte (Kap./Transp./Reichw.) | Empfehlung | Score | Abstand | Ø Distanz |
+Alle Zahlen dieses Abschnitts stammen aus echten Durchläufen über das folgende
+Netz. Es ist bewusst dokumentiert, damit die Werte nachvollziehbar bleiben.
+
+| DC | Standort (Breite / Länge) | Kapazität | Grundbelegung | Lager €/Platz/Mon. | Transport €/Pal. + €/km |
+|---|---|---|---|---|---|
+| DC Losheim | 49,51 / 6,75 (Saarland) | 18.000 | 2.000 | 13,50 | 5,50 + 0,042 |
+| DC Armitage | 52,74 / −1,88 (Staffordshire) | 14.000 | 1.500 | 15,50 | 6,00 + 0,046 |
+| DC Venlo | 51,37 / 6,17 (Limburg) | 16.000 | 1.800 | 12,80 | 5,80 + 0,044 |
+| DC Milano | 45,46 / 9,19 (Lombardia) | 11.000 | 900 | 14,20 | 6,40 + 0,048 |
+
+Nachfrage: Kategorie **„Bath Taps“**, acht Kundenregionen (Deutschland West und
+Süd, United Kingdom, Frankreich, Benelux, Italien, Spanien, Polen), 24 Monate
+Historie und 12 Monate Forecast, Zielreichweite 28 Tage, Ziel-Auslastungsgrenze
+85 %.
+
+### Die Messreihe
+
+Alleinzuordnung, Datenbasis Forecast, leeres Netz. „Abstand" ist der
+Punktevorsprung des Ersten vor dem Zweiten.
+
+| Gewichte (Kap./Transp./Reichw.) | Empfehlung | Score | Abstand | Rangfolge (Score) |
 |---|---|---|---|---|
-| 100 / 0 / 0 | **DC Poznań** | 68,9 | 0,4 | 868 km |
-| 0 / 100 / 0 | DC Duisburg | 100,0 | 13,5 | 628 km |
-| 0 / 0 / 100 | DC Duisburg | 98,1 | 0,1 | 628 km |
-| 30 / 45 / 25 (Standard) | DC Duisburg | 90,1 | 6,1 | 628 km |
-| 60 / 20 / 20 | DC Duisburg | 80,7 | 2,5 | 628 km |
-| 20 / 60 / 20 | DC Duisburg | 93,3 | 8,1 | 628 km |
-| 20 / 20 / 60 | DC Duisburg | 92,6 | 2,9 | 628 km |
-| 50 / 0 / 50 | DC Duisburg | 83,3 | 0,0 | 628 km |
+| 100 / 0 / 0 | DC Losheim | 54,9 | 4,9 | Losheim 54,9 · Venlo 50,0 · Armitage 16,7 · Milano 0,0 |
+| 0 / 100 / 0 | DC Losheim | 100,0 | 4,4 | Losheim 100,0 · Venlo 95,6 · Armitage 69,2 · Milano 68,2 |
+| 0 / 0 / 100 | **DC Venlo** | 97,9 | 0,0 | Venlo 97,9 · Losheim 97,9 · Armitage 97,4 · Milano 87,4 |
+| 30 / 45 / 25 (Standard) | DC Losheim | 86,0 | 3,4 | Losheim 86,0 · Venlo 82,5 · Armitage 60,5 · Milano 52,5 |
+| 60 / 20 / 20 | DC Losheim | 72,5 | 3,8 | Losheim 72,5 · Venlo 68,7 · Armitage 43,4 · Milano 31,1 |
+| 20 / 60 / 20 | DC Losheim | 90,6 | 3,6 | Losheim 90,6 · Venlo 87,0 · Armitage 64,4 · Milano 58,4 |
+| 20 / 20 / 60 | DC Losheim | 89,7 | 1,9 | Losheim 89,7 · Venlo 87,9 · Armitage 75,6 · Milano 66,0 |
+| 50 / 0 / 50 | DC Losheim | 76,4 | 2,4 | Losheim 76,4 · Venlo 74,0 · Armitage 57,1 · Milano 43,7 |
 
-Daraus lassen sich vier Muster ablesen, die allgemein gelten:
+Ø Distanz der Empfehlung: 712 km in allen Fällen mit DC Losheim, 710 km bei
+DC Venlo. Daraus lassen sich vier Muster ablesen, die allgemein gelten:
 
-**Erstens: Die Gewichtung entscheidet seltener, als man erwartet.** In acht von
-zehn geprüften Kombinationen gewinnt derselbe Standort. Bei einem
+**Erstens: Die Gewichtung entscheidet seltener, als man erwartet.** In sieben von
+acht geprüften Kombinationen gewinnt derselbe Standort, DC Losheim. Bei einem
 transportkostendominierten Netz — und das sind die meisten — schlägt die
 Kundennähe die übrigen Kriterien fast immer durch. Ein Wechsel der Empfehlung
-tritt erst bei 100 % Kapazitätsgewicht ein, und dann mit 0,4 Punkten Abstand,
-also praktisch einem Gleichstand.
+tritt nur bei 100 % Reichweitengewicht ein, und dort liegen DC Venlo und
+DC Losheim mit 97,9 zu 97,9 gleichauf. Die Empfehlung wechselt also nicht, weil
+ein anderer Standort besser wäre, sondern weil bei Gleichstand die Sortierung
+entscheidet.
 
-**Zweitens: Der Abstand ist aussagekräftiger als der Score.** Ein Ergebnis mit
-8,1 Punkten Vorsprung ist robust; eines mit 0,0 bis 0,4 Punkten ist eine
-Zufallsentscheidung, bei der andere Kriterien den Ausschlag geben sollten.
-Prüfen Sie deshalb immer die Spalte hinter dem Ersten in der Rangliste.
+**Zweitens: Der Abstand ist aussagekräftiger als der Score.** In diesem Netz
+liegt der Vorsprung durchgehend zwischen 0,0 und 4,9 Punkten — die beiden
+führenden Standorte sind praktisch gleichwertig, und die Entscheidung zwischen
+ihnen sollte an Kriterien fallen, die das Modell nicht kennt. Deutlich ist
+dagegen der Abstand zum dritten Platz: DC Armitage liegt in den kostenorientierten
+Gewichtungen 14 bis 38 Punkte zurück und rückt nur bei reiner Reichweitengewichtung
+auf 0,5 Punkte heran — dort differenziert die Kapazität kaum noch. DC Milano bleibt
+mit 10 bis 55 Punkten Rückstand am weitesten hinter dem Feld. Prüfen Sie deshalb
+immer die Zeile hinter dem Ersten in der Rangliste.
 
 **Drittens: Kapazitätsgewicht drückt das Niveau, nicht die Reihenfolge.** Weil
 der Kapazitäts-Score bereits bei mäßiger Auslastung deutlich unter 100 liegt,
-sinkt der Gesamt-Score, sobald man dieses Kriterium hochzieht (90,1 → 80,7 bei
+sinkt der Gesamt-Score, sobald man dieses Kriterium hochzieht (86,0 → 72,5 bei
 60 % Gewicht). Das ist kein schlechteres Ergebnis, sondern eine andere Skala.
 
+Gut ablesbar ist hier auch die Kennlinie aus Abschnitt 6.1: Der Ziel-Bestand von
+11.797 Stellplätzen bringt DC Losheim auf 76,7 % Auslastung (Score 54,9),
+DC Venlo exakt auf die Grenze von 85 % (Score 50,0) und DC Armitage auf 95 %
+(Score 16,7). Bei DC Milano übersteigt der Ziel-Bestand die freien 10.100
+Stellplätze — der Kapazitäts-Score fällt auf 0, und die Rangliste weist den
+Standort als „zu klein" aus.
+
 **Viertens: Der Reichweiten-Score trennt schwach, solange Kapazität reicht.**
-Bei 0/0/100 liegen die ersten drei Standorte innerhalb von 0,1 Punkten, weil die
-Bestandsfähigkeit bei allen 1,0 beträgt und nur die Transitzeit differenziert.
-Dieses Kriterium entfaltet seine Wirkung erst, wenn Kapazität knapp wird — dann
-sinkt die Bestandsfähigkeit unter 1 und der Score bricht schnell ein.
+Bei 0/0/100 liegen die ersten drei Standorte innerhalb von 0,5 Punkten, weil die
+Bestandsfähigkeit bei ihnen jeweils 1,0 beträgt und nur die Transitzeit
+differenziert. Erst DC Milano fällt mit 87,4 ab, weil dort die Kapazität nicht
+reicht. Dieses Kriterium entfaltet seine Wirkung also erst, wenn Kapazität knapp
+wird — dann sinkt die Bestandsfähigkeit unter 1 und der Score bricht schnell
+ein.
 
 ### Wann welche Gewichtung sinnvoll ist
 
@@ -378,13 +414,18 @@ Beide Datenbestände nutzen dasselbe Schema und werden identisch verrechnet. Der
 Unterschied liegt **allein darin, welche Perioden in den Bedarf pro Tag
 eingehen**. Das Tool erstellt selbst keine Prognose und extrapoliert nicht.
 
-Gemessen am Demodatensatz (Kategorie Kühlgeräte, Standardgewichtung):
+Gemessen am Beispielnetz aus Abschnitt 8 (Kategorie „Bath Taps“,
+Standardgewichtung, Wachstum von 4 % pro Jahr im Forecast):
 
 | Datenbasis | Perioden | Zeitraum | Paletten | Bedarf/Tag | Ziel-Bestand | Empfehlung |
 |---|---|---|---|---|---|---|
-| Historie | 24 | 730 Tage | 276.190 | 378,3 | 10.594 | DC Duisburg |
-| Forecast | 12 | 365 Tage | 140.016 | 383,6 | 10.741 | DC Duisburg |
-| Historie + Forecast | 35 | 1.064 Tage | 416.205 | 391,2 | 10.953 | DC Duisburg |
+| Historie | 24 | 730 Tage | 289.512 | 396,6 | 11.105 | DC Losheim |
+| Forecast | 12 | 365 Tage | 153.776 | 421,3 | 11.797 | DC Losheim |
+| Historie + Forecast | 36 | 1.095 Tage | 443.289 | 404,8 | 11.335 | DC Losheim |
+
+Der Ziel-Bestand schwankt hier um rund 700 Stellplätze, je nachdem welche
+Datenbasis man wählt — das entspricht knapp 6 % und liegt in der Größenordnung
+einer halben Lagergasse.
 
 ### Was die Wahl bewirkt
 
@@ -495,7 +536,7 @@ Pflicht je Zeile:
 
 | Feld | Beispiel |
 |---|---|
-| Produktkategorie | Kühlgeräte |
+| Produktkategorie | Bath Taps |
 | Periode | 2027-03 |
 | eine Mengenangabe | Menge, Paletten, Paletten-Äquivalent, Volumen oder Umsatz |
 | ein Ortsbezug | Region, Land oder Kunde |
