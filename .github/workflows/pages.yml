@@ -2,7 +2,7 @@ name: Deploy to GitHub Pages
 
 on:
   push:
-    branches: [claude/interval-timer-app-r54e6e]
+    branches: [claude/interval-timer-app-r54e6e, claude/logistics-network-analysis-tool-tmei0z]
   workflow_dispatch:
 
 permissions:
