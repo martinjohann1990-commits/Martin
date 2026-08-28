@@ -1,0 +1,890 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Network Analysis &amp; Scenario Modeling Tool</title>
+
+<!-- Bootstrap for layout/styling -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
+<!-- SheetJS: parses the uploaded .xlsx workbook entirely client-side -->
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<!-- Chart.js: renders the result charts -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+
+<style>
+  :root {
+    --brand: #1f5fa8;
+    --brand-dark: #143e6e;
+    --accent: #e07b1f;
+  }
+  body { background: #f4f6f9; padding-bottom: 4rem; }
+  header.app-header {
+    background: linear-gradient(120deg, var(--brand-dark), var(--brand));
+    color: #fff;
+    padding: 1.5rem 0;
+    margin-bottom: 1.5rem;
+  }
+  header.app-header p { color: #dce8f7; margin-bottom: 0; }
+  .card { border: none; box-shadow: 0 1px 4px rgba(0,0,0,.08); margin-bottom: 1.5rem; }
+  .card-header {
+    background: #fff;
+    border-bottom: 2px solid #eef1f5;
+    font-weight: 600;
+    color: var(--brand-dark);
+  }
+  .step-badge {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 1.6rem; height: 1.6rem; border-radius: 50%;
+    background: var(--brand); color: #fff; font-size: .85rem; font-weight: 700;
+    margin-right: .5rem;
+  }
+  #dataStatus .badge-count { font-size: .95rem; }
+  .dc-picker { max-height: 220px; overflow-y: auto; border: 1px solid #dee2e6; border-radius: .375rem; padding: .5rem .75rem; background: #fff; }
+  .dc-picker .form-check { margin-bottom: .15rem; }
+  .group-chip {
+    display: inline-flex; align-items: center; gap: .4rem;
+    background: #eaf1fb; border: 1px solid #cfe0f5; color: var(--brand-dark);
+    border-radius: 1rem; padding: .25rem .7rem; margin: .2rem .3rem .2rem 0; font-size: .85rem;
+  }
+  .group-chip button { border: none; background: none; color: #b3352c; font-weight: 700; line-height: 1; cursor: pointer; }
+  .nav-tabs .nav-link.active { font-weight: 600; color: var(--brand-dark); }
+  .metric-card { background: #fff; border-radius: .5rem; padding: 1rem; text-align: center; border: 1px solid #eef1f5; }
+  .metric-card .value { font-size: 1.5rem; font-weight: 700; color: var(--brand-dark); }
+  .metric-card .label { font-size: .8rem; color: #6c757d; text-transform: uppercase; letter-spacing: .03em; }
+  .chart-box { position: relative; height: 300px; }
+  .chart-box.small { height: 220px; }
+  .disabled-section { opacity: .5; pointer-events: none; }
+  .assumption-note { font-size: .82rem; color: #6c757d; background: #fbf7ee; border: 1px solid #f0e2c2; border-radius: .375rem; padding: .5rem .75rem; }
+  .warn-note { font-size: .85rem; color: #7a4b00; background: #fff3cd; border: 1px solid #ffe08a; border-radius: .375rem; padding: .5rem .75rem; }
+  code.small-code { font-size: .8rem; }
+  #outputArea, #analysisOutputArea { min-height: 80px; }
+  table.table-sm td, table.table-sm th { vertical-align: middle; }
+</style>
+</head>
+<body>
+
+<header class="app-header">
+  <div class="container">
+    <h1 class="h3 mb-1">Network Analysis &amp; Scenario Modeling Tool</h1>
+    <p>Client-side warehouse consolidation modeling — upload once, run any scenario, no server involved.</p>
+  </div>
+</header>
+
+<main class="container">
+
+  <!-- ============================================================ -->
+  <!-- STEP 1: FILE UPLOAD                                            -->
+  <!-- ============================================================ -->
+  <div class="card">
+    <div class="card-header"><span class="step-badge">1</span>Upload Data</div>
+    <div class="card-body">
+      <p class="text-muted">
+        Select the Excel workbook (.xlsx) containing the sheets
+        <code class="small-code">Forecast_-_Pallet_Load_</code>,
+        <code class="small-code">Sales_History_Data_aggregated</code>,
+        <code class="small-code">Destinations_</code> / <code class="small-code">Ship-to-adress</code>,
+        <code class="small-code">SKU_View</code>,
+        <code class="small-code">DC_Translation_Table_</code> and
+        <code class="small-code">Sales_Hierarchie_Table_</code>.
+        Sheet names are matched fuzzily (case/underscore-insensitive), so small naming variations are fine.
+      </p>
+      <input type="file" id="fileInput" class="form-control" accept=".xlsx,.xls">
+      <div id="dataStatus" class="mt-3"></div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- STEP 2: SCENARIO CONTROL PANEL                                 -->
+  <!-- ============================================================ -->
+  <div class="card disabled-section" id="scenarioCard">
+    <div class="card-header"><span class="step-badge">2</span>Scenario Control Panel</div>
+    <div class="card-body">
+
+      <div class="row g-3">
+        <div class="col-md-4">
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="scenario" id="scBase" value="base" checked>
+            <label class="form-check-label" for="scBase"><strong>Base</strong> — "as-is"</label>
+          </div>
+          <div class="form-text ms-4">Uses the DC_Translation_Table mapping exactly as provided.</div>
+        </div>
+        <div class="col-md-4">
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="scenario" id="sc1" value="s1">
+            <label class="form-check-label" for="sc1"><strong>Scenario 1</strong> — Central Europe Consolidation</label>
+          </div>
+          <div class="form-text ms-4">Losheim, Dole, VDA, Wroclaw &rarr; <strong>Saar</strong>. Bassano, Armitage, Sevlievo unchanged.</div>
+        </div>
+        <div class="col-md-4">
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="scenario" id="sc2" value="s2">
+            <label class="form-check-label" for="sc2"><strong>Scenario 2</strong> — Eastern Europe Consolidation</label>
+          </div>
+          <div class="form-text ms-4">Every DC except Armitage &amp; Bassano &rarr; <strong>Sevlievo</strong>.</div>
+        </div>
+        <div class="col-md-4">
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="scenario" id="sc3" value="s3">
+            <label class="form-check-label" for="sc3"><strong>Scenario 3</strong> — Central &amp; Eastern Split</label>
+          </div>
+          <div class="form-text ms-4">Eastern-country demand &rarr; <strong>Sevlievo</strong>; remaining Losheim/Dole/VDA/Wroclaw demand &rarr; <strong>Saar</strong>.</div>
+        </div>
+        <div class="col-md-8">
+          <div class="form-check">
+            <input class="form-check-input" type="radio" name="scenario" id="scCustom" value="custom">
+            <label class="form-check-label" for="scCustom"><strong>Custom scenario</strong> — build your own DC consolidation mapping</label>
+          </div>
+        </div>
+      </div>
+
+      <!-- Scenario 3: editable "east of" country list -->
+      <div id="s3Config" class="mt-3" hidden>
+        <label class="form-label mb-1">Countries treated as "Eastern Europe" (ISO country-key codes, comma separated)</label>
+        <input type="text" id="s3EastCountries" class="form-control">
+        <div class="form-text">
+          Default follows the brief: Poland, Czech Republic, Austria and Slovenia "and east of". Adjust freely to match your
+          <code class="small-code">Country Key</code> values — the tool cannot infer geography on its own.
+        </div>
+      </div>
+
+      <!-- Custom scenario builder -->
+      <div id="customConfig" class="mt-3" hidden>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label mb-1">Existing DCs (from DC_Translation_Table)</label>
+            <div id="dcPicker" class="dc-picker"></div>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label mb-1">Assign selected DCs to a new consolidated DC</label>
+            <div class="input-group">
+              <input type="text" id="newGroupName" class="form-control" placeholder="e.g. Saar">
+              <button class="btn btn-outline-primary" id="addGroupBtn" type="button">Add group</button>
+            </div>
+            <div class="form-text">Select one or more DCs on the left, name the target DC, then click "Add group". Any DC left unassigned stays as-is.</div>
+            <div id="groupList" class="mt-3"></div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-primary mt-3" id="runScenarioBtn" type="button">Run Scenario</button>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- STEP 3: SCENARIO OUTPUT                                        -->
+  <!-- ============================================================ -->
+  <div class="card" id="outputCard" hidden>
+    <div class="card-header">Scenario Results</div>
+    <div class="card-body">
+      <div id="unmappedWarning"></div>
+      <div id="outputArea"></div>
+    </div>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- STEP 4: ADDITIONAL ANALYSES                                    -->
+  <!-- ============================================================ -->
+  <div class="card disabled-section" id="analysisCard">
+    <div class="card-header"><span class="step-badge">3</span>Additional Analyses (Taps)</div>
+    <div class="card-body">
+      <p class="assumption-note">
+        These analyses group Forecast rows by <code class="small-code">V&amp;B/ISI District + Calendar week/year</code> into a
+        "shipment" (the source data is pre-aggregated, so no line-level shipment ID exists). Each shipment's final DC follows
+        whichever scenario mapping is currently active above (Base by default). Please verify this assumption fits your data.
+      </p>
+      <div class="row g-3 align-items-end">
+        <div class="col-md-6">
+          <label class="form-label mb-1">Marketing-View value(s) that identify "Taps" products</label>
+          <select id="tapsValues" class="form-select" multiple size="4"></select>
+          <div class="form-text">Auto-preselected where the value contains "tap" — double-check against your actual SKU_View data.</div>
+        </div>
+        <div class="col-md-6">
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="chkShipmentSize" checked>
+            <label class="form-check-label" for="chkShipmentSize">Shipment Size Analysis</label>
+          </div>
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" id="chkShipmentMix" checked>
+            <label class="form-check-label" for="chkShipmentMix">Shipment Mix Analysis</label>
+          </div>
+          <button class="btn btn-primary mt-2" id="runAnalysisBtn" type="button">Run Analyses</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" id="analysisOutputCard" hidden>
+    <div class="card-header">Analysis Results</div>
+    <div class="card-body">
+      <div id="analysisOutputArea"></div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+/* ==================================================================================
+   NETWORK ANALYSIS & SCENARIO MODELING TOOL
+   Single-file, fully client-side implementation (no backend / no Python).
+   Sections below: CONFIG -> STATE -> UTILITIES -> DATA MODEL BUILD -> SCENARIO LOGIC
+   -> RENDERING -> ADDITIONAL ANALYSES -> EVENT WIRING
+   ================================================================================== */
+
+/* ---------------------------------------------------------------------------------
+   CONFIG
+   DC names used to identify the consolidation groups from the brief. Matching is
+   done on a normalized (trimmed, uppercased) version of the DC field, using
+   "contains" so values like "Losheim (DE)" still match "Losheim".
+   --------------------------------------------------------------------------------- */
+const SCENARIO1_SOURCE_DCS = ['LOSHEIM', 'DOLE', 'VDA', 'WROCLAW'];
+const SCENARIO1_TARGET = 'Saar';
+
+const SCENARIO2_KEEP_DCS = ['ARMITAGE', 'BASSANO'];
+const SCENARIO2_TARGET = 'Sevlievo';
+
+const SCENARIO3_EAST_TARGET = 'Sevlievo';
+const SCENARIO3_WEST_SOURCE_DCS = ['LOSHEIM', 'DOLE', 'VDA', 'WROCLAW'];
+const SCENARIO3_WEST_TARGET = 'Saar';
+const SCENARIO3_DEFAULT_EAST_COUNTRIES = ['PL','CZ','SK','AT','SI','HU','RO','BG','HR','RS','UA','LT','LV','EE','BA','ME','MK','AL','MD'];
+
+const SIZE_CLUSTERS = [
+  { label: '0 - 1.0 ESU',  min: 0,   max: 1.0 },
+  { label: '1.1 - 5.0 ESU', min: 1.0000001, max: 5.0 },
+  { label: '5.1+ ESU',     min: 5.0000001, max: Infinity },
+];
+
+/* ---------------------------------------------------------------------------------
+   STATE
+   --------------------------------------------------------------------------------- */
+const state = {
+  workbook: null,
+  // Raw parsed rows per logical sheet
+  raw: { forecast: [], salesHistory: [], destinations: [], skuView: [], dcTranslation: [], salesHierarchy: [] },
+  // Lookup structures built from raw data (see buildDataModel)
+  skuMap: new Map(),          // materialKey -> { marketingView, productline, gtin, dc }
+  dcTranslationMap: new Map(),// shippingPointKey -> { dc, desc }
+  districtInfo: new Map(),    // districtKey -> { districtName, shippingPoint, country }
+  forecastRecords: [],        // enriched forecast rows used for all calculations
+  uniqueDCs: [],              // unique DC values from DC_Translation_Table
+  customGroups: [],           // [{ name, members: [dc,...] }]
+  charts: {},                 // Chart.js instances, keyed by canvas id, so we can destroy/recreate
+};
+
+/* ---------------------------------------------------------------------------------
+   UTILITIES
+   --------------------------------------------------------------------------------- */
+function normKey(s) {
+  return String(s ?? '').trim().toLowerCase().replace(/[^a-z0-9]+/g, '');
+}
+function normVal(v) {
+  return v === null || v === undefined ? '' : String(v).trim();
+}
+function normDC(v) {
+  return normVal(v).toUpperCase();
+}
+function toNumber(v) {
+  const n = typeof v === 'number' ? v : parseFloat(String(v ?? '').replace(/,/g, ''));
+  return Number.isFinite(n) ? n : 0;
+}
+// Canonical material key so "12345" (Forecast, int64) matches "0012345" or "12345" (SKU_View, string)
+function materialKey(v) {
+  const s = normVal(v);
+  const n = Number(s);
+  return Number.isFinite(n) && s !== '' ? String(n) : s.toUpperCase();
+}
+function fmtInt(n) { return Math.round(n).toLocaleString('en-US'); }
+function fmtNum(n, d = 1) { return n.toLocaleString('en-US', { minimumFractionDigits: d, maximumFractionDigits: d }); }
+function fmtPct(n) { return (n * 100).toFixed(1) + '%'; }
+
+// Resolve each logical column name to whatever the actual header text is in a sheet,
+// tolerant of spacing/casing/punctuation differences (e.g. "V&B/ISI District").
+function resolveHeaders(rows, targetDefs) {
+  const headers = rows.length ? Object.keys(rows[0]) : [];
+  const normHeaderMap = {};
+  headers.forEach(h => { normHeaderMap[normKey(h)] = h; });
+  const resolved = {};
+  for (const [target, candidates] of Object.entries(targetDefs)) {
+    resolved[target] = candidates.map(c => normHeaderMap[c]).find(h => h) || null;
+  }
+  return resolved;
+}
+function findSheetName(workbook, patterns) {
+  return workbook.SheetNames.find(name => {
+    const n = normKey(name);
+    return patterns.some(p => n.includes(p));
+  });
+}
+function mostFrequent(arr) {
+  const counts = new Map();
+  arr.forEach(v => { if (v) counts.set(v, (counts.get(v) || 0) + 1); });
+  let best = null, bestCount = -1;
+  for (const [v, c] of counts) { if (c > bestCount) { best = v; bestCount = c; } }
+  return best;
+}
+
+/* ---------------------------------------------------------------------------------
+   FILE PARSING
+   --------------------------------------------------------------------------------- */
+document.getElementById('fileInput').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const statusEl = document.getElementById('dataStatus');
+  statusEl.innerHTML = '<div class="text-muted">Reading workbook...</div>';
+  try {
+    const buffer = await file.arrayBuffer();
+    const workbook = XLSX.read(buffer, { type: 'array', cellDates: false });
+    state.workbook = workbook;
+    loadSheets(workbook);
+    buildDataModel();
+    renderDataStatus();
+    populateDCPicker();
+    populateTapsValueSelector();
+    document.getElementById('scenarioCard').classList.remove('disabled-section');
+    document.getElementById('analysisCard').classList.remove('disabled-section');
+  } catch (err) {
+    console.error(err);
+    statusEl.innerHTML = `<div class="alert alert-danger">Could not read this file: ${err.message}</div>`;
+  }
+});
+
+function loadSheets(workbook) {
+  const sheetMap = {
+    forecast:       findSheetName(workbook, ['forecast']),
+    salesHistory:   findSheetName(workbook, ['saleshistory']),
+    destinations:   findSheetName(workbook, ['destinations']),
+    shipTo:         findSheetName(workbook, ['shiptoadress', 'shipto']),
+    skuView:        findSheetName(workbook, ['skuview', 'sku']),
+    dcTranslation:  findSheetName(workbook, ['dctranslation']),
+    salesHierarchy: findSheetName(workbook, ['saleshierarchie', 'saleshierarchy']),
+  };
+  state.sheetMap = sheetMap;
+
+  const sheetToRows = (name) => name ? XLSX.utils.sheet_to_json(workbook.Sheets[name], { defval: null }) : [];
+
+  state.raw.forecast = sheetToRows(sheetMap.forecast);
+  state.raw.salesHistory = sheetToRows(sheetMap.salesHistory);
+  // Destinations_ and Ship-to-adress share the same structure; merge & de-duplicate by Ship-to-pty.
+  const destRows = sheetToRows(sheetMap.destinations);
+  const shipToRows = sheetToRows(sheetMap.shipTo);
+  state.raw.destinations = destRows.concat(shipToRows);
+  state.raw.skuView = sheetToRows(sheetMap.skuView);
+  state.raw.dcTranslation = sheetToRows(sheetMap.dcTranslation);
+  state.raw.salesHierarchy = sheetToRows(sheetMap.salesHierarchy);
+}
+
+function renderDataStatus() {
+  const sm = state.sheetMap;
+  const rows = [
+    ['Forecast - Pallet Load', sm.forecast, state.raw.forecast.length],
+    ['Sales History (aggregated)', sm.salesHistory, state.raw.salesHistory.length],
+    ['Destinations / Ship-to-adress', sm.destinations || sm.shipTo, state.raw.destinations.length],
+    ['SKU_View', sm.skuView, state.raw.skuView.length],
+    ['DC_Translation_Table', sm.dcTranslation, state.raw.dcTranslation.length],
+    ['Sales_Hierarchie_Table', sm.salesHierarchy, state.raw.salesHierarchy.length],
+  ];
+  const missing = rows.filter(r => !r[1] && r[0] !== 'Sales History (aggregated)' && r[0] !== 'Sales_Hierarchie_Table');
+  let html = '<div class="row row-cols-2 row-cols-md-3 g-2 mb-2">';
+  rows.forEach(([label, sheetName, count]) => {
+    const ok = !!sheetName;
+    html += `<div class="col"><div class="border rounded p-2 h-100">
+      <div class="small text-muted">${label}</div>
+      <div class="fw-semibold ${ok ? 'text-success' : 'text-danger'}">${ok ? sheetName : 'not found'}</div>
+      <div class="badge-count">${ok ? fmtInt(count) + ' rows' : '-'}</div>
+    </div></div>`;
+  });
+  html += '</div>';
+  if (missing.length) {
+    html += `<div class="alert alert-warning py-2">Missing required sheet(s): ${missing.map(m => m[0]).join(', ')}. Calculations that depend on them will be incomplete.</div>`;
+  }
+  if (state.unmappedForecastCount > 0) {
+    html += `<div class="warn-note">${fmtInt(state.unmappedForecastCount)} of ${fmtInt(state.forecastRecords.length)} forecast rows
+      (${fmtInt(state.unmappedForecastQty)} ESU) could not be traced to a shipping point / DC and were bucketed as
+      <strong>UNMAPPED</strong>. This usually means the district code has no matching customer in Destinations_, or the
+      shipping point isn't listed in DC_Translation_Table.</div>`;
+  }
+  statusToHTML(html);
+}
+function statusToHTML(html) { document.getElementById('dataStatus').innerHTML = html; }
+
+/* ---------------------------------------------------------------------------------
+   DATA MODEL BUILD
+   Joins: Forecast -> SKU_View (products), Forecast.District -> Destinations (customers)
+          -> Shipping point -> DC_Translation_Table -> DC.
+   A district can serve multiple customers on different shipping points; since the
+   Forecast/Sales tables are already pre-aggregated at district level (not customer
+   level) we take the MOST FREQUENT shipping point / country per district as the
+   representative value. This is a necessary simplification of the source data and
+   is called out to the user via the "UNMAPPED" warning above when a district can't
+   be resolved at all.
+   --------------------------------------------------------------------------------- */
+function buildDataModel() {
+  // --- SKU_View: Material Number -> product attributes -------------------------
+  state.skuMap = new Map();
+  if (state.raw.skuView.length) {
+    const h = resolveHeaders(state.raw.skuView, {
+      material: ['materialnumber'], marketingView: ['marketingview'],
+      productline: ['productline'], gtin: ['gtin'], dc: ['dc'],
+    });
+    state.raw.skuView.forEach(r => {
+      if (!h.material) return;
+      const key = materialKey(r[h.material]);
+      state.skuMap.set(key, {
+        marketingView: normVal(h.marketingView ? r[h.marketingView] : ''),
+        productline: normVal(h.productline ? r[h.productline] : ''),
+        gtin: h.gtin ? r[h.gtin] : null,
+        dc: normVal(h.dc ? r[h.dc] : ''),
+      });
+    });
+  }
+
+  // --- DC_Translation_Table: Shipping point -> DC -------------------------------
+  state.dcTranslationMap = new Map();
+  const dcSet = new Set();
+  if (state.raw.dcTranslation.length) {
+    const h = resolveHeaders(state.raw.dcTranslation, {
+      shippingPoint: ['vbisishippingpoint'],
+      shippingPointDesc: ['vbisishippingpointdescription'],
+      dc: ['dc'],
+    });
+    state.raw.dcTranslation.forEach(r => {
+      if (!h.shippingPoint) return;
+      const key = normKey(r[h.shippingPoint]);
+      const dc = normVal(h.dc ? r[h.dc] : '');
+      state.dcTranslationMap.set(key, {
+        dc,
+        desc: normVal(h.shippingPointDesc ? r[h.shippingPointDesc] : ''),
+      });
+      if (dc) dcSet.add(dc);
+    });
+  }
+  state.uniqueDCs = Array.from(dcSet).sort((a, b) => a.localeCompare(b));
+
+  // --- Destinations_ (+ Ship-to-adress): District -> {shipping point, country} mode
+  const districtShipPoints = new Map(); // districtKey -> [shippingPoint,...]
+  const districtCountries = new Map();  // districtKey -> [country,...]
+  const districtNames = new Map();
+  if (state.raw.destinations.length) {
+    const h = resolveHeaders(state.raw.destinations, {
+      shipToPty: ['shiptopty'], name: ['name'], city: ['city'],
+      country: ['countrykey'], district: ['vbisidistrict'],
+      districtName: ['vbisidistrictname'], shippingPoint: ['vbisishippingpoint'],
+    });
+    state.raw.destinations.forEach(r => {
+      if (!h.district) return;
+      const dKey = normKey(r[h.district]);
+      if (!dKey) return;
+      if (!districtShipPoints.has(dKey)) districtShipPoints.set(dKey, []);
+      if (!districtCountries.has(dKey)) districtCountries.set(dKey, []);
+      if (h.shippingPoint) districtShipPoints.get(dKey).push(normKey(r[h.shippingPoint]));
+      if (h.country) districtCountries.get(dKey).push(normVal(r[h.country]).toUpperCase());
+      if (h.districtName && !districtNames.has(dKey)) districtNames.set(dKey, normVal(r[h.districtName]));
+    });
+  }
+  state.districtInfo = new Map();
+  const allDistrictKeys = new Set([...districtShipPoints.keys(), ...districtCountries.keys()]);
+  allDistrictKeys.forEach(dKey => {
+    state.districtInfo.set(dKey, {
+      districtName: districtNames.get(dKey) || '',
+      shippingPointKey: mostFrequent(districtShipPoints.get(dKey) || []),
+      country: mostFrequent(districtCountries.get(dKey) || []),
+    });
+  });
+
+  // --- Forecast: enrich every row with product + DC + country -------------------
+  state.forecastRecords = [];
+  let unmappedCount = 0, unmappedQty = 0;
+  if (state.raw.forecast.length) {
+    const h = resolveHeaders(state.raw.forecast, {
+      district: ['vbisidistrict'], districtName: ['vbisidistrictname'],
+      plant: ['productionplantsupplier'], week: ['calendarweekyear'],
+      material: ['materialnumber'], qty: ['forecastqtyesu'],
+      pallet: ['sumofpalletload'], volume: ['sumofvolumeinm3'],
+    });
+    state.raw.forecast.forEach(r => {
+      const dKey = h.district ? normKey(r[h.district]) : '';
+      const info = state.districtInfo.get(dKey);
+      const spKey = info ? info.shippingPointKey : null;
+      const trans = spKey ? state.dcTranslationMap.get(spKey) : null;
+      const originalDC = trans ? trans.dc : '';
+      const qty = h.qty ? toNumber(r[h.qty]) : 0;
+      if (!originalDC) { unmappedCount++; unmappedQty += qty; }
+
+      const matKey = h.material ? materialKey(r[h.material]) : '';
+      const sku = state.skuMap.get(matKey);
+
+      state.forecastRecords.push({
+        district: h.district ? normVal(r[h.district]) : '',
+        districtKey: dKey,
+        districtName: h.districtName ? normVal(r[h.districtName]) : (info ? info.districtName : ''),
+        week: h.week ? normVal(r[h.week]) : '',
+        material: matKey,
+        qty,
+        pallet: h.pallet ? toNumber(r[h.pallet]) : 0,
+        volume: h.volume ? toNumber(r[h.volume]) : 0,
+        originalDC: originalDC || 'UNMAPPED',
+        country: info ? info.country : '',
+        marketingView: sku ? sku.marketingView : '',
+      });
+    });
+  }
+  state.unmappedForecastCount = unmappedCount;
+  state.unmappedForecastQty = unmappedQty;
+}
+
+/* ---------------------------------------------------------------------------------
+   SCENARIO LOGIC
+   Given a forecast record (already carrying its originalDC & country), decide the
+   final DC under the currently selected scenario.
+   --------------------------------------------------------------------------------- */
+function dcMatches(dc, list) {
+  const n = normDC(dc);
+  return list.some(target => n.includes(target));
+}
+
+function getSelectedScenarioId() {
+  return document.querySelector('input[name="scenario"]:checked').value;
+}
+
+function getScenario3EastCountries() {
+  const raw = document.getElementById('s3EastCountries').value;
+  return raw.split(',').map(s => s.trim().toUpperCase()).filter(Boolean);
+}
+
+function resolveFinalDC(record, scenarioId) {
+  const dc = record.originalDC;
+  if (dc === 'UNMAPPED') return 'UNMAPPED';
+
+  switch (scenarioId) {
+    case 'base':
+      return dc;
+
+    case 's1':
+      return dcMatches(dc, SCENARIO1_SOURCE_DCS) ? SCENARIO1_TARGET : dc;
+
+    case 's2':
+      return dcMatches(dc, SCENARIO2_KEEP_DCS) ? dc : SCENARIO2_TARGET;
+
+    case 's3': {
+      const eastList = getScenario3EastCountries();
+      const country = normVal(record.country).toUpperCase();
+      if (country && eastList.includes(country)) return SCENARIO3_EAST_TARGET;
+      if (dcMatches(dc, SCENARIO3_WEST_SOURCE_DCS)) return SCENARIO3_WEST_TARGET;
+      return dc;
+    }
+
+    case 'custom': {
+      // Custom groups store exact DC member names (picked from a checkbox list), so
+      // match exactly here rather than the "contains" logic used by the fixed scenarios.
+      const group = state.customGroups.find(g => g.members.some(m => normDC(m) === normDC(dc)));
+      return group ? group.name : dc;
+    }
+
+    default:
+      return dc;
+  }
+}
+
+/* ---------------------------------------------------------------------------------
+   SCENARIO OUTPUT RENDERING
+   --------------------------------------------------------------------------------- */
+function computeScenarioAggregates(scenarioId) {
+  const byDC = new Map(); // finalDC -> { qty, pallet, materials:Set }
+  state.forecastRecords.forEach(rec => {
+    const finalDC = resolveFinalDC(rec, scenarioId);
+    if (!byDC.has(finalDC)) byDC.set(finalDC, { qty: 0, pallet: 0, materials: new Set() });
+    const bucket = byDC.get(finalDC);
+    bucket.qty += rec.qty;
+    bucket.pallet += rec.pallet;
+    if (rec.material) bucket.materials.add(rec.material);
+  });
+  return byDC;
+}
+
+function destroyChart(id) {
+  if (state.charts[id]) { state.charts[id].destroy(); delete state.charts[id]; }
+}
+
+function renderScenarioOutput() {
+  const scenarioId = getSelectedScenarioId();
+  const baseAgg = computeScenarioAggregates('base');
+  const scenarioAgg = scenarioId === 'base' ? baseAgg : computeScenarioAggregates(scenarioId);
+
+  document.getElementById('outputCard').hidden = false;
+
+  const unmapped = scenarioAgg.get('UNMAPPED');
+  document.getElementById('unmappedWarning').innerHTML = unmapped
+    ? `<div class="warn-note mb-3">${fmtInt(unmapped.qty)} ESU across ${fmtInt(unmapped.materials.size)} SKUs remain UNMAPPED under this scenario and are excluded from the DC comparison below.</div>`
+    : '';
+
+  const dcNames = (agg) => Array.from(agg.keys()).filter(k => k !== 'UNMAPPED').sort((a, b) => a.localeCompare(b));
+  const scenarioDCs = dcNames(scenarioAgg);
+
+  let html = `<h6 class="text-muted mb-3">Scenario: <strong>${scenarioLabel(scenarioId)}</strong> (Base shown alongside for comparison)</h6>`;
+
+  // --- Metric table ---
+  html += '<div class="table-responsive"><table class="table table-sm table-striped align-middle">';
+  html += '<thead><tr><th>Final DC</th><th class="text-end">Total Quantities (ESU)</th><th class="text-end">Total Storage Demand (pallets)</th><th class="text-end"># Picking Locations (SKUs)</th></tr></thead><tbody>';
+  scenarioDCs.forEach(dc => {
+    const b = scenarioAgg.get(dc);
+    html += `<tr><td>${dc}</td><td class="text-end">${fmtInt(b.qty)}</td><td class="text-end">${fmtInt(b.pallet)}</td><td class="text-end">${fmtInt(b.materials.size)}</td></tr>`;
+  });
+  html += '</tbody></table></div>';
+
+  // --- Chart canvases ---
+  html += `<div class="row g-3 mt-1">
+    <div class="col-md-4"><div class="chart-box small"><canvas id="chartQty"></canvas></div></div>
+    <div class="col-md-4"><div class="chart-box small"><canvas id="chartPallet"></canvas></div></div>
+    <div class="col-md-4"><div class="chart-box small"><canvas id="chartSku"></canvas></div></div>
+  </div>`;
+
+  document.getElementById('outputArea').innerHTML = html;
+
+  // Union of DC labels across Base + Scenario so the comparison charts line up.
+  const allLabels = Array.from(new Set([...dcNames(baseAgg), ...scenarioDCs])).sort((a, b) => a.localeCompare(b));
+  const baseSeries = (getter) => allLabels.map(dc => baseAgg.has(dc) ? getter(baseAgg.get(dc)) : 0);
+  const scenarioSeries = (getter) => allLabels.map(dc => scenarioAgg.has(dc) ? getter(scenarioAgg.get(dc)) : 0);
+
+  drawComparisonBar('chartQty', 'Total Quantities (ESU)', allLabels, baseSeries(b => b.qty), scenarioSeries(b => b.qty), scenarioId);
+  drawComparisonBar('chartPallet', 'Total Storage Demand (pallets)', allLabels, baseSeries(b => b.pallet), scenarioSeries(b => b.pallet), scenarioId);
+  drawComparisonBar('chartSku', '# Picking Locations (SKUs)', allLabels, baseSeries(b => b.materials.size), scenarioSeries(b => b.materials.size), scenarioId);
+}
+
+function scenarioLabel(id) {
+  return { base: 'Base ("as-is")', s1: 'Scenario 1 - Central Europe Consolidation', s2: 'Scenario 2 - Eastern Europe Consolidation', s3: 'Scenario 3 - Central & Eastern Split', custom: 'Custom scenario' }[id] || id;
+}
+
+function drawComparisonBar(canvasId, title, labels, baseData, scenarioData, scenarioId) {
+  destroyChart(canvasId);
+  const ctx = document.getElementById(canvasId).getContext('2d');
+  const datasets = [{ label: 'Base', data: baseData, backgroundColor: '#9fb8d6' }];
+  if (scenarioId !== 'base') datasets.push({ label: scenarioLabel(scenarioId), data: scenarioData, backgroundColor: '#1f5fa8' });
+  state.charts[canvasId] = new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { title: { display: true, text: title }, legend: { display: scenarioId !== 'base', position: 'bottom' } },
+      scales: { y: { beginAtZero: true } },
+    },
+  });
+}
+
+/* ---------------------------------------------------------------------------------
+   CUSTOM SCENARIO UI
+   --------------------------------------------------------------------------------- */
+function populateDCPicker() {
+  const el = document.getElementById('dcPicker');
+  el.innerHTML = state.uniqueDCs.map(dc => `
+    <div class="form-check">
+      <input class="form-check-input dc-check" type="checkbox" value="${dc}" id="dcopt-${normKey(dc)}">
+      <label class="form-check-label" for="dcopt-${normKey(dc)}">${dc}</label>
+    </div>`).join('') || '<div class="text-muted small">No DCs found in DC_Translation_Table.</div>';
+}
+
+function renderGroupList() {
+  const el = document.getElementById('groupList');
+  el.innerHTML = state.customGroups.map((g, i) => `
+    <div class="group-chip">
+      <span>${g.name}: ${g.members.join(', ')}</span>
+      <button type="button" data-idx="${i}" class="remove-group">&times;</button>
+    </div>`).join('') || '<div class="text-muted small">No groups defined yet — unassigned DCs stay as-is.</div>';
+  el.querySelectorAll('.remove-group').forEach(btn => {
+    btn.addEventListener('click', () => {
+      state.customGroups.splice(Number(btn.dataset.idx), 1);
+      renderGroupList();
+    });
+  });
+}
+
+document.getElementById('addGroupBtn').addEventListener('click', () => {
+  const name = document.getElementById('newGroupName').value.trim();
+  const members = Array.from(document.querySelectorAll('.dc-check:checked')).map(c => c.value);
+  if (!name || !members.length) {
+    alert('Pick at least one DC and give the consolidated DC a name.');
+    return;
+  }
+  state.customGroups.push({ name, members });
+  document.querySelectorAll('.dc-check:checked').forEach(c => c.checked = false);
+  document.getElementById('newGroupName').value = '';
+  renderGroupList();
+});
+
+/* ---------------------------------------------------------------------------------
+   SCENARIO PANEL EVENT WIRING
+   --------------------------------------------------------------------------------- */
+document.querySelectorAll('input[name="scenario"]').forEach(radio => {
+  radio.addEventListener('change', () => {
+    document.getElementById('customConfig').hidden = radio.value !== 'custom' || !document.getElementById('scCustom').checked;
+    document.getElementById('s3Config').hidden = !document.getElementById('sc3').checked;
+  });
+});
+document.getElementById('s3EastCountries').value = SCENARIO3_DEFAULT_EAST_COUNTRIES.join(',');
+document.getElementById('runScenarioBtn').addEventListener('click', renderScenarioOutput);
+
+/* ==================================================================================
+   ADDITIONAL ANALYSES: SHIPMENT SIZE & SHIPMENT MIX (Taps)
+   ================================================================================== */
+function populateTapsValueSelector() {
+  const values = new Set();
+  state.skuMap.forEach(v => { if (v.marketingView) values.add(v.marketingView); });
+  const sorted = Array.from(values).sort((a, b) => a.localeCompare(b));
+  const sel = document.getElementById('tapsValues');
+  sel.innerHTML = sorted.map(v => `<option value="${v}" ${/tap/i.test(v) ? 'selected' : ''}>${v}</option>`).join('')
+    || '<option disabled>No Marketing-View values found</option>';
+}
+
+function getSelectedTapsValues() {
+  return Array.from(document.getElementById('tapsValues').selectedOptions).map(o => o.value);
+}
+
+// Group enriched forecast rows into "shipments" (district + week), each carrying
+// the DC assigned under the CURRENTLY selected scenario mapping.
+function buildShipments() {
+  const scenarioId = getSelectedScenarioId();
+  const tapsValues = new Set(getSelectedTapsValues());
+  const shipments = new Map(); // key: districtKey|week -> { dc, totalESU, hasTaps, allTaps, lineCount }
+
+  state.forecastRecords.forEach(rec => {
+    if (rec.originalDC === 'UNMAPPED') return;
+    const finalDC = resolveFinalDC(rec, scenarioId);
+    const key = `${rec.districtKey}|${rec.week}`;
+    if (!shipments.has(key)) {
+      shipments.set(key, { dc: finalDC, totalESU: 0, lineCount: 0, tapsLines: 0 });
+    }
+    const s = shipments.get(key);
+    s.totalESU += rec.qty;
+    s.lineCount += 1;
+    if (tapsValues.has(rec.marketingView)) s.tapsLines += 1;
+  });
+
+  shipments.forEach(s => {
+    s.hasTaps = s.tapsLines > 0;
+    s.allTaps = s.hasTaps && s.tapsLines === s.lineCount;
+  });
+  return Array.from(shipments.values());
+}
+
+document.getElementById('runAnalysisBtn').addEventListener('click', () => {
+  const shipments = buildShipments();
+  const tapsShipments = shipments.filter(s => s.hasTaps);
+  let html = '';
+
+  if (!tapsShipments.length) {
+    html = '<div class="alert alert-warning">No shipments matched the selected Taps Marketing-View value(s). Check the selection above.</div>';
+    document.getElementById('analysisOutputCard').hidden = false;
+    document.getElementById('analysisOutputArea').innerHTML = html;
+    return;
+  }
+
+  const dcList = Array.from(new Set(tapsShipments.map(s => s.dc))).sort((a, b) => a.localeCompare(b));
+
+  if (document.getElementById('chkShipmentSize').checked) {
+    html += renderShipmentSizeSection(tapsShipments, dcList);
+  }
+  if (document.getElementById('chkShipmentMix').checked) {
+    html += renderShipmentMixSection(tapsShipments, dcList);
+  }
+
+  document.getElementById('analysisOutputCard').hidden = false;
+  document.getElementById('analysisOutputArea').innerHTML = html;
+
+  if (document.getElementById('chkShipmentSize').checked) drawShipmentSizeChart(tapsShipments, dcList);
+  if (document.getElementById('chkShipmentMix').checked) drawShipmentMixChart(tapsShipments, dcList);
+});
+
+function avg(arr) { return arr.length ? arr.reduce((a, b) => a + b, 0) / arr.length : 0; }
+
+function clusterOf(size) {
+  return SIZE_CLUSTERS.find(c => size >= c.min && size <= c.max) || SIZE_CLUSTERS[SIZE_CLUSTERS.length - 1];
+}
+
+function renderShipmentSizeSection(tapsShipments, dcList) {
+  const overallAvg = avg(tapsShipments.map(s => s.totalESU));
+  let html = `<h6 class="mt-2">A. Shipment Size Analysis <span class="text-muted small">(taps-related shipments, Europe)</span></h6>`;
+  html += `<div class="row row-cols-2 row-cols-md-4 g-2 mb-3">
+    <div class="col"><div class="metric-card"><div class="value">${fmtNum(overallAvg, 2)}</div><div class="label">Avg ESU / shipment (Europe)</div></div></div>`;
+  dcList.forEach(dc => {
+    const dcAvg = avg(tapsShipments.filter(s => s.dc === dc).map(s => s.totalESU));
+    html += `<div class="col"><div class="metric-card"><div class="value">${fmtNum(dcAvg, 2)}</div><div class="label">${dc}</div></div></div>`;
+  });
+  html += '</div>';
+
+  html += '<div class="table-responsive"><table class="table table-sm table-striped">';
+  html += `<thead><tr><th>Size cluster</th><th class="text-end">Europe (count)</th>${dcList.map(dc => `<th class="text-end">${dc}</th>`).join('')}</tr></thead><tbody>`;
+  SIZE_CLUSTERS.forEach(c => {
+    const europeCount = tapsShipments.filter(s => clusterOf(s.totalESU).label === c.label).length;
+    html += `<tr><td>${c.label}</td><td class="text-end">${fmtInt(europeCount)}</td>`;
+    dcList.forEach(dc => {
+      const n = tapsShipments.filter(s => s.dc === dc && clusterOf(s.totalESU).label === c.label).length;
+      html += `<td class="text-end">${fmtInt(n)}</td>`;
+    });
+    html += '</tr>';
+  });
+  html += '</tbody></table></div>';
+  html += '<div class="chart-box small mb-4"><canvas id="chartShipSize"></canvas></div>';
+  return html;
+}
+
+function drawShipmentSizeChart(tapsShipments, dcList) {
+  destroyChart('chartShipSize');
+  const ctx = document.getElementById('chartShipSize').getContext('2d');
+  const datasets = SIZE_CLUSTERS.map((c, i) => ({
+    label: c.label,
+    data: dcList.map(dc => tapsShipments.filter(s => s.dc === dc && clusterOf(s.totalESU).label === c.label).length),
+    backgroundColor: ['#9fb8d6', '#1f5fa8', '#e07b1f'][i % 3],
+  }));
+  state.charts.chartShipSize = new Chart(ctx, {
+    type: 'bar',
+    data: { labels: dcList, datasets },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { title: { display: true, text: 'Shipment size clusters per DC (taps-related)' }, legend: { position: 'bottom' } },
+      scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true } },
+    },
+  });
+}
+
+function renderShipmentMixSection(tapsShipments, dcList) {
+  const pureShare = (arr) => arr.length ? arr.filter(s => s.allTaps).length / arr.length : 0;
+  const mixedShare = (arr) => arr.length ? arr.filter(s => !s.allTaps).length / arr.length : 0;
+
+  let html = `<h6 class="mt-2">B. Shipment Mix Analysis <span class="text-muted small">(taps-related shipments, Europe)</span></h6>`;
+  html += '<div class="table-responsive"><table class="table table-sm table-striped">';
+  html += '<thead><tr><th>Scope</th><th class="text-end"># Taps-related shipments</th><th class="text-end">% Taps-only</th><th class="text-end">% Taps + other product groups</th></tr></thead><tbody>';
+  html += `<tr><td><strong>Europe (total)</strong></td><td class="text-end">${fmtInt(tapsShipments.length)}</td><td class="text-end">${fmtPct(pureShare(tapsShipments))}</td><td class="text-end">${fmtPct(mixedShare(tapsShipments))}</td></tr>`;
+  dcList.forEach(dc => {
+    const subset = tapsShipments.filter(s => s.dc === dc);
+    html += `<tr><td>${dc}</td><td class="text-end">${fmtInt(subset.length)}</td><td class="text-end">${fmtPct(pureShare(subset))}</td><td class="text-end">${fmtPct(mixedShare(subset))}</td></tr>`;
+  });
+  html += '</tbody></table></div>';
+  html += '<div class="chart-box small mb-4"><canvas id="chartShipMix"></canvas></div>';
+  return html;
+}
+
+function drawShipmentMixChart(tapsShipments, dcList) {
+  destroyChart('chartShipMix');
+  const ctx = document.getElementById('chartShipMix').getContext('2d');
+  const labels = ['Europe', ...dcList];
+  const scopes = [tapsShipments, ...dcList.map(dc => tapsShipments.filter(s => s.dc === dc))];
+  const pureShare = (arr) => arr.length ? arr.filter(s => s.allTaps).length / arr.length * 100 : 0;
+  const mixedShare = (arr) => arr.length ? arr.filter(s => !s.allTaps).length / arr.length * 100 : 0;
+  state.charts.chartShipMix = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [
+        { label: 'Taps-only (%)', data: scopes.map(pureShare), backgroundColor: '#1f5fa8' },
+        { label: 'Taps + other groups (%)', data: scopes.map(mixedShare), backgroundColor: '#e07b1f' },
+      ],
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { title: { display: true, text: 'Shipment mix: pure vs. mixed taps shipments' }, legend: { position: 'bottom' } },
+      scales: { x: { stacked: true }, y: { stacked: true, beginAtZero: true, max: 100 } },
+    },
+  });
+}
+</script>
+</body>
+</html>
