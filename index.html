@@ -2,62 +2,99 @@
 <html lang="de">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="theme-color" content="#0f1115">
-<title>Intervall Timer</title>
-<link rel="stylesheet" href="style.css">
+<title>NetPlan+ &ndash; Logistiknetzwerk-Analyse</title>
+<link rel="icon" href="data:,">
+<script>
+(function () {
+  try {
+    var saved = window.localStorage.getItem('lnp.theme');
+    var theme = saved || (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    document.documentElement.setAttribute('data-theme', theme);
+  } catch (e) { /* file:// / restrictive settings: keep default light */ }
+})();
+</script>
+<link rel="stylesheet" href="css/style.css">
+<link rel="stylesheet" href="vendor/leaflet.css">
 </head>
 <body>
-<div class="app">
 
-  <header class="app-header">
-    <h1>Intervall Timer</h1>
-    <span id="wakeLockBadge" class="wake-badge" hidden>🔓 Bildschirm bleibt an</span>
-  </header>
+<div class="app" id="app">
 
-  <main>
-    <section id="setupScreen" class="screen setup-screen">
-      <div class="field">
-        <label for="workTime">Belastung (Sekunden)</label>
-        <input type="number" id="workTime" min="1" value="30">
+  <aside class="sidebar" id="sidebar">
+    <div class="brand" id="brandBlock">
+      <div class="brand-mark" id="brandMark">NP</div>
+      <div class="brand-text">
+        <div class="brand-name" id="brandName">NetPlan+</div>
+        <div class="brand-sub" id="brandSub" data-t="Logistiknetzwerk-Analyse">Logistiknetzwerk-Analyse</div>
       </div>
-      <div class="field">
-        <label for="restTime">Pause (Sekunden)</label>
-        <input type="number" id="restTime" min="0" value="15">
-      </div>
-      <div class="field">
-        <label for="rounds">Runden</label>
-        <input type="number" id="rounds" min="1" value="8">
-      </div>
-      <div class="field">
-        <label for="prepTime">Vorbereitung (Sekunden)</label>
-        <input type="number" id="prepTime" min="0" value="10">
-      </div>
-      <button id="startBtn" class="btn btn-primary">Start</button>
-    </section>
+    </div>
+    <nav class="nav" id="mainNav">
+      <button class="nav-item active" data-view="dashboard"><span class="nav-ic">&#9635;</span><span data-t="Dashboard">Dashboard</span></button>
+      <button class="nav-item" data-view="data"><span class="nav-ic">&#8613;</span><span data-t="Daten &amp; Import">Daten &amp; Import</span></button>
+      <button class="nav-item" data-view="dcs"><span class="nav-ic">&#9632;</span><span data-t="DC-Verwaltung">DC-Verwaltung</span></button>
+      <button class="nav-item" data-view="simulation"><span class="nav-ic">&#9881;</span><span data-t="Simulation">Simulation</span></button>
+      <button class="nav-item" data-view="scenarios"><span class="nav-ic">&#8942;</span><span data-t="Szenarien">Szenarien</span></button>
+      <button class="nav-item" data-view="reports"><span class="nav-ic">&#9776;</span><span data-t="Berichte">Berichte</span></button>
+      <button class="nav-item" data-view="export"><span class="nav-ic">&#8615;</span><span data-t="Export &amp; Projekt">Export &amp; Projekt</span></button>
+    </nav>
+    <div class="sidebar-foot">
+      <div class="foot-line" id="dataStatusLine">0 <span data-t="Datensätze">Datensätze</span></div>
+    </div>
+  </aside>
 
-    <section id="timerScreen" class="screen timer-screen" hidden>
-      <div class="phase-label" id="phaseLabel">Bereit</div>
-      <div class="time-display" id="timeDisplay">00:00</div>
-      <div class="round-info" id="roundInfo">Runde 1 / 8</div>
+  <div class="main">
+    <header class="topbar">
+      <button class="icon-btn only-mobile" id="menuToggle" aria-label="Menu">&#9776;</button>
+      <div class="topbar-title" id="viewTitle" data-t="Dashboard">Dashboard</div>
+      <div class="topbar-spacer"></div>
+      <button class="btn btn-ghost" id="demoBtn" data-t="Demodaten laden">Demodaten laden</button>
+      <button class="icon-btn" id="langToggle" title="Sprache / Language">DE</button>
+      <button class="icon-btn" id="themeToggle" title="Theme">&#9788;</button>
+    </header>
 
-      <div class="progress-track">
-        <div class="progress-fill" id="progressFill"></div>
-      </div>
-
-      <div class="controls">
-        <button id="pauseBtn" class="btn btn-secondary">Pause</button>
-        <button id="resetBtn" class="btn btn-secondary">Zurücksetzen</button>
-      </div>
-    </section>
-  </main>
-
-  <footer class="app-footer">
-    <p id="statusMsg" class="status-msg"></p>
-  </footer>
-
+    <main class="content" id="content">
+      <div class="view" id="view-dashboard"></div>
+      <div class="view" id="view-data" hidden></div>
+      <div class="view" id="view-dcs" hidden></div>
+      <div class="view" id="view-simulation" hidden></div>
+      <div class="view" id="view-scenarios" hidden></div>
+      <div class="view" id="view-reports" hidden></div>
+      <div class="view" id="view-export" hidden></div>
+    </main>
+  </div>
 </div>
 
-<script src="script.js"></script>
+<div class="toast-stack" id="toastStack"></div>
+<div class="modal-root" id="modalRoot" hidden></div>
+<div class="print-area" id="printArea"></div>
+
+<!-- Vendor libraries: bundled locally under /vendor (spec §3 "alles clientseitig, Bibliotheken
+     lokal eingebunden") — no CDN dependency at runtime, works fully offline once deployed. -->
+<script src="vendor/papaparse.min.js"></script>
+<script src="vendor/xlsx.core.min.js"></script>
+<script src="vendor/chart.umd.js"></script>
+<script src="vendor/leaflet.js"></script>
+
+<!-- Application modules: plain scripts, single global namespace window.LNP -->
+<script src="js/i18n.js"></script>
+<script src="js/util.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/geo.js"></script>
+<script src="js/state.js"></script>
+<script src="js/importer.js"></script>
+<script src="js/sim.js"></script>
+<script src="js/charts.js"></script>
+<script src="js/mapview.js"></script>
+<script src="js/demo.js"></script>
+<script src="js/views/dashboard.js"></script>
+<script src="js/views/data.js"></script>
+<script src="js/views/dcs.js"></script>
+<script src="js/views/simulation.js"></script>
+<script src="js/views/scenarios.js"></script>
+<script src="js/views/reports.js"></script>
+<script src="js/views/exportProject.js"></script>
+<script src="js/app.js"></script>
 </body>
 </html>
