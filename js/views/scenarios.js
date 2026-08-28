@@ -40,11 +40,25 @@
         '<select class="js-scenario-target" data-source="' + dc.id + '">' + options + '</select><div></div></div>';
     }).join('');
 
+    var districts = LNP.sim.allDistricts();
+    var overrideRows = districts.map(function (d) {
+      var current = (base.regionOverrides || {})[d.district] || '';
+      var opts = '<option value=""' + (current === '' ? ' selected' : '') + '>Automatisch (Basistopologie)</option>' +
+        dcs.map(function (dc) { return '<option value="' + dc.id + '"' + (dc.id === current ? ' selected' : '') + '>' + U.escapeHtml(dc.name) + '</option>'; }).join('');
+      return '<div class="map-row"><div class="map-field-name">' + U.escapeHtml(d.name) + '</div>' +
+        '<select class="js-scenario-region-override" data-district="' + U.escapeHtml(d.district) + '">' + opts +
+        '</select><div></div></div>';
+    }).join('');
+
     var body = '<div class="field"><label data-t="Name">' + I.t('Name') + '</label><input type="text" id="scName" value="' + U.escapeHtml(base.name) + '"></div>' +
       (warnings.length ? warnings.map(function (w) { return '<div class="note-box warn">' + U.escapeHtml(w) + '</div>'; }).join('') : '') +
       '<h3>DC&#8209;Zuordnung</h3><p class="help">Jeder Standort wird auf einen Ziel-Standort abgebildet (identisch = bleibt eigenständig / Standort besteht weiter).</p>' +
       '<div class="map-row" style="border-bottom:2px solid var(--border);font-weight:700;font-size:11px;color:var(--text-faint);text-transform:uppercase;">' +
-      '<div>Quelle</div><div>Ziel</div><div></div></div>' + rows;
+      '<div>Quelle</div><div>Ziel</div><div></div></div>' + rows +
+      (districts.length ? '<hr class="hr"><h3>Regionale Zuordnung überschreiben</h3>' +
+        '<p class="help">Optional: eine Region fest einem Standort zuweisen, unabhängig von der aus den Versanddaten abgeleiteten Basistopologie (Beispiel: „Sevlievo deckt Osteuropa“).</p>' +
+        '<div class="map-row" style="border-bottom:2px solid var(--border);font-weight:700;font-size:11px;color:var(--text-faint);text-transform:uppercase;">' +
+        '<div>Region</div><div>Zuständiges DC</div><div></div></div>' + overrideRows : '');
 
     LNP.ui.openModal(existing ? I.t('Bearbeiten') : I.t('Szenario speichern'), body, {
       maxWidth: '580px',
@@ -56,7 +70,11 @@
           var name = r.querySelector('#scName').value.trim() || base.name;
           var mapping = {};
           r.querySelectorAll('.js-scenario-target').forEach(function (sel) { mapping[sel.getAttribute('data-source')] = sel.value; });
-          var def = { id: base.id, name: name, type: base.type, dcMapping: mapping, regionOverrides: base.regionOverrides || {} };
+          var regionOverrides = {};
+          r.querySelectorAll('.js-scenario-region-override').forEach(function (sel) {
+            if (sel.value) regionOverrides[sel.getAttribute('data-district')] = sel.value;
+          });
+          var def = { id: base.id, name: name, type: base.type, dcMapping: mapping, regionOverrides: regionOverrides };
           var saved = LNP.state.saveScenario(def);
           if (selectedIds.indexOf(saved.id) === -1) selectedIds.push(saved.id);
           LNP.ui.closeModal();

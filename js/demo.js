@@ -135,7 +135,7 @@
             var qty = 20 + Math.floor(rand() * 300);
             var pallets = +(qty / 180 + rand() * 0.4).toFixed(2);
             var volume = +(pallets * 1.8).toFixed(2);
-            var p = U.parsePeriod(periodInt);
+            var p = U.weekIntToMonthPeriod(periodInt);
             forecast.push({
               id: U.uid('fc'), district: d.code, districtName: d.name, plant: 'WERK_' + (1 + Math.floor(rand() * 2)),
               material: mat, periodKey: p.key, periodTs: p.ts, periodDays: p.days, qty: qty, pallets: pallets, volume: volume

@@ -39,6 +39,18 @@
     return null;
   }
   function candidateDcs() { return S().data.dcs.filter(function (dc) { return dc.active !== false; }); }
+
+  /* Active DCs, optionally narrowed to an explicit allow-list (params.candidateDcIds) so the
+     Simulation view can let the user pick which sites are even considered. An empty array is a
+     deliberate "none selected" and must yield zero candidates, not fall back to "all" — only a
+     missing/null list means "no filter applied". */
+  function resolveCandidates(params) {
+    var all = candidateDcs();
+    if (!params || !params.candidateDcIds) return all;
+    var allow = {};
+    params.candidateDcIds.forEach(function (id) { allow[id] = true; });
+    return all.filter(function (dc) { return allow[dc.id]; });
+  }
   function allDestinations() { return S().data.destinations; }
 
   var _cache = {};
@@ -310,7 +322,7 @@
     var skuCount = scopeSkuCount(demand.rows);
     var pickingBins = Math.ceil(skuCount / (settings.skusPerBin || 1));
 
-    var candidates = candidateDcs();
+    var candidates = resolveCandidates(params);
     var cpps = [], transits = [], i;
     for (i = 0; i < candidates.length; i++) {
       var cpp = avgTransportCostPerPallet(candidates[i], districtPalletsMap, settings);
@@ -335,7 +347,9 @@
     var best = results.length ? results[0] : null;
 
     var warnings = [];
-    if (!candidates.length) warnings.push('Keine aktiven Distributionszentren vorhanden.');
+    if (!candidates.length) {
+      warnings.push(candidateDcs().length ? 'Keine Standorte als Kandidaten ausgewählt.' : 'Keine aktiven Distributionszentren vorhanden.');
+    }
     if (best && !best.feasible) warnings.push('Der empfohlene Standort überschreitet die Kapazitätsgrenze.');
 
     var parts = [];
@@ -362,7 +376,7 @@
     var coverageWeeks = resolveCoverageWeeks(params.category, settings);
     var skuCount = scopeSkuCount(demand.rows);
     var pickingBins = Math.ceil(skuCount / (settings.skusPerBin || 1));
-    var candidates = candidateDcs();
+    var candidates = resolveCandidates(params);
     var poolSize = params.candidatePoolSize || Math.min(candidates.length, 5) || 1;
 
     var districtPalletsMapFull = {}, totalPallets = 0;
@@ -784,7 +798,7 @@
     allDistricts: allDistricts, allCategories: allCategories, periodRange: periodRange,
     demandFor: demandFor, resolveCoverageWeeks: resolveCoverageWeeks,
     distanceKm: distanceKm, transportCostPerPallet: transportCostPerPallet, transitDaysFor: transitDaysFor,
-    evaluateDC: evaluateDC, dcById: dcById, candidateDcs: candidateDcs,
+    evaluateDC: evaluateDC, dcById: dcById, candidateDcs: candidateDcs, resolveCandidates: resolveCandidates,
     runSingle: runSingle, runSplit: runSplit, runManual: runManual, runAll: runAll, applyResult: applyResult,
     skuCountByDc: skuCountByDc, allocateToDcs: allocateToDcs, computeScenarioNetwork: computeScenarioNetwork,
     resolveTarget: resolveTarget, buildScenarioTemplate: buildScenarioTemplate, SCENARIO_TEMPLATES: SCENARIO_TEMPLATES,

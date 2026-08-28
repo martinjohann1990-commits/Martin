@@ -6,7 +6,7 @@
   var U = LNP.util, I = LNP.i18n;
 
   var ui = { category: 'all', mode: 'single', periodFromKey: '', periodToKey: '',
-    weights: { capacity: 30, transport: 45, service: 25 }, maxUtilization: 0.85, manualShares: {} };
+    weights: { capacity: 30, transport: 45, service: 25 }, maxUtilization: 0.85, manualShares: {}, excludedDcIds: {} };
   var lastSingle = null, lastActive = null;
 
   function periodOptions(selected) {
@@ -38,6 +38,9 @@
       '<option value="split"' + (ui.mode === 'split' ? ' selected' : '') + '>' + I.t('Aufteilung') + '</option>' +
       '<option value="manual"' + (ui.mode === 'manual' ? ' selected' : '') + '>' + I.t('Manuell') + '</option>' +
       '</select></div>' +
+      '<h3>Standorte</h3>' +
+      '<p class="help">Nur ausgewählte Standorte werden als Kandidaten bewertet.</p>' +
+      dcChecklist() +
       '<h3 data-t="Gewichtung">' + I.t('Gewichtung') + '</h3>' +
       weightRow('capacity', 'Kapazität') + weightRow('transport', 'Transport') + weightRow('service', 'Reichweite') +
       '<div class="field"><label data-t="Auslastungsgrenze">' + I.t('Auslastungsgrenze') + '</label>' +
@@ -47,6 +50,24 @@
       '<button class="btn btn-primary" id="simRunBtn" data-t="Simulation starten">' + I.t('Simulation starten') + '</button>' +
       '</div>';
   }
+  function dcChecklist() {
+    var dcs = LNP.sim.candidateDcs();
+    if (!dcs.length) return '<p class="help muted">Keine aktiven Distributionszentren.</p>';
+    return '<div class="pill-group" style="margin-bottom:10px;">' +
+      '<button type="button" class="pill" id="simDcAll">Alle</button>' +
+      '<button type="button" class="pill" id="simDcNone">Keine</button>' +
+      '</div>' +
+      '<div style="max-height:150px;overflow:auto;border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 10px;">' +
+      dcs.map(function (dc) {
+        var checked = !ui.excludedDcIds[dc.id];
+        return '<label class="checkbox-row" style="margin:4px 0;"><input type="checkbox" class="js-dc-candidate" data-id="' + dc.id + '"' + (checked ? ' checked' : '') + '> ' + U.escapeHtml(dc.name) + '</label>';
+      }).join('') + '</div>';
+  }
+
+  function selectedCandidateIds() {
+    return LNP.sim.candidateDcs().filter(function (dc) { return !ui.excludedDcIds[dc.id]; }).map(function (dc) { return dc.id; });
+  }
+
   function weightRow(key, label) {
     return '<div class="weight-row"><label data-t="' + label + '">' + I.t(label) + '</label>' +
       '<input type="range" min="0" max="100" step="5" class="js-weight" data-key="' + key + '" value="' + ui.weights[key] + '">' +
@@ -121,7 +142,7 @@
 
   function splitTableHtml(active) {
     var isManual = ui.mode === 'manual';
-    var dcsForManual = isManual ? LNP.sim.candidateDcs() : null;
+    var dcsForManual = isManual ? LNP.sim.resolveCandidates({ candidateDcIds: selectedCandidateIds() }) : null;
     var rows = (isManual ? dcsForManual.map(function (dc) {
       var p = active.parts.filter(function (x) { return x.dcId === dc.id; })[0];
       return { dc: dc, p: p };
@@ -162,7 +183,7 @@
     var settings = Object.assign({}, LNP.state.settings, { weights: ui.weights, maxUtilization: ui.maxUtilization });
     var periodFrom = ui.periodFromKey ? periodKeyToTs(ui.periodFromKey) : null;
     var periodTo = ui.periodToKey ? periodKeyToTs(ui.periodToKey) : null;
-    var params = { category: ui.category, dataset: 'forecast', periodFrom: periodFrom, periodTo: periodTo, settings: settings };
+    var params = { category: ui.category, dataset: 'forecast', periodFrom: periodFrom, periodTo: periodTo, settings: settings, candidateDcIds: selectedCandidateIds() };
     lastSingle = LNP.sim.runSingle(params);
     if (ui.mode === 'single') lastActive = lastSingle;
     else if (ui.mode === 'split') lastActive = LNP.sim.runSplit(params);
@@ -220,6 +241,20 @@
     pt.addEventListener('change', function () { ui.periodToKey = pt.value; });
     var modeSel = container.querySelector('#simMode');
     modeSel.addEventListener('change', function () { ui.mode = modeSel.value; render(container); });
+    container.querySelectorAll('.js-dc-candidate').forEach(function (chk) {
+      chk.addEventListener('change', function () {
+        var id = chk.getAttribute('data-id');
+        if (chk.checked) delete ui.excludedDcIds[id]; else ui.excludedDcIds[id] = true;
+      });
+    });
+    var dcAllBtn = container.querySelector('#simDcAll');
+    if (dcAllBtn) dcAllBtn.addEventListener('click', function () { ui.excludedDcIds = {}; render(container); });
+    var dcNoneBtn = container.querySelector('#simDcNone');
+    if (dcNoneBtn) dcNoneBtn.addEventListener('click', function () {
+      ui.excludedDcIds = {};
+      LNP.sim.candidateDcs().forEach(function (dc) { ui.excludedDcIds[dc.id] = true; });
+      render(container);
+    });
     container.querySelectorAll('.js-weight').forEach(function (inp) {
       inp.addEventListener('input', function () {
         ui.weights[inp.getAttribute('data-key')] = parseFloat(inp.value);

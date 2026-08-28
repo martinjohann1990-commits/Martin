@@ -89,14 +89,14 @@
     { key: 'district', label: 'V&B/ISI District', required: true, synonyms: ['District', 'Distrikt', 'District Code', 'Vertriebsgebiet'] },
     { key: 'districtName', label: 'V&B/ISI District name', required: false, synonyms: ['District name', 'Distrikt Name', 'Vertriebsgebiet Name'] },
     { key: 'plant', label: 'Production Plant / Supplier', required: false, synonyms: ['Production Plant', 'Supplier', 'Werk', 'Lieferant', 'Plant'] },
-    { key: 'period', label: 'Calendar week/year', required: true, synonyms: ['Calendar week', 'Period', 'Periode', 'Kalenderwoche', 'KW/Jahr'] },
+    { key: 'period', label: 'Calendar week/year', required: true, synonyms: ['Calendar week', 'Calendar month/year', 'Period', 'Periode', 'Kalenderwoche', 'KW/Jahr', 'Monat', 'Month', 'Month/Year'] },
     { key: 'material', label: 'Material Number', required: true, synonyms: ['Material', 'Artikelnummer', 'SKU', 'Material Nummer'] },
     { key: 'qty', label: 'Forecast qty ESU', required: true, synonyms: ['Forecast quantity', 'Forecast qty', 'Menge', 'Prognosemenge'] },
     { key: 'pallets', label: 'Sum of Pallet load', required: false, synonyms: ['Pallet load', 'Paletten', 'Pallets', 'PAL'] },
     { key: 'volume', label: 'Sum of Volume in M3', required: false, synonyms: ['Volume in M3', 'Volumen', 'Volume m3', 'M3'] }
   ];
 
-  function parseForecast(rawRows, mapping) {
+  function parseForecast(rawRows, mapping, periodType) {
     var records = [], warnings = [];
     for (var i = 0; i < rawRows.length; i++) {
       var r = rawRows[i];
@@ -105,7 +105,7 @@
       var material = str(r, mapping, 'material');
       var qty = num(r, mapping, 'qty');
       if (!district || periodRaw === null || !material) continue;
-      var period = U.parsePeriod(periodRaw);
+      var period = U.parsePeriodByType(periodRaw, periodType || 'week');
       if (!period) { warnings.push('Zeile ' + (i + 2) + ': Periode nicht erkannt (' + periodRaw + ')'); continue; }
       records.push({
         id: U.uid('fc'),

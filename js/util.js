@@ -137,6 +137,47 @@
     return simple;
   }
 
+  function monthPeriodOf(y, m) {
+    return { key: y + '-' + pad(m, 2), ts: Date.UTC(y, m - 1, 1), days: daysInMonth(y, m) };
+  }
+
+  /* Parses a plain YYYYMM integer/string (month, not week) -> {year, month} | null */
+  function parseYearMonthInt(v) {
+    var n = Number(v);
+    if (!isFinite(n)) return null;
+    var s = String(Math.round(n));
+    if (s.length !== 6) return null;
+    var year = Number(s.slice(0, 4)), month = Number(s.slice(4, 6));
+    if (year > 1900 && year < 2200 && month >= 1 && month <= 12) return { year: year, month: month };
+    return null;
+  }
+
+  /* Converts a "Calendar week/year" value (e.g. 202401) to the calendar month that contains it. */
+  function weekIntToMonthPeriod(raw) {
+    var cw = parseCalendarWeekInt(raw);
+    if (!cw) return null;
+    var d = isoWeekToDate(cw.year, cw.week);
+    return monthPeriodOf(d.getUTCFullYear(), d.getUTCMonth() + 1);
+  }
+
+  /* Parses a period value given an explicit type, so an ambiguous 6-digit code (which could be
+     read as either YYYYWW or YYYYMM) is resolved by user choice at import time rather than
+     guessed. type: 'week' | 'month' | 'auto' (auto = legacy free-form parsePeriod below). */
+  function parsePeriodByType(raw, type) {
+    if (raw === null || raw === undefined || raw === '') return null;
+    if (type === 'week') {
+      var mp = weekIntToMonthPeriod(raw);
+      if (mp) return mp;
+      return parsePeriod(raw);
+    }
+    if (type === 'month') {
+      var ym = parseYearMonthInt(raw);
+      if (ym) return monthPeriodOf(ym.year, ym.month);
+      return parsePeriod(raw);
+    }
+    return parsePeriod(raw);
+  }
+
   /* Generic period normalizer per spec table -> {key, ts, days} */
   function parsePeriod(raw) {
     if (raw === null || raw === undefined || raw === '') return null;
@@ -273,6 +314,8 @@
     uid: uid, isNum: isNum, clamp: clamp, escapeHtml: escapeHtml, debounce: debounce,
     sum: sum, groupBy: groupBy, sortByDesc: sortByDesc, topNWithRest: topNWithRest,
     parseLocaleNumber: parseLocaleNumber, parsePeriod: parsePeriod, parseCalendarWeekInt: parseCalendarWeekInt,
+    parseYearMonthInt: parseYearMonthInt, weekIntToMonthPeriod: weekIntToMonthPeriod, parsePeriodByType: parsePeriodByType,
+    monthPeriodOf: monthPeriodOf,
     pad: pad, readWorkbookFile: readWorkbookFile, readWorkbookFileRaw: readWorkbookFileRaw,
     downloadBlob: downloadBlob, normHeader: normHeader
   };

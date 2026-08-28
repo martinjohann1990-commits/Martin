@@ -68,10 +68,21 @@
         '</div>';
     }).join('');
 
+    var isForecast = slot.key === 'forecast';
+    var periodCol = auto.mapping.period ? auto.mapping.period.column : '';
+    var guessedType = /month|monat/i.test(periodCol) ? 'month' : 'week';
+    var periodTypeHtml = isForecast ?
+      '<div class="field" style="margin-top:10px;"><label>Periodenformat der gewählten Spalte</label>' +
+      '<select id="mapPeriodType">' +
+      '<option value="week"' + (guessedType === 'week' ? ' selected' : '') + '>Kalenderwoche (z.B. 202601)</option>' +
+      '<option value="month"' + (guessedType === 'month' ? ' selected' : '') + '>Monat (z.B. 2026-01 oder 202601)</option>' +
+      '</select>' +
+      '<div class="help">Wochenangaben werden für die Darstellung automatisch zum enthaltenden Kalendermonat zusammengefasst.</div></div>' : '';
+
     var body = '<p class="help">' + I.tf('{0} {1}', rows.length, I.t('Zeilen erkannt')) + '</p>' +
       '<div class="map-row" style="border-bottom:2px solid var(--border);font-weight:700;font-size:11px;color:var(--text-faint);text-transform:uppercase;">' +
       '<div data-t="Feld">' + I.t('Feld') + '</div><div data-t="Spalte in Datei">' + I.t('Spalte in Datei') + '</div><div data-t="Konfidenz">' + I.t('Konfidenz') + '</div></div>' +
-      rowsHtml + '<div id="mappingWarning" class="note-box warn" style="display:none;margin-top:12px;"></div>';
+      rowsHtml + periodTypeHtml + '<div id="mappingWarning" class="note-box warn" style="display:none;margin-top:12px;"></div>';
 
     var modal = LNP.ui.openModal(U.escapeHtml(I.t(slot.title)), body, {
       maxWidth: '640px',
@@ -93,7 +104,8 @@
             w.textContent = I.t('Pflichtfeld fehlt') + ': ' + missing.map(function (f) { return I.t(f.label); }).join(', ');
             return;
           }
-          var result = ft.parse(rows, mapping);
+          var periodTypeSel = r.querySelector('#mapPeriodType');
+          var result = ft.parse(rows, mapping, periodTypeSel ? periodTypeSel.value : undefined);
           commitImport(slot, result, rows.length);
           LNP.ui.closeModal();
         });
