@@ -82,6 +82,11 @@ der Grenzen bei Zeithorizont und Datenmenge:
 | Deutsch | [`docs/berechnungslogik.md`](docs/berechnungslogik.md) | [`docs/NetPlan-Berechnungslogik.pdf`](docs/NetPlan-Berechnungslogik.pdf) |
 | English | [`docs/calculation-methodology.md`](docs/calculation-methodology.md) | [`docs/NetPlan-Calculation-Methodology.pdf`](docs/NetPlan-Calculation-Methodology.pdf) |
 
+Wie das Werkzeug aufgebaut ist – Architektur, Datenmodell, Import-Pipeline,
+Designsystem, Teststrategie und die Fallstricke beim Bau – steht in
+[`docs/spezifikation.md`](docs/spezifikation.md)
+([PDF](docs/NetPlan-Spezifikation.pdf)).
+
 Die PDF-Fassungen werden mit `node make-docs-pdf.js` neu erzeugt (benötigt
 Playwright, nur für die Entwicklung). Eine Kurzfassung der Formeln zeigt das
 Tool selbst unter *Export & Projekt → Rechenlogik im Überblick*.

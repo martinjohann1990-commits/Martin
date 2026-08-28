@@ -18,7 +18,8 @@ const DOCS = path.join(ROOT, 'docs');
 
 const FILES = [
   { md: 'berechnungslogik.md', pdf: 'NetPlan-Berechnungslogik.pdf', lang: 'de' },
-  { md: 'calculation-methodology.md', pdf: 'NetPlan-Calculation-Methodology.pdf', lang: 'en' }
+  { md: 'calculation-methodology.md', pdf: 'NetPlan-Calculation-Methodology.pdf', lang: 'en' },
+  { md: 'spezifikation.md', pdf: 'NetPlan-Spezifikation.pdf', lang: 'de' }
 ];
 
 /* ------------------------------------------------------------ Markdown → HTML
