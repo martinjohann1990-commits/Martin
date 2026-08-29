@@ -61,7 +61,7 @@
       rows: rawCount, accepted: result.records.length, warnings: result.warnings.length,
       loadedAt: Date.now(), aggregated: result.aggregated, originalCount: result.originalCount
     };
-    LNP.state.setDataset(slot.target, result.records, status);
+    LNP.state.setDataset(slot.target, result.records, status, slot.key);
     if (slot.key === 'forecast') ensureDcsFromForecast(result.records);
     LNP.ui.toast(I.tf('{0}: {1} {2}', I.t(slot.title), I.fmtInt(result.records.length), I.t('Zeilen übernommen')), 'good');
     if (result.warnings.length) {
@@ -258,6 +258,9 @@
       '</div>';
   }
 
+  var CENTROID_SOURCE_LABEL = {
+    'manuell': 'manuell', 'automatisch': 'automatisch (Sales History)'
+  };
   function regionsSection() {
     var districts = LNP.sim.allDistricts();
     if (!districts.length) return '';
@@ -265,15 +268,16 @@
     var rows = districts.map(function (d) {
       var c = LNP.sim.districtCentroid(d.district);
       var ov = overrides[d.district];
+      var sourceLabel = c ? (c.source === 'ship-to' ? I.tf('Ship-to-Adressen ({0} Kunden)', c.customers) : I.t(CENTROID_SOURCE_LABEL[c.source] || c.source)) : I.t('offen');
       return '<tr>' +
         '<td>' + U.escapeHtml(d.name) + '</td>' +
         '<td><input type="number" step="0.01" class="js-region-lat" data-district="' + U.escapeHtml(d.district) + '" value="' + (ov ? ov.lat : (c ? c.lat.toFixed(2) : '')) + '"></td>' +
         '<td><input type="number" step="0.01" class="js-region-lng" data-district="' + U.escapeHtml(d.district) + '" value="' + (ov ? ov.lng : (c ? c.lng.toFixed(2) : '')) + '"></td>' +
-        '<td>' + (c ? '<span class="badge badge-info">' + I.t(c.source) + '</span>' : '<span class="badge badge-bad">' + I.t('offen') + '</span>') + '</td>' +
+        '<td>' + (c ? '<span class="badge badge-info">' + sourceLabel + '</span>' : '<span class="badge badge-bad">' + sourceLabel + '</span>') + '</td>' +
         '</tr>';
     }).join('');
     return '<div class="card"><h2>' + I.t('Region') + ' &ndash; ' + I.t('Koordinaten') + '</h2>' +
-      '<p class="help">Distrikt-Zentroid = mengengewichtetes Mittel der Länder, die laut Sales Hierarchie/Sales History zu diesem Distrikt gehören; bei Bedarf manuell überschreibbar.</p>' +
+      '<p class="help">Distrikt-Zentroid = mengengewichtetes Mittel der tatsächlichen Kundenstandorte (Destinations × Ship-to-Address), sofern verknüpfbar; sonst mengengewichtetes Mittel der Länder, die laut Sales Hierarchie/Sales History zu diesem Distrikt gehören. Bei Bedarf manuell überschreibbar.</p>' +
       '<div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Region">' + I.t('Region') + '</th><th>' + I.t('Breitengrad') + '</th><th>' + I.t('Längengrad') + '</th><th data-t="Quelle">' + I.t('Quelle') + '</th></tr></thead><tbody>' + rows + '</tbody></table></div></div>';
   }
 
@@ -314,7 +318,7 @@
       btn.addEventListener('click', function () {
         var slotKey = btn.getAttribute('data-slot');
         var slot = SLOTS.filter(function (s) { return s.key === slotKey; })[0];
-        LNP.state.clearDataset(slot.target);
+        LNP.state.clearDataset(slot.target, slot.key);
       });
     });
     var coverageGlobal = container.querySelector('#setCoverageGlobal');

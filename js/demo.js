@@ -198,8 +198,8 @@
     S.setDataset('salesHierarchy', salesHierarchy);
     S.setDataset('history', history);
     S.setDataset('destinations', destinations);
-    S.setDataset('shipToAddresses', shipToAddresses);
-    S.setDataset('skus', skus);
+    S.setDataset('shipToAddresses', shipToAddresses, null, 'shipToAddress');
+    S.setDataset('skus', skus, null, 'sku');
     S.setDataset('forecast', forecast);
     LNP.sim.invalidateCaches();
     S.emit('project');

@@ -165,17 +165,23 @@
     Object.assign(state.settings, newSettings);
   }
 
-  /* ---------------- import bulk setters ---------------- */
-  function setDataset(key, rows, status) {
+  /* ---------------- import bulk setters ----------------
+     `key` addresses the state.data[] slot (its name is fixed by emptyData()); `statusKey`
+     addresses state.fileStatus[] and defaults to `key` — pass it explicitly whenever the
+     data.js upload-slot id differs from the data property name (e.g. slot "sku" -> data
+     property "skus", slot "shipToAddress" -> data property "shipToAddresses"), otherwise
+     the Data & Import file card never picks up the "loaded" status though the import itself
+     succeeded. */
+  function setDataset(key, rows, status, statusKey) {
     state.data[key] = rows;
-    state.fileStatus[key] = status || { rows: rows.length, loadedAt: Date.now() };
+    state.fileStatus[statusKey || key] = status || { rows: rows.length, loadedAt: Date.now() };
     emit(key === 'forecast' || key === 'history' ? 'records' : key);
     emit('fileStatus');
   }
 
-  function clearDataset(key) {
+  function clearDataset(key, statusKey) {
     state.data[key] = [];
-    delete state.fileStatus[key];
+    delete state.fileStatus[statusKey || key];
     emit('records'); emit('fileStatus');
   }
 

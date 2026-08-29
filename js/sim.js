@@ -60,7 +60,7 @@
   function invalidateCaches() { _cache = {}; }
   S().onChange(function (evt) {
     if (evt === 'destinations' || evt === 'dcTranslation' || evt === 'dcs' || evt === 'skus' ||
-      evt === 'records' || evt === 'salesHierarchy' || evt === 'reset' || evt === 'project') invalidateCaches();
+      evt === 'records' || evt === 'salesHierarchy' || evt === 'shipToAddresses' || evt === 'reset' || evt === 'project') invalidateCaches();
   });
 
   /* Canonical districts = the top level of the Sales Hierarchie ("District" column), e.g.
@@ -129,11 +129,83 @@
     return rows;
   }
 
+  /* ================= Ship-to-Party precision layer =================
+     Sales History's District / Land-Einheit labels are reporting buckets, not addresses, so
+     districtCentroid()'s country-centroid average is only ever an approximation. Destinations
+     (Shipping point <-> Ship-to Party, with real ESU volume) joined against Ship-to-address
+     (Ship-to Party -> actual country/city) gives the real, volume-weighted location of a
+     district's customers — used here to sharpen the centroid Sales History alone can't provide.
+     Sales History stays authoritative for the DC<->district VOLUME split (dcDistrictShares) —
+     this layer only refines WHERE that volume actually sits geographically. */
+  function normShipToId(v) {
+    if (v === null || v === undefined) return null;
+    var s = String(v).trim().replace(/^0+(?=\d)/, '');
+    return s || null;
+  }
+  function shipToIndex() {
+    if (_cache.shipToIndex) return _cache.shipToIndex;
+    var idx = {};
+    S().data.shipToAddresses.forEach(function (r) {
+      var key = normShipToId(r.shipTo);
+      if (key) idx[key] = r;
+    });
+    _cache.shipToIndex = idx;
+    return idx;
+  }
+  /* Country -> District, reverse-engineered from Sales Hierarchie's "Land / Einheit" labels
+     (the same expansion districtCentroid's fallback uses) so a Ship-to-address's real ISO
+     country code can be placed into a district without needing a second, SAP-internal code
+     mapping (Sales Hierarchie's own "Code" column is not an ISO country code). */
+  function countryToDistrictMap() {
+    if (_cache.countryToDistrict) return _cache.countryToDistrict;
+    var map = {};
+    S().data.salesHierarchy.forEach(function (r) {
+      if (!r.district) return;
+      GEO.expandUnitToCountries(r.unit).forEach(function (cc) { if (!map[cc]) map[cc] = r.district; });
+    });
+    _cache.countryToDistrict = map;
+    return map;
+  }
+  /* District -> ESU-weighted average of real Ship-to-address coordinates (city if resolvable,
+     else the customer's own country) for every Destinations row that joins to an address. */
+  function districtCustomerGeo() {
+    if (_cache.districtCustomerGeo) return _cache.districtCustomerGeo;
+    var idx = shipToIndex(), countryDistrict = countryToDistrictMap();
+    var acc = {};
+    S().data.destinations.forEach(function (r) {
+      var shipToKey = normShipToId(r.vbShipTo) || normShipToId(r.isiShipTo);
+      if (!shipToKey) return;
+      var addr = idx[shipToKey];
+      if (!addr || !addr.country) return;
+      var district = countryDistrict[GEO.normalizeCountryKey(addr.country)];
+      if (!district) return;
+      var geo = GEO.resolve({ city: addr.city, country: addr.country });
+      if (!geo) return;
+      var w = Math.max(0, r.qtyEsu || 0) || 0.01;
+      acc[district] = acc[district] || { sumLat: 0, sumLng: 0, weight: 0, customers: 0 };
+      acc[district].sumLat += geo.lat * w; acc[district].sumLng += geo.lng * w;
+      acc[district].weight += w; acc[district].customers++;
+    });
+    var out = {};
+    Object.keys(acc).forEach(function (d) {
+      var a = acc[d];
+      if (a.weight > 0) out[d] = { lat: a.sumLat / a.weight, lng: a.sumLng / a.weight, customers: a.customers };
+    });
+    _cache.districtCustomerGeo = out;
+    return out;
+  }
+
   function districtCentroid(district) {
     var override = S().settings.districtCoordOverrides && S().settings.districtCoordOverrides[district];
     if (override && U.isNum(override.lat) && U.isNum(override.lng)) return { lat: override.lat, lng: override.lng, source: 'manuell' };
     var key = 'districtCentroid:' + district;
     if (_cache[key] !== undefined) return _cache[key];
+    var precise = districtCustomerGeo()[district];
+    if (precise) {
+      var preciseOut = { lat: precise.lat, lng: precise.lng, source: 'ship-to', customers: precise.customers };
+      _cache[key] = preciseOut;
+      return preciseOut;
+    }
     var rows = districtCountryBreakdown(district);
     var sumLat = 0, sumLng = 0, weight = 0;
     var haveVolume = rows.some(function (r) { return r.esu > 0; });
@@ -219,6 +291,34 @@
       return settings.coverageWeeksByCategory[category];
     }
     return settings.coverageWeeksGlobal;
+  }
+
+  /* Ziel-Bestand = Bedarf/Tag x 7 x Coverage(Wochen) x Sicherheitsaufschlag — exact when a
+     single category is selected. With category:'all' (or unset) a single global coverage
+     figure would silently ignore any per-category "Ziel-Reichweite" override configured in
+     Daten & Import, so each category's own pallet volume is weighted by its OWN coverage
+     setting and summed, instead of blending every category's pallets under one number. */
+  function blendedStorageDemand(params, settings, totalPallets, weeks) {
+    if (params.category && params.category !== 'all') {
+      return (totalPallets / (weeks || 1)) * resolveCoverageWeeks(params.category, settings) * (settings.stockFactor || 1);
+    }
+    var cats = allCategories();
+    if (!cats.length) return (totalPallets / (weeks || 1)) * resolveCoverageWeeks(null, settings) * (settings.stockFactor || 1);
+    var sum = 0;
+    cats.forEach(function (cat) {
+      var d = demandFor(Object.assign({}, params, { category: cat }));
+      var catPallets = totalPalletsOf(d);
+      if (!catPallets) return;
+      var catWeeks = d.totalDays / 7 || weeks || 1;
+      sum += (catPallets / catWeeks) * resolveCoverageWeeks(cat, settings) * (settings.stockFactor || 1);
+    });
+    return sum;
+  }
+  /* Ø slot-equivalent per pallet implied by blendedStorageDemand — lets DC/region-level pallet
+     allocations (runSplit, runManual, computeScenarioNetwork) turn into storage-slot demand
+     with a single multiplication while still honoring the per-category blend above. */
+  function effectiveSlotFactor(params, settings, totalPallets, weeks) {
+    return totalPallets > 0 ? blendedStorageDemand(params, settings, totalPallets, weeks) / totalPallets : 0;
   }
 
   function scopeSkuCount(rows) {
@@ -352,7 +452,7 @@
     var totalPallets = totalPalletsOf(demand);
     var weeks = demand.totalDays / 7 || 1;
     var coverageWeeks = resolveCoverageWeeks(params.category, settings);
-    var storageDemand = (totalPallets / weeks) * coverageWeeks * (settings.stockFactor || 1);
+    var storageDemand = blendedStorageDemand(params, settings, totalPallets, weeks);
     var skuCount = scopeSkuCount(demand.rows);
     var pickingBins = Math.ceil(skuCount / (settings.skusPerBin || 1));
 
@@ -411,7 +511,11 @@
     var skuCount = scopeSkuCount(demand.rows);
     var pickingBins = Math.ceil(skuCount / (settings.skusPerBin || 1));
     var candidates = resolveCandidates(params);
-    var poolSize = params.candidatePoolSize || Math.min(candidates.length, 5) || 1;
+    /* No artificial cap by default — an "optimal" network strategy has to weigh every
+       selected candidate DC against capacity/cost/transport, not just a handful of the
+       cheapest-on-average ones. params.candidatePoolSize still lets a caller restrict the
+       pool explicitly (e.g. for performance with a very large DC list). */
+    var poolSize = params.candidatePoolSize || candidates.length || 1;
 
     var districtPalletsMapFull = {};
     Object.keys(demand.byDistrict).forEach(function (d) { districtPalletsMapFull[d] = demand.byDistrict[d].pallets; });
@@ -423,7 +527,7 @@
     var pool = quickScored.slice(0, poolSize).map(function (x) { return x.dc; });
     if (!pool.length) pool = candidates.slice(0, poolSize);
 
-    var slotFactor = weeks > 0 ? (coverageWeeks * (settings.stockFactor || 1)) / weeks : 0;
+    var slotFactor = effectiveSlotFactor(params, settings, totalPallets, weeks);
     var remainingCapacity = {};
     pool.forEach(function (dc) { remainingCapacity[dc.id] = Math.max(0, (dc.capacity || 0) - (dc.usedSlots || 0)); });
 
@@ -517,7 +621,7 @@
     var districtPalletsMapFull = {};
     Object.keys(demand.byDistrict).forEach(function (d) { districtPalletsMapFull[d] = demand.byDistrict[d].pallets; });
     var totalPallets = totalPalletsOf(demand);
-    var slotFactor = weeks > 0 ? (coverageWeeks * (settings.stockFactor || 1)) / weeks : 0;
+    var slotFactor = effectiveSlotFactor(params, settings, totalPallets, weeks);
     var ids = Object.keys(shareMap).filter(function (id) { return shareMap[id] > 0; });
 
     var cpps = [], transits = [];
@@ -639,12 +743,14 @@
     var weeks = demand.totalDays / 7 || 1;
     var skuCounts = skuCountByDc(scenario);
     var coverageWeeks = resolveCoverageWeeks(params.category, settings);
+    var totalPalletsAll = totalPalletsOf(demand);
+    var slotFactor = effectiveSlotFactor(params, settings, totalPalletsAll, weeks);
     var perDc = [];
     Object.keys(allocResult.alloc).forEach(function (id) {
       var dc = dcById(id); if (!dc) return;
       var a = allocResult.alloc[id];
       var weeklyRate = a.pallets / weeks;
-      var storageDemand = weeklyRate * coverageWeeks * (settings.stockFactor || 1);
+      var storageDemand = a.pallets * slotFactor;
       var skuCount = skuCounts[id] || 0;
       var pickingBins = Math.ceil(skuCount / (settings.skusPerBin || 1));
       var utilization = dc.capacity > 0 ? ((dc.usedSlots || 0) + storageDemand) / dc.capacity : null;
@@ -814,9 +920,10 @@
   var FORMULA_REFERENCE = [
     { title: 'Paletten', formula: 'Paletten = Menge (ESU je Monat) ÷ Pallett Load (artikelspezifisch, aus dem Forecast)', note: 'Der Forecast liegt bereits je DC vor (nicht je Distrikt) — die Palettenzahl je DC ist damit exakt, keine Näherung.' },
     { title: 'Bedarf/Tag', formula: 'Bedarf/Tag = Σ Paletten ÷ Σ echte Tageslängen der Perioden im Filter' },
-    { title: 'Ziel-Bestand (Lagerbedarf)', formula: 'Ziel-Bestand = Bedarf/Tag × 7 × Coverage(Wochen) × Sicherheitsaufschlag' },
+    { title: 'Ziel-Bestand (Lagerbedarf)', formula: 'Ziel-Bestand = Bedarf/Tag × 7 × Coverage(Wochen) × Sicherheitsaufschlag', note: 'Bei Kategorie "Alle" wird nicht ein einzelner globaler Coverage-Wert auf die Gesamtmenge angewandt: jede Kategorie wird mit ihrer eigenen (ggf. individuell hinterlegten) Ziel-Reichweite gerechnet und die Ergebnisse werden aufsummiert — sonst würde eine je Kategorie unterschiedliche Reichweite unbemerkt überschrieben.' },
     { title: 'Geografischer Fußabdruck je DC', formula: 'Distrikt-Anteil(DC) = Sales History ESU(DC, Distrikt) ÷ Sales History ESU(DC, alle Distrikte)', note: 'Aus den echten historischen Mengen der Sales History (Shipping Point → DC via DC Translation Table), nicht aus einer Kundenanzahl-Näherung. Nur die Distrikt-Ebene wird summiert — die feinere Land/Einheit-Ebene ist in denselben Zahlen bereits enthalten (Vermeidung von Doppelzählung).' },
-    { title: 'Distanz', formula: 'Distanz = Haversine(DC, Distrikt-Zentroid) × 1,28', note: 'Distrikt-Zentroid = mengengewichtetes Mittel der Länder-Zentroide, die laut Sales Hierarchie/Sales History zu diesem Distrikt gehören.' },
+    { title: 'Distrikt-Zentroid (Distanzgrundlage)', formula: 'Primär: mengengewichtetes Mittel echter Kundenkoordinaten (Destinations-ESU je Ship-to-Party × Ship-to-Address-Ort/Land); ersatzweise mengengewichtetes Mittel der Länder-Zentroide laut Sales Hierarchie/Sales History.', note: 'Destinations liefert je Versandpunkt die belieferten Ship-to-Parties mit echter ESU-Menge; Ship-to-Address liefert deren tatsächliches Land/Ort. Wo sich beide verknüpfen lassen, ist der Distrikt-Standort damit kundenscharf statt länderweit gemittelt — Quelle wird in Daten & Import je Distrikt angezeigt.' },
+    { title: 'Distanz', formula: 'Distanz = Haversine(DC, Distrikt-Zentroid) × 1,28' },
     { title: '€ / Palette', formula: 'Regionspauschale, sonst Grundkosten + €/km × Distanz' },
     { title: 'Transit', formula: 'Transit = Handlingtage + Distanz ÷ km pro Tag' },
     { title: 'Kapazitäts-Score', formula: 'Auslastung ≤ Grenze: 100 − 50 × (Auslastung ÷ Grenze); Grenze…100%: 50 × (1 − (Auslastung − Grenze) ÷ (1 − Grenze)); darüber: 0' },
@@ -834,6 +941,7 @@
     dcHintFor: dcHintFor,
     allDistricts: allDistricts, canonicalDistrictSet: canonicalDistrictSet, allCategories: allCategories, periodRange: periodRange,
     dcDistrictShares: dcDistrictShares, districtCountryBreakdown: districtCountryBreakdown, districtCentroid: districtCentroid,
+    districtCustomerGeo: districtCustomerGeo, countryToDistrictMap: countryToDistrictMap,
     countryDisplayName: countryDisplayName,
     demandFor: demandFor, resolveCoverageWeeks: resolveCoverageWeeks,
     distanceKm: distanceKm, transportCostPerPallet: transportCostPerPallet, transitDaysFor: transitDaysFor,

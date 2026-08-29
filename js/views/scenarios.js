@@ -74,9 +74,15 @@
           r.querySelectorAll('.js-scenario-region-override').forEach(function (sel) {
             if (sel.value) regionOverrides[sel.getAttribute('data-district')] = sel.value;
           });
-          var def = { id: base.id, name: name, type: base.type, dcMapping: mapping, regionOverrides: regionOverrides };
-          var saved = LNP.state.saveScenario(def);
-          if (selectedIds.indexOf(saved.id) === -1) selectedIds.push(saved.id);
+          var def = { id: base.id || U.uid('sc'), name: name, type: base.type, dcMapping: mapping, regionOverrides: regionOverrides };
+          /* selectedIds must be updated BEFORE saveScenario() — it emits synchronously and the
+             app-level onChange listener re-renders this view immediately, so pushing the new id
+             afterwards would land one render too late (scenario listed, but shown unchecked and
+             missing from the comparison until the user manually toggles it). Assigning def.id
+             ourselves (instead of letting saveScenario default it) is what makes the id known
+             ahead of that emit. */
+          if (selectedIds.indexOf(def.id) === -1) selectedIds.push(def.id);
+          LNP.state.saveScenario(def);
           LNP.ui.closeModal();
           LNP.ui.toast(I.t('Speichern') + ': ' + name, 'good');
         });

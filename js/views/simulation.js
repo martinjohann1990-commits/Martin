@@ -5,7 +5,7 @@
   var LNP = window.LNP = window.LNP || {};
   var U = LNP.util, I = LNP.i18n;
 
-  var ui = { category: 'all', mode: 'single', periodFromKey: '', periodToKey: '',
+  var ui = { category: 'all', mode: 'split', periodFromKey: '', periodToKey: '',
     weights: { capacity: 30, transport: 45, service: 25 }, maxUtilization: 0.85, manualShares: {}, excludedDcIds: {} };
   var lastSingle = null, lastActive = null;
 
