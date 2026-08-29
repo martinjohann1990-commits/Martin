@@ -241,20 +241,20 @@
     var settings = LNP.state.settings;
     var cats = LNP.sim.allCategories();
     var catRows = cats.map(function (c) {
-      var v = U.isNum(settings.coverageWeeksByCategory[c]) ? settings.coverageWeeksByCategory[c] : '';
-      return '<tr><td>' + U.escapeHtml(c) + '</td><td><input type="number" min="0" step="0.5" class="js-cat-coverage" data-cat="' + U.escapeHtml(c) + '" value="' + v + '" placeholder="' + I.fmtNum(settings.coverageWeeksGlobal, 1) + '"></td></tr>';
+      var v = U.isNum(settings.coverageMonthsByCategory[c]) ? settings.coverageMonthsByCategory[c] : '';
+      return '<tr><td>' + U.escapeHtml(c) + '</td><td><input type="number" min="0" step="0.1" class="js-cat-coverage" data-cat="' + U.escapeHtml(c) + '" value="' + v + '" placeholder="' + I.fmtNum(settings.coverageMonthsGlobal, 1) + '"></td></tr>';
     }).join('');
     return '<div class="card">' +
       '<h2 data-t="Mengenlogik">' + I.t('Mengenlogik') + '</h2>' +
       '<div class="field-row">' +
-      '<div class="field"><label data-t="Globale Ziel-Reichweite (Wochen)">' + I.t('Globale Ziel-Reichweite (Wochen)') + '</label>' +
-      '<input type="number" min="0" step="0.5" id="setCoverageGlobal" value="' + settings.coverageWeeksGlobal + '"></div>' +
+      '<div class="field"><label data-t="Globale Ziel-Reichweite (Monate)">' + I.t('Globale Ziel-Reichweite (Monate)') + '</label>' +
+      '<input type="number" min="0" step="0.1" id="setCoverageGlobal" value="' + settings.coverageMonthsGlobal + '"></div>' +
       '<div class="field"><label data-t="Sicherheitsaufschlag">' + I.t('Sicherheitsaufschlag') + '</label>' +
       '<input type="number" min="0" step="0.05" id="setStockFactor" value="' + settings.stockFactor + '"></div>' +
       '<div class="field"><label>SKUs je Picking Bin</label><input type="number" min="1" step="1" id="setSkusPerBin" value="' + settings.skusPerBin + '"></div>' +
       '</div>' +
       (cats.length ? '<h3 data-t="Ziel-Reichweite je Kategorie">' + I.t('Ziel-Reichweite je Kategorie') + '</h3>' +
-        '<div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Kategorie">' + I.t('Kategorie') + '</th><th style="width:140px">Wochen</th></tr></thead><tbody>' + catRows + '</tbody></table></div>' : '') +
+        '<div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Kategorie">' + I.t('Kategorie') + '</th><th style="width:140px" data-t="Monate">' + I.t('Monate') + '</th></tr></thead><tbody>' + catRows + '</tbody></table></div>' : '') +
       '</div>';
   }
 
@@ -322,16 +322,16 @@
       });
     });
     var coverageGlobal = container.querySelector('#setCoverageGlobal');
-    if (coverageGlobal) coverageGlobal.addEventListener('change', function () { LNP.state.updateSettings({ coverageWeeksGlobal: parseFloat(coverageGlobal.value) || 0 }); });
+    if (coverageGlobal) coverageGlobal.addEventListener('change', function () { LNP.state.updateSettings({ coverageMonthsGlobal: parseFloat(coverageGlobal.value) || 0 }); });
     var stockFactor = container.querySelector('#setStockFactor');
     if (stockFactor) stockFactor.addEventListener('change', function () { LNP.state.updateSettings({ stockFactor: parseFloat(stockFactor.value) || 0 }); });
     var skusPerBin = container.querySelector('#setSkusPerBin');
     if (skusPerBin) skusPerBin.addEventListener('change', function () { LNP.state.updateSettings({ skusPerBin: parseFloat(skusPerBin.value) || 1 }); });
     container.querySelectorAll('.js-cat-coverage').forEach(function (inp) {
       inp.addEventListener('change', function () {
-        var map = Object.assign({}, LNP.state.settings.coverageWeeksByCategory);
+        var map = Object.assign({}, LNP.state.settings.coverageMonthsByCategory);
         if (inp.value === '') delete map[inp.getAttribute('data-cat')]; else map[inp.getAttribute('data-cat')] = parseFloat(inp.value);
-        LNP.state.updateSettings({ coverageWeeksByCategory: map });
+        LNP.state.updateSettings({ coverageMonthsByCategory: map });
       });
     });
     function bindRegionInput(sel) {

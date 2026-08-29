@@ -97,7 +97,7 @@
       (warnings.length ? warnings.map(function (w) { return '<div class="reco-warn">' + U.escapeHtml(w) + '</div>'; }).join(' ') : '') +
       '<div class="reco-kpis">' +
       recoKpi(I.t('Prognose Paletten (Gesamt)'), I.fmtInt(active.demand.totalPallets)) +
-      recoKpi(I.t('Ziel-Reichweite (Wochen)'), I.fmtNum(active.targetDays / 7, 1)) +
+      recoKpi(I.t('Ziel-Reichweite (Monate)'), I.fmtNum(active.targetDays / 30.44, 1)) +
       recoKpi('Ø €/Palette', best.transportCostPerPallet !== null ? I.fmtNum(best.transportCostPerPallet, 2) : '–') +
       recoKpi('Ø Transit (Tage)', best.transitDays !== null ? I.fmtNum(best.transitDays, 1) : '–') +
       recoKpi(I.t('Kapazität'), best.utilization !== null ? I.fmtPct(best.utilization, 0) : '–') +

@@ -23,7 +23,7 @@
       ['Aktive DCs', net.perDc.length],
       ['SKUs', LNP.state.data.skus.length],
       ['Ship-to-Kunden', LNP.state.data.destinations.length],
-      ['Ziel-Reichweite (Wochen)', settings.coverageWeeksGlobal]
+      ['Ziel-Reichweite (Monate)', settings.coverageMonthsGlobal]
     ]);
 
     var dcRows = [['Name', 'Code', 'Land', 'Kapazität', 'Belegt (Basis)', 'Aktiv', 'Lat', 'Lng']];
@@ -51,8 +51,8 @@
     });
     addSheet(wb, 'Regionszuordnung', regionRows);
 
-    var targetRows = [['Kategorie/Global', 'Wochen'], ['Global', settings.coverageWeeksGlobal]];
-    Object.keys(settings.coverageWeeksByCategory).forEach(function (cat) { targetRows.push([cat, settings.coverageWeeksByCategory[cat]]); });
+    var targetRows = [['Kategorie/Global', 'Monate'], ['Global', settings.coverageMonthsGlobal]];
+    Object.keys(settings.coverageMonthsByCategory).forEach(function (cat) { targetRows.push([cat, settings.coverageMonthsByCategory[cat]]); });
     addSheet(wb, 'Zielreichweiten', targetRows);
 
     var regionCoordRows = [['Distrikt', 'Lat', 'Lng', 'Quelle']];
@@ -105,7 +105,7 @@
         '<td>' + I.fmtInt(d.capacity) + '</td><td>' + (d.utilization !== null ? I.fmtPct(d.utilization, 0) : '–') + '</td><td>' + I.fmtInt(d.skuCount) + '</td></tr>';
     }).join('');
     return '<h1>' + U.escapeHtml(branding.appName || 'NetPlan+') + ' &ndash; Netzwerk-Bericht</h1>' +
-      '<p>Erstellt: ' + I.fmtDate(new Date()) + ' &middot; Ziel-Reichweite: ' + I.fmtNum(settings.coverageWeeksGlobal, 1) + ' Wochen &middot; Gesamt: ' + I.fmtInt(net.totalPallets) + ' PAL</p>' +
+      '<p>Erstellt: ' + I.fmtDate(new Date()) + ' &middot; Ziel-Reichweite: ' + I.fmtNum(settings.coverageMonthsGlobal, 1) + ' Monate &middot; Gesamt: ' + I.fmtInt(net.totalPallets) + ' PAL</p>' +
       '<h2>Kennzahlen je Distributionszentrum (Basis)</h2>' +
       '<table border="1" cellpadding="4" style="border-collapse:collapse;width:100%;font-size:12px;">' +
       '<thead><tr><th>DC</th><th>Paletten</th><th>Storage PAL</th><th>Kapazität</th><th>Auslastung</th><th>SKU</th></tr></thead><tbody>' + rows + '</tbody></table>';

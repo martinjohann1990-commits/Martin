@@ -59,7 +59,7 @@
       return '<tr><td>' + U.escapeHtml(d.dcName) + '</td><td class="num">' + I.fmtNum(d.weeklyRate, 1) + '</td>' +
         '<td class="num">' + I.fmtInt(d.storageDemandPallets) + '</td><td class="num">' + I.fmtInt(d.capacity) + '</td><td>' + utilBadge + '</td></tr>';
     }).join('');
-    return '<p class="help">Basis-Szenario (Ist-Zustand), globale Ziel-Reichweite: <b>' + I.fmtNum(settings.coverageWeeksGlobal, 1) + ' ' + I.t('Wochen') + '</b> ' +
+    return '<p class="help">Basis-Szenario (Ist-Zustand), globale Ziel-Reichweite: <b>' + I.fmtNum(settings.coverageMonthsGlobal, 1) + ' ' + I.t('Monate') + '</b> ' +
       '(anpassbar unter Daten &amp; Import → Mengenlogik; wirkt sich sofort auf diesen Bericht aus).</p>' +
       '<div class="chart-box"><canvas id="chartStorage"></canvas></div>' +
       '<div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Name">' + I.t('Name') + '</th><th class="num">PAL/Woche</th>' +

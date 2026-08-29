@@ -9,8 +9,8 @@
 
   function defaultSettings() {
     return {
-      coverageWeeksGlobal: 3,
-      coverageWeeksByCategory: {},
+      coverageMonthsGlobal: 0.7, /* ~3 Wochen, dem alten Wochen-Standardwert entsprechend */
+      coverageMonthsByCategory: {},
       stockFactor: 1.0,
       skusPerBin: 1,
       binsPerSlotFactor: 1,
@@ -266,9 +266,30 @@
     } catch (e) { return false; }
   }
 
+  /* Migrates a saved project's old week-based coverage settings (pre-months-switch) to the
+     current month-based fields, so previously exported/localStorage projects don't silently
+     lose their configured Ziel-Reichweite. */
+  function migrateCoverageSettings(settings) {
+    if (!settings) return settings;
+    var WEEKS_PER_MONTH = 30.44 / 7;
+    if (settings.coverageMonthsGlobal === undefined && U.isNum(settings.coverageWeeksGlobal)) {
+      settings.coverageMonthsGlobal = settings.coverageWeeksGlobal / WEEKS_PER_MONTH;
+    }
+    if (!settings.coverageMonthsByCategory && settings.coverageWeeksByCategory) {
+      var map = {};
+      Object.keys(settings.coverageWeeksByCategory).forEach(function (k) {
+        map[k] = settings.coverageWeeksByCategory[k] / WEEKS_PER_MONTH;
+      });
+      settings.coverageMonthsByCategory = map;
+    }
+    delete settings.coverageWeeksGlobal;
+    delete settings.coverageWeeksByCategory;
+    return settings;
+  }
+
   function applyLoaded(obj) {
     if (!obj) return;
-    replaceSettings(Object.assign(defaultSettings(), obj.settings || {}));
+    replaceSettings(Object.assign(defaultSettings(), migrateCoverageSettings(obj.settings || {})));
     state.scenarios = obj.scenarios || [];
     state.assignments = obj.assignments || {};
     var nd = emptyData();

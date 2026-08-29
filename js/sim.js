@@ -285,32 +285,41 @@
     return { byDc: byDc, byDistrict: byDistrict, totalDays: totalDays, rows: rows };
   }
 
-  function resolveCoverageWeeks(category, settings) {
+  var DAYS_PER_MONTH = 30.44;
+
+  /* Ziel-Reichweite is configured in MONTHS (Daten & Import). */
+  function resolveCoverageMonths(category, settings) {
     settings = settings || S().settings;
-    if (category && category !== 'all' && settings.coverageWeeksByCategory && U.isNum(settings.coverageWeeksByCategory[category])) {
-      return settings.coverageWeeksByCategory[category];
+    if (category && category !== 'all' && settings.coverageMonthsByCategory && U.isNum(settings.coverageMonthsByCategory[category])) {
+      return settings.coverageMonthsByCategory[category];
     }
-    return settings.coverageWeeksGlobal;
+    return settings.coverageMonthsGlobal;
+  }
+  /* The demand pipeline below (weeks/totalDays from demandFor) works in weeks — this converts
+     the month-based setting into the equivalent number of weeks once, so the rest of the
+     Bedarf/Tag x 7 x Coverage math doesn't need to change unit throughout. */
+  function coverageWeeksEquivalent(category, settings) {
+    return resolveCoverageMonths(category, settings) * DAYS_PER_MONTH / 7;
   }
 
-  /* Ziel-Bestand = Bedarf/Tag x 7 x Coverage(Wochen) x Sicherheitsaufschlag — exact when a
-     single category is selected. With category:'all' (or unset) a single global coverage
-     figure would silently ignore any per-category "Ziel-Reichweite" override configured in
-     Daten & Import, so each category's own pallet volume is weighted by its OWN coverage
+  /* Ziel-Bestand = Bedarf/Tag x 7 x Coverage(Wochenäquivalent aus Monaten) x Sicherheitsaufschlag
+     — exact when a single category is selected. With category:'all' (or unset) a single global
+     coverage figure would silently ignore any per-category "Ziel-Reichweite" override configured
+     in Daten & Import, so each category's own pallet volume is weighted by its OWN coverage
      setting and summed, instead of blending every category's pallets under one number. */
   function blendedStorageDemand(params, settings, totalPallets, weeks) {
     if (params.category && params.category !== 'all') {
-      return (totalPallets / (weeks || 1)) * resolveCoverageWeeks(params.category, settings) * (settings.stockFactor || 1);
+      return (totalPallets / (weeks || 1)) * coverageWeeksEquivalent(params.category, settings) * (settings.stockFactor || 1);
     }
     var cats = allCategories();
-    if (!cats.length) return (totalPallets / (weeks || 1)) * resolveCoverageWeeks(null, settings) * (settings.stockFactor || 1);
+    if (!cats.length) return (totalPallets / (weeks || 1)) * coverageWeeksEquivalent(null, settings) * (settings.stockFactor || 1);
     var sum = 0;
     cats.forEach(function (cat) {
       var d = demandFor(Object.assign({}, params, { category: cat }));
       var catPallets = totalPalletsOf(d);
       if (!catPallets) return;
       var catWeeks = d.totalDays / 7 || weeks || 1;
-      sum += (catPallets / catWeeks) * resolveCoverageWeeks(cat, settings) * (settings.stockFactor || 1);
+      sum += (catPallets / catWeeks) * coverageWeeksEquivalent(cat, settings) * (settings.stockFactor || 1);
     });
     return sum;
   }
@@ -411,7 +420,7 @@
     var ownCpp = avgTransportCostPerPallet(dc, ctx.districtPalletsMap, settings);
     var tScore = transportScore(ownCpp, ctx.cheapestCpp);
     var transit = avgTransitDays(dc, ctx.districtPalletsMap, settings);
-    var sScore = serviceScore(transit, ctx.bestTransit, ctx.worstTransit, resolveCoverageWeeks(null, settings) * 7);
+    var sScore = serviceScore(transit, ctx.bestTransit, ctx.worstTransit, coverageWeeksEquivalent(null, settings) * 7);
     var w = settings.weights || { capacity: 30, transport: 45, service: 25 };
     var wsum = (w.capacity + w.transport + w.service) || 1;
     var total = (w.capacity * cScore + w.transport * tScore + w.service * sScore) / wsum;
@@ -451,7 +460,7 @@
     Object.keys(demand.byDistrict).forEach(function (d) { districtPalletsMap[d] = demand.byDistrict[d].pallets; });
     var totalPallets = totalPalletsOf(demand);
     var weeks = demand.totalDays / 7 || 1;
-    var coverageWeeks = resolveCoverageWeeks(params.category, settings);
+    var coverageWeeksEq = coverageWeeksEquivalent(params.category, settings);
     var storageDemand = blendedStorageDemand(params, settings, totalPallets, weeks);
     var skuCount = scopeSkuCount(demand.rows);
     var pickingBins = Math.ceil(skuCount / (settings.skusPerBin || 1));
@@ -497,7 +506,7 @@
 
     return {
       mode: 'single', category: params.category, dataset: params.dataset || 'forecast',
-      periodFrom: params.periodFrom, periodTo: params.periodTo, targetDays: coverageWeeks * 7, createdAt: Date.now(),
+      periodFrom: params.periodFrom, periodTo: params.periodTo, targetDays: coverageWeeksEq * 7, createdAt: Date.now(),
       demand: { totalPallets: totalPallets, weeklyRate: totalPallets / weeks, totalDays: demand.totalDays, byDistrict: demand.byDistrict },
       ranking: results, recommended: best, parts: parts, regions: regions, warnings: warnings
     };
@@ -507,7 +516,7 @@
     var settings = params.settings || S().settings;
     var demand = demandFor(params);
     var weeks = demand.totalDays / 7 || 1;
-    var coverageWeeks = resolveCoverageWeeks(params.category, settings);
+    var coverageWeeksEq = coverageWeeksEquivalent(params.category, settings);
     var skuCount = scopeSkuCount(demand.rows);
     var pickingBins = Math.ceil(skuCount / (settings.skusPerBin || 1));
     var candidates = resolveCandidates(params);
@@ -604,7 +613,7 @@
 
     return {
       mode: 'split', category: params.category, dataset: params.dataset || 'forecast',
-      periodFrom: params.periodFrom, periodTo: params.periodTo, targetDays: coverageWeeks * 7, createdAt: Date.now(),
+      periodFrom: params.periodFrom, periodTo: params.periodTo, targetDays: coverageWeeksEq * 7, createdAt: Date.now(),
       demand: { totalPallets: totalPallets, weeklyRate: totalPallets / weeks, totalDays: demand.totalDays, byDistrict: demand.byDistrict },
       parts: parts, regions: regions, recommended: null,
       warnings: parts.some(function (p) { return !p.feasible; }) ? ['Mindestens ein Standort überschreitet die Kapazitätsgrenze.'] : []
@@ -615,7 +624,7 @@
     var settings = params.settings || S().settings;
     var demand = demandFor(params);
     var weeks = demand.totalDays / 7 || 1;
-    var coverageWeeks = resolveCoverageWeeks(params.category, settings);
+    var coverageWeeksEq = coverageWeeksEquivalent(params.category, settings);
     var skuCount = scopeSkuCount(demand.rows);
     var pickingBins = Math.ceil(skuCount / (settings.skusPerBin || 1));
     var districtPalletsMapFull = {};
@@ -657,7 +666,7 @@
 
     return {
       mode: 'manual', category: params.category, dataset: params.dataset || 'forecast',
-      periodFrom: params.periodFrom, periodTo: params.periodTo, targetDays: coverageWeeks * 7, createdAt: Date.now(),
+      periodFrom: params.periodFrom, periodTo: params.periodTo, targetDays: coverageWeeksEq * 7, createdAt: Date.now(),
       demand: { totalPallets: totalPallets, weeklyRate: totalPallets / weeks, totalDays: demand.totalDays, byDistrict: demand.byDistrict },
       parts: parts, regions: regions, recommended: null, warnings: parts.some(function (p) { return !p.feasible; }) ? ['Mindestens ein Standort überschreitet die Kapazitätsgrenze.'] : []
     };
@@ -742,7 +751,6 @@
     var allocResult = allocateToDcs(demand, scenario);
     var weeks = demand.totalDays / 7 || 1;
     var skuCounts = skuCountByDc(scenario);
-    var coverageWeeks = resolveCoverageWeeks(params.category, settings);
     var totalPalletsAll = totalPalletsOf(demand);
     var slotFactor = effectiveSlotFactor(params, settings, totalPalletsAll, weeks);
     var perDc = [];
@@ -768,7 +776,7 @@
       totalPallets: U.sum(perDc, function (x) { return x.pallets; }),
       totalQty: U.sum(perDc, function (x) { return x.qty; }),
       unassignedPallets: allocResult.unassignedPallets,
-      coverageWeeks: coverageWeeks, perDc: perDc, totalDays: demand.totalDays, weeks: weeks
+      coverageMonths: resolveCoverageMonths(params.category, settings), perDc: perDc, totalDays: demand.totalDays, weeks: weeks
     };
   }
 
@@ -920,7 +928,7 @@
   var FORMULA_REFERENCE = [
     { title: 'Paletten', formula: 'Paletten = Menge (ESU je Monat) ÷ Pallett Load (artikelspezifisch, aus dem Forecast)', note: 'Der Forecast liegt bereits je DC vor (nicht je Distrikt) — die Palettenzahl je DC ist damit exakt, keine Näherung.' },
     { title: 'Bedarf/Tag', formula: 'Bedarf/Tag = Σ Paletten ÷ Σ echte Tageslängen der Perioden im Filter' },
-    { title: 'Ziel-Bestand (Lagerbedarf)', formula: 'Ziel-Bestand = Bedarf/Tag × 7 × Coverage(Wochen) × Sicherheitsaufschlag', note: 'Bei Kategorie "Alle" wird nicht ein einzelner globaler Coverage-Wert auf die Gesamtmenge angewandt: jede Kategorie wird mit ihrer eigenen (ggf. individuell hinterlegten) Ziel-Reichweite gerechnet und die Ergebnisse werden aufsummiert — sonst würde eine je Kategorie unterschiedliche Reichweite unbemerkt überschrieben.' },
+    { title: 'Ziel-Bestand (Lagerbedarf)', formula: 'Ziel-Bestand = Bedarf/Tag × 30,44 × Coverage(Monate) × Sicherheitsaufschlag', note: 'Ziel-Reichweite wird in Monaten gepflegt (30,44 Tage/Monat, mittlere Monatslänge). Bei Kategorie "Alle" wird nicht ein einzelner globaler Coverage-Wert auf die Gesamtmenge angewandt: jede Kategorie wird mit ihrer eigenen (ggf. individuell hinterlegten) Ziel-Reichweite gerechnet und die Ergebnisse werden aufsummiert — sonst würde eine je Kategorie unterschiedliche Reichweite unbemerkt überschrieben.' },
     { title: 'Geografischer Fußabdruck je DC', formula: 'Distrikt-Anteil(DC) = Sales History ESU(DC, Distrikt) ÷ Sales History ESU(DC, alle Distrikte)', note: 'Aus den echten historischen Mengen der Sales History (Shipping Point → DC via DC Translation Table), nicht aus einer Kundenanzahl-Näherung. Nur die Distrikt-Ebene wird summiert — die feinere Land/Einheit-Ebene ist in denselben Zahlen bereits enthalten (Vermeidung von Doppelzählung).' },
     { title: 'Distrikt-Zentroid (Distanzgrundlage)', formula: 'Primär: mengengewichtetes Mittel echter Kundenkoordinaten (Destinations-ESU je Ship-to-Party × Ship-to-Address-Ort/Land); ersatzweise mengengewichtetes Mittel der Länder-Zentroide laut Sales Hierarchie/Sales History.', note: 'Destinations liefert je Versandpunkt die belieferten Ship-to-Parties mit echter ESU-Menge; Ship-to-Address liefert deren tatsächliches Land/Ort. Wo sich beide verknüpfen lassen, ist der Distrikt-Standort damit kundenscharf statt länderweit gemittelt — Quelle wird in Daten & Import je Distrikt angezeigt.' },
     { title: 'Distanz', formula: 'Distanz = Haversine(DC, Distrikt-Zentroid) × 1,28' },
@@ -943,7 +951,7 @@
     dcDistrictShares: dcDistrictShares, districtCountryBreakdown: districtCountryBreakdown, districtCentroid: districtCentroid,
     districtCustomerGeo: districtCustomerGeo, countryToDistrictMap: countryToDistrictMap,
     countryDisplayName: countryDisplayName,
-    demandFor: demandFor, resolveCoverageWeeks: resolveCoverageWeeks,
+    demandFor: demandFor, resolveCoverageMonths: resolveCoverageMonths,
     distanceKm: distanceKm, transportCostPerPallet: transportCostPerPallet, transitDaysFor: transitDaysFor,
     evaluateDC: evaluateDC,
     runSingle: runSingle, runSplit: runSplit, runManual: runManual, runAll: runAll, applyResult: applyResult,

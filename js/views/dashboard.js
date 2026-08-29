@@ -79,7 +79,7 @@
       kpiTile('SKUs im Bestand', I.fmtInt(skus.length)) +
       kpiTile('Ship-to-Kunden', I.fmtInt(shipTo.length)) +
       kpiTile('Ø Paletten je DC', I.fmtInt(avgPerDc)) +
-      kpiTile('Ziel-Reichweite (Wochen)', I.fmtNum(settings.coverageWeeksGlobal, 1)) +
+      kpiTile('Ziel-Reichweite (Monate)', I.fmtNum(settings.coverageMonthsGlobal, 1)) +
       (net.unassignedPallets > 0.5 ? kpiTile('Nicht zugeordnete Paletten', I.fmtInt(net.unassignedPallets), '', 'warn') : '');
 
     var districtRows = Object.keys(demand.byDistrict).map(function (k) { return demand.byDistrict[k]; });

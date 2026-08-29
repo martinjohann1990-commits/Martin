@@ -31,7 +31,7 @@
     'Prognose Paletten (Gesamt)': 'Forecast pallets (total)', 'Prognose ESU (Gesamt)': 'Forecast ESU (total)',
     'Aktive Distributionszentren': 'Active distribution centers', 'SKUs im Bestand': 'SKUs on file',
     'Ship-to-Kunden': 'Ship-to customers', 'Ø Paletten je DC': 'Avg. pallets per DC',
-    'Ziel-Reichweite (Wochen)': 'Target coverage (weeks)', 'Volumen je Distributionszentrum': 'Volume per distribution center',
+    'Ziel-Reichweite (Monate)': 'Target coverage (months)', 'Volumen je Distributionszentrum': 'Volume per distribution center',
     'Top-10 Vertriebsgebiete': 'Top 10 sales districts', 'Prognoseverlauf je Periode': 'Forecast trend per period',
     'Netzwerkkarte': 'Network map', 'Keine Daten geladen': 'No data loaded',
     'Bitte laden Sie Ihre Excel-/CSV-Dateien im Bereich “Daten & Import” hoch oder starten Sie mit den Demodaten.':
@@ -45,7 +45,7 @@
     'Spaltenzuordnung': 'Column mapping', 'Feld': 'Field', 'Spalte in Datei': 'Column in file', 'Konfidenz': 'Confidence',
     'Pflichtfeld fehlt': 'Required field missing', 'Bereit zum Import': 'Ready to import',
     'Mengenlogik': 'Quantity logic', 'Stück je Palette': 'Units per pallet', 'm³ je Palette': 'm³ per pallet',
-    'Ziel-Reichweite je Kategorie': 'Target coverage per category', 'Globale Ziel-Reichweite (Wochen)': 'Global target coverage (weeks)',
+    'Ziel-Reichweite je Kategorie': 'Target coverage per category', 'Globale Ziel-Reichweite (Monate)': 'Global target coverage (months)',
     'Sicherheitsaufschlag': 'Safety factor', 'Datenbestand': 'Data on file', 'Datensatz entfernen': 'Remove dataset',
     'Alle Daten zurücksetzen': 'Reset all data',
 
@@ -69,7 +69,7 @@
     /* scenarios */
     'Szenario speichern': 'Save scenario', 'Aktueller Stand': 'Current state', 'Kennzahlenvergleich': 'KPI comparison',
     'Zuordnungsmatrix': 'Assignment matrix', 'Basis (Ist-Zustand)': 'Base (as-is)',
-    'Erstellt': 'Created', 'Vergleichen': 'Compare', 'Auslastung': 'Utilization', 'Distanz': 'Distance', 'Wochen': 'weeks',
+    'Erstellt': 'Created', 'Vergleichen': 'Compare', 'Auslastung': 'Utilization', 'Distanz': 'Distance', 'Wochen': 'weeks', 'Monate': 'months',
 
     /* reports */
     'Länder-Distrikt-Zuordnung': 'Country–district allocation', 'SKU je DC': 'SKUs per DC',
