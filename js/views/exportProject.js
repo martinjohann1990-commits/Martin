@@ -41,12 +41,12 @@
     net.perDc.forEach(function (d) { detailRows.push([d.dcName, Math.round(d.pallets), Math.round(d.qty), Math.round(d.storageDemandPallets), d.capacity, d.utilization !== null ? Math.round(d.utilization * 100) : '', d.skuCount, d.pickingBins]); });
     addSheet(wb, 'Detailergebnisse', detailRows);
 
-    var regionRows = [['Distrikt', 'DC (Basis)', 'Anteil %']];
-    var shares = LNP.sim.districtDcShares();
-    Object.keys(shares).forEach(function (district) {
-      Object.keys(shares[district]).forEach(function (dcId) {
-        var dc = LNP.sim.dcById(dcId);
-        regionRows.push([district, dc ? dc.name : dcId, Math.round(shares[district][dcId] * 10000) / 100]);
+    var regionRows = [['DC', 'Distrikt', 'Anteil % (aus Sales History)']];
+    var shares = LNP.sim.dcDistrictShares();
+    Object.keys(shares).forEach(function (dcIdKey) {
+      var dc = LNP.sim.dcById(dcIdKey);
+      Object.keys(shares[dcIdKey].shares).forEach(function (district) {
+        regionRows.push([dc ? dc.name : dcIdKey, district, Math.round(shares[dcIdKey].shares[district] * 10000) / 100]);
       });
     });
     addSheet(wb, 'Regionszuordnung', regionRows);
@@ -69,8 +69,8 @@
     });
     addSheet(wb, 'Szenarien', scenarioRows.length > 1 ? scenarioRows : [['Keine Szenarien gespeichert']]);
 
-    var rawRows = [['Distrikt', 'Material', 'Periode', 'Menge ESU', 'Paletten', 'Volumen m3']];
-    LNP.state.data.forecast.slice(0, 50000).forEach(function (r) { rawRows.push([r.district, r.material, r.periodKey, r.qty, r.pallets, r.volume]); });
+    var rawRows = [['DC', 'Artikel', 'Kategorie', 'Periode', 'Menge ESU', 'Paletten']];
+    LNP.state.data.forecast.slice(0, 50000).forEach(function (r) { rawRows.push([r.dc, r.article, r.category, r.periodKey, r.qty, r.pallets]); });
     addSheet(wb, 'Rohdaten', rawRows);
 
     return wb;

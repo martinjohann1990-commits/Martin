@@ -44,6 +44,8 @@
     LT: { lat: 55.17, lng: 23.88, name: 'Litauen', names: ['lithuania', 'litauen'] },
     UA: { lat: 48.38, lng: 31.17, name: 'Ukraine', names: ['ukraine'] },
     MD: { lat: 47.41, lng: 28.37, name: 'Moldau', names: ['moldova'] },
+    BY: { lat: 53.71, lng: 27.95, name: 'Belarus', names: ['belarus', 'weissrussland', 'weißrussland'] },
+    GE: { lat: 42.32, lng: 43.36, name: 'Georgien', names: ['georgia', 'georgien'] },
     RU: { lat: 61.52, lng: 105.32, name: 'Russland', names: ['russia', 'russland'] },
     CY: { lat: 35.13, lng: 33.43, name: 'Zypern', names: ['cyprus', 'zypern'] },
     MT: { lat: 35.94, lng: 14.38, name: 'Malta', names: ['malta'] },
@@ -53,7 +55,13 @@
     CN: { lat: 35.86, lng: 104.20, name: 'China', names: ['china'] },
     AU: { lat: -25.27, lng: 133.78, name: 'Australien', names: ['australia', 'australien'] },
     BR: { lat: -14.24, lng: -51.93, name: 'Brasilien', names: ['brazil', 'brasilien'] },
-    ZA: { lat: -30.56, lng: 22.94, name: 'Südafrika', names: ['south africa', 'südafrika'] }
+    ZA: { lat: -30.56, lng: 22.94, name: 'Südafrika', names: ['south africa', 'südafrika'] },
+    TW: { lat: 23.70, lng: 121.00, name: 'Taiwan', names: ['taiwan'] },
+    JP: { lat: 36.20, lng: 138.25, name: 'Japan', names: ['japan'] },
+    KR: { lat: 35.91, lng: 127.77, name: 'Südkorea', names: ['south korea', 'korea'] },
+    IN: { lat: 20.59, lng: 78.96, name: 'Indien', names: ['india', 'indien'] },
+    EG: { lat: 26.82, lng: 30.80, name: 'Ägypten', names: ['egypt', 'ägypten', 'aegypten'] },
+    TH: { lat: 15.87, lng: 100.99, name: 'Thailand', names: ['thailand'] }
   };
 
   /* A curated set of major European cities/logistics hubs used as a finer-grained fallback
@@ -95,7 +103,10 @@
     'zagreb': { lat: 45.81, lng: 15.98 }, 'ljubljana': { lat: 46.06, lng: 14.51 },
     'belgrade': { lat: 44.79, lng: 20.45 }, 'beograd': { lat: 44.79, lng: 20.45 },
     'athina': { lat: 37.98, lng: 23.73 }, 'athens': { lat: 37.98, lng: 23.73 },
-    'istanbul': { lat: 41.01, lng: 28.98 }
+    'istanbul': { lat: 41.01, lng: 28.98 },
+    'wittlich': { lat: 49.99, lng: 6.89 }, 'valence d\' agen': { lat: 44.13, lng: 0.91 }, 'valence-d\'agen': { lat: 44.13, lng: 0.91 },
+    'sevelievo': { lat: 43.03, lng: 25.11 }, 'treuchtlingen': { lat: 48.96, lng: 10.91 }, 'lugoj': { lat: 45.69, lng: 21.90 },
+    'roeselare': { lat: 50.95, lng: 3.12 }, 'roden': { lat: 53.14, lng: 6.42 }, 'teplice': { lat: 50.64, lng: 13.82 }
   };
 
   /* Countries considered "east of the PL / CZ / AT / SI line" (inclusive), used to pre-fill
@@ -106,6 +117,66 @@
     SK: true, HU: true, RO: true, BG: true, HR: true, RS: true, BA: true, ME: true, MK: true, AL: true,
     UA: true, MD: true, EE: true, LV: true, LT: true, GR: true, TR: true, CY: true, RU: true
   };
+
+  /* Curated multi-country region groups, matched by keyword against the free-text region/
+     "Land / Einheit" labels used in sales-hierarchy style tables (e.g. "Nordics", "Iberia",
+     "Belgium/Luxemburg"). Used when a label doesn't resolve to a single country. Order matters:
+     first keyword match wins, so more specific groups should precede broader ones. */
+  var REGION_GROUPS = [
+    { keywords: ['dach'], countries: ['DE', 'AT', 'CH'] },
+    { keywords: ['benelux'], countries: ['BE', 'NL', 'LU'] },
+    { keywords: ['belgium/luxemburg', 'belgium/luxembourg', 'belux'], countries: ['BE', 'LU'] },
+    { keywords: ['nordic'], countries: ['SE', 'NO', 'DK', 'FI', 'IS'] },
+    { keywords: ['baltic'], countries: ['EE', 'LV', 'LT'] },
+    { keywords: ['iberia', 'iberian'], countries: ['ES', 'PT'] },
+    { keywords: ['greece', 'cyprus', 'griechenland'], countries: ['GR', 'CY'] },
+    { keywords: ['czech', 'slovak', 'tschech'], countries: ['CZ', 'SK'] },
+    { keywords: ['romania', 'moldova', 'rumän'], countries: ['RO', 'MD'] },
+    { keywords: ['bulgaria', 'balkan', 'bulgarien'], countries: ['BG', 'HR', 'SI', 'RS', 'BA', 'ME', 'MK', 'AL'] },
+    { keywords: ['poland/cis', 'cis/caucasus', 'poland'], countries: ['PL', 'BY', 'GE'] },
+    { keywords: ['uk / ir', 'uk/ir', 'uk & ireland', 'britain & ireland'], countries: ['GB', 'IE'] },
+    { keywords: ['export', 'oem', 'not assigned', 'n/a', 'others', 'sonstige', 'divers'], countries: [] }
+  ];
+
+  /* Resolves a free-text region/"Land / Einheit" label to the ISO2 countries it represents.
+     Priority matters: an EXACT single-country name match wins first ("GB", "Austria"); then
+     curated multi-country groups, so a compound label like "Bulgaria/Balkans" or "Belgium/
+     Luxemburg" expands fully instead of being short-circuited by the "Bulgaria"/"Belgium"
+     substring inside it; only then a loose substring single-country fallback ("Germany Total"
+     -> DE). Returns [] for non-geographic buckets (e.g. "OEM/Others", "Kitchen Export"). */
+  function expandUnitToCountries(rawText) {
+    if (!rawText) return [];
+    var text = String(rawText).trim();
+    if (!text) return [];
+    var upper = text.toUpperCase();
+    var low = text.toLowerCase();
+
+    if (COUNTRY[upper]) return [upper];
+    var code;
+    for (code in COUNTRY) {
+      if (!COUNTRY.hasOwnProperty(code)) continue;
+      var e = COUNTRY[code];
+      if (low === e.name.toLowerCase()) return [code];
+      for (var i = 0; i < e.names.length; i++) if (low === e.names[i]) return [code];
+    }
+
+    for (var g = 0; g < REGION_GROUPS.length; g++) {
+      var grp = REGION_GROUPS[g];
+      for (var k = 0; k < grp.keywords.length; k++) {
+        if (low.indexOf(grp.keywords[k]) !== -1) return grp.countries;
+      }
+    }
+
+    for (code in COUNTRY) {
+      if (!COUNTRY.hasOwnProperty(code)) continue;
+      var e2 = COUNTRY[code];
+      if (low.indexOf(e2.name.toLowerCase()) !== -1) return [code];
+      for (var j = 0; j < e2.names.length; j++) {
+        if (e2.names[j].length >= 4 && low.indexOf(e2.names[j]) !== -1) return [code];
+      }
+    }
+    return [];
+  }
 
   function normalizeCountryKey(raw) {
     if (!raw) return null;
@@ -175,8 +246,9 @@
   }
 
   LNP.geo = {
-    COUNTRY: COUNTRY, CITY: CITY,
+    COUNTRY: COUNTRY, CITY: CITY, REGION_GROUPS: REGION_GROUPS,
     normalizeCountryKey: normalizeCountryKey, countryName: countryName, isEastOfLine: isEastOfLine,
+    expandUnitToCountries: expandUnitToCountries,
     resolve: resolve, haversineKm: haversineKm, roadDistanceKm: roadDistanceKm
   };
 })();

@@ -1,18 +1,21 @@
-/* NetPlan+ views/data.js — "Daten &amp; Import": 7 dedicated upload slots with column-mapping
-   review, quantity logic / coverage settings, region coordinates, and data-on-file overview. */
+/* NetPlan+ views/data.js — "Daten &amp; Import": 7 dedicated upload slots for the real SAP-BI
+   export structure — a wide-format Forecast, three "Division-split" structural sheets (Sales
+   History, Destinations, SKU View) that need no user column-mapping, and three plain-header
+   sheets (DC Translation, Sales Hierarchie, Ship-to-Address). Plus quantity/coverage settings,
+   region coordinates and a data-on-file overview. */
 (function () {
   'use strict';
   var LNP = window.LNP = window.LNP || {};
   var U = LNP.util, I = LNP.i18n;
 
   var SLOTS = [
-    { key: 'forecast', title: 'Forecast – Pallet Load', file: 'Forecast_-_Pallet_Load_.csv', importerKey: 'forecast', target: 'forecast' },
-    { key: 'history', title: 'Sales History (aggregiert)', file: 'Sales_History_Data_aggregated.csv', importerKey: 'history', target: 'history' },
-    { key: 'destinations', title: 'Destinations', file: 'Destinations_.csv', importerKey: 'destinations', target: 'destinations', merge: true },
-    { key: 'shipTo', title: 'Ship-to-Address', file: 'Ship-to-adress.csv', importerKey: 'shipTo', target: 'destinations', merge: true },
-    { key: 'sku', title: 'SKU View', file: 'SKU_View.csv', importerKey: 'sku', target: 'skus' },
-    { key: 'dcTranslation', title: 'DC Translation Table', file: 'DC_Translation_Table_.csv', target: 'dcTranslation', positional: true },
-    { key: 'salesHierarchy', title: 'Sales Hierarchie', file: 'Sales_Hierarchie_Table_.csv', importerKey: 'salesHierarchy', target: 'salesHierarchy' }
+    { key: 'forecast', title: 'Forecast – Pallet Load', file: 'Forecast - Pallet Load', kind: 'wide', target: 'forecast' },
+    { key: 'history', title: 'Sales History (aggregiert)', file: 'Sales History Data aggregated', kind: 'structural', target: 'history' },
+    { key: 'destinations', title: 'Destinations', file: 'Destinations', kind: 'structural', target: 'destinations' },
+    { key: 'sku', title: 'SKU View', file: 'SKU View', kind: 'structural', target: 'skus' },
+    { key: 'dcTranslation', title: 'DC Translation Table', file: 'DC Translation Table', kind: 'positional', target: 'dcTranslation' },
+    { key: 'salesHierarchy', title: 'Sales Hierarchie', file: 'Sales Hierarchie Table', kind: 'mapped', importerKey: 'salesHierarchy', target: 'salesHierarchy' },
+    { key: 'shipToAddress', title: 'Ship-to-Address', file: 'Ship-to-adress', kind: 'mapped', importerKey: 'shipToAddress', target: 'shipToAddresses' }
   ];
 
   function fileCardHtml(slot) {
@@ -53,6 +56,122 @@
     return 'badge-bad';
   }
 
+  function commitImport(slot, result, rawCount) {
+    var status = {
+      rows: rawCount, accepted: result.records.length, warnings: result.warnings.length,
+      loadedAt: Date.now(), aggregated: result.aggregated, originalCount: result.originalCount
+    };
+    LNP.state.setDataset(slot.target, result.records, status);
+    if (slot.key === 'forecast') ensureDcsFromForecast(result.records);
+    LNP.ui.toast(I.tf('{0}: {1} {2}', I.t(slot.title), I.fmtInt(result.records.length), I.t('Zeilen übernommen')), 'good');
+    if (result.warnings.length) {
+      LNP.ui.toast(result.warnings.slice(0, 3).join(' / ') + (result.warnings.length > 3 ? ' …' : ''), 'bad');
+    }
+  }
+
+  /* Forecast's own "DC" column is the source of truth for which shipping points are real
+     pallet-storage distribution centers — auto-create them here (never overwriting a DC the
+     user already edited), pre-filling coordinates/country for a handful of known real sites. */
+  function ensureDcsFromForecast(records) {
+    var names = {};
+    records.forEach(function (r) { if (r.dc) names[r.dc] = true; });
+    Object.keys(names).forEach(function (name) {
+      var hint = LNP.sim.dcHintFor(name);
+      LNP.state.getOrCreateDc(name, hint ? { country: hint.country, lat: hint.lat, lng: hint.lng, latSource: 'automatisch' } : null);
+    });
+    LNP.state.emit('dcs');
+    LNP.sim.invalidateCaches();
+  }
+
+  /* ---------------- Forecast: wide-format modal (no per-field mapping needed) ---------------- */
+  function openForecastModal(slot, rows2d) {
+    var result = LNP.importer.parseForecastWide(rows2d);
+    var idLabels = LNP.importer.FORECAST_ID_FIELDS.map(function (f) {
+      var col = result.idMapping[f.key];
+      var found = col !== undefined;
+      return '<div class="map-row"><div class="map-field-name' + (f.required ? ' required' : '') + '">' + U.escapeHtml(f.label) + '</div>' +
+        '<div>' + (found ? U.escapeHtml(String(rows2d[0][col])) : '<span class="muted">—</span>') + '</div>' +
+        '<div>' + (found ? '<span class="badge badge-good">OK</span>' : '<span class="badge badge-bad">' + I.t('nicht gesetzt') + '</span>') + '</div></div>';
+    }).join('');
+    var body = '<p class="help">' + I.tf('{0} {1}', rows2d.length - 1, I.t('Zeilen erkannt')) + ' &middot; ' +
+      result.monthCols.length + ' Monatsspalten erkannt (' + (result.monthCols[0] ? result.monthCols[0].period.key : '–') + ' … ' + (result.monthCols[result.monthCols.length - 1] ? result.monthCols[result.monthCols.length - 1].period.key : '–') + ')</p>' +
+      '<div class="note-box">Breitformat: eine Spalte je Monat. Paletten = Monatsmenge ÷ artikelspezifischer Palettenladung. Nullwerte werden nicht als Zeile übernommen.</div>' +
+      '<div class="map-row" style="border-bottom:2px solid var(--border);font-weight:700;font-size:11px;color:var(--text-faint);text-transform:uppercase;">' +
+      '<div data-t="Feld">' + I.t('Feld') + '</div><div data-t="Spalte in Datei">' + I.t('Spalte in Datei') + '</div><div data-t="Status">' + I.t('Status') + '</div></div>' +
+      idLabels +
+      (result.warnings.length ? result.warnings.map(function (w) { return '<div class="note-box warn">' + U.escapeHtml(w) + '</div>'; }).join('') : '');
+
+    LNP.ui.openModal(U.escapeHtml(I.t(slot.title)), body, {
+      maxWidth: '640px',
+      footerHtml: '<button class="btn" id="fcCancel" data-t="Abbrechen">' + I.t('Abbrechen') + '</button>' +
+        '<button class="btn btn-primary" id="fcConfirm" data-t="Importieren"' + (result.records.length ? '' : ' disabled') + '>' + I.t('Importieren') + '</button>',
+      onMount: function (r) {
+        r.querySelector('#fcCancel').addEventListener('click', LNP.ui.closeModal);
+        var confirmBtn = r.querySelector('#fcConfirm');
+        if (confirmBtn) confirmBtn.addEventListener('click', function () {
+          commitImport(slot, result, rows2d.length - 1);
+          LNP.ui.closeModal();
+        });
+      }
+    });
+  }
+
+  /* ---------------- Sales History / Destinations / SKU View: structural preview modal ---------------- */
+  var STRUCTURAL_PARSERS = {
+    history: LNP.importer.parseSalesHistoryReal,
+    destinations: LNP.importer.parseDestinationsReal,
+    sku: LNP.importer.parseSkuViewReal
+  };
+
+  function openStructuralModal(slot, rows2d) {
+    var parse = STRUCTURAL_PARSERS[slot.key];
+    var result = parse(rows2d);
+    var esuCol = LNP.importer.findOverallEsuColumn(rows2d);
+    var preview = rows2d.slice(3, 8).map(function (row) {
+      return '<tr>' + row.slice(0, 8).map(function (c) { return '<td>' + U.escapeHtml(c == null ? '' : String(c)) + '</td>'; }).join('') + '</tr>';
+    }).join('');
+    var body = '<p class="help">' + I.tf('{0} {1}', result.records.length, I.t('Zeilen übernommen')) + '</p>' +
+      '<div class="note-box">Struktur mit dreizeiliger Kopfzeile (Division / Kennzahl / ID) und Spalten-Duplikaten — Spalten werden automatisch erkannt (Overall-Result-Spalte in Spalte ' + (esuCol >= 0 ? esuCol + 1 : '–') + ').</div>' +
+      (result.warnings.length ? result.warnings.map(function (w) { return '<div class="note-box warn">' + U.escapeHtml(w) + '</div>'; }).join('') : '') +
+      '<div class="table-wrap"><table class="tbl">' + preview + '</table></div>';
+
+    LNP.ui.openModal(U.escapeHtml(I.t(slot.title)), body, {
+      maxWidth: '700px',
+      footerHtml: '<button class="btn" id="stCancel" data-t="Abbrechen">' + I.t('Abbrechen') + '</button>' +
+        '<button class="btn btn-primary" id="stConfirm" data-t="Importieren"' + (result.records.length ? '' : ' disabled') + '>' + I.t('Importieren') + '</button>',
+      onMount: function (r) {
+        r.querySelector('#stCancel').addEventListener('click', LNP.ui.closeModal);
+        var confirmBtn = r.querySelector('#stConfirm');
+        if (confirmBtn) confirmBtn.addEventListener('click', function () {
+          commitImport(slot, result, rows2d.length - 3);
+          LNP.ui.closeModal();
+        });
+      }
+    });
+  }
+
+  /* ---------------- DC Translation Table: positional preview modal ---------------- */
+  function openPositionalModal(slot, rows2d) {
+    var result = LNP.importer.parseDcTranslationPositional(rows2d);
+    var preview = rows2d.slice(0, 6).map(function (r) { return '<tr>' + r.map(function (c) { return '<td>' + U.escapeHtml(c == null ? '' : String(c)) + '</td>'; }).join('') + '</tr>'; }).join('');
+    var body = '<p class="help">' + I.tf('{0} {1}', result.records.length, I.t('Zeilen übernommen')) + '</p>' +
+      '<div class="note-box">Diese Datei enthält zwei Spalten mit dem Namen &bdquo;V&amp;B/ISI Shipping point&ldquo; (Code, dann Beschreibung) — die Zuordnung erfolgt daher positionsbasiert (Spalte 1 = Code, Spalte 2 = Beschreibung, Spalte mit Kopfzeile &bdquo;DC&ldquo; = Distributionszentrum). Distributionszentren selbst werden nicht aus dieser Tabelle angelegt — dafür ist die Forecast-Datei maßgeblich (diese Tabelle enthält auch Produktionswerke, Retouren u.ä., die keine Lagerstandorte sind).</div>' +
+      '<div class="table-wrap"><table class="tbl">' + preview + '</table></div>';
+    LNP.ui.openModal(U.escapeHtml(I.t(slot.title)), body, {
+      maxWidth: '600px',
+      footerHtml: '<button class="btn" id="posCancel" data-t="Abbrechen">' + I.t('Abbrechen') + '</button>' +
+        '<button class="btn btn-primary" id="posConfirm" data-t="Importieren"' + (result.records.length ? '' : ' disabled') + '>' + I.t('Importieren') + '</button>',
+      onMount: function (r) {
+        r.querySelector('#posCancel').addEventListener('click', LNP.ui.closeModal);
+        r.querySelector('#posConfirm').addEventListener('click', function () {
+          commitImport(slot, result, rows2d.length - 1);
+          LNP.ui.closeModal();
+        });
+      }
+    });
+  }
+
+  /* ---------------- Sales Hierarchie / Ship-to-Address: classic confidence-scored mapping ---------------- */
   function openMappingModal(slot, headers, rows) {
     var ft = LNP.importer.FILE_TYPES[slot.importerKey];
     var auto = LNP.importer.autoMapColumns(headers, ft.fields);
@@ -68,23 +187,12 @@
         '</div>';
     }).join('');
 
-    var isForecast = slot.key === 'forecast';
-    var periodCol = auto.mapping.period ? auto.mapping.period.column : '';
-    var guessedType = /month|monat/i.test(periodCol) ? 'month' : 'week';
-    var periodTypeHtml = isForecast ?
-      '<div class="field" style="margin-top:10px;"><label>Periodenformat der gewählten Spalte</label>' +
-      '<select id="mapPeriodType">' +
-      '<option value="week"' + (guessedType === 'week' ? ' selected' : '') + '>Kalenderwoche (z.B. 202601)</option>' +
-      '<option value="month"' + (guessedType === 'month' ? ' selected' : '') + '>Monat (z.B. 2026-01 oder 202601)</option>' +
-      '</select>' +
-      '<div class="help">Wochenangaben werden für die Darstellung automatisch zum enthaltenden Kalendermonat zusammengefasst.</div></div>' : '';
-
     var body = '<p class="help">' + I.tf('{0} {1}', rows.length, I.t('Zeilen erkannt')) + '</p>' +
       '<div class="map-row" style="border-bottom:2px solid var(--border);font-weight:700;font-size:11px;color:var(--text-faint);text-transform:uppercase;">' +
       '<div data-t="Feld">' + I.t('Feld') + '</div><div data-t="Spalte in Datei">' + I.t('Spalte in Datei') + '</div><div data-t="Konfidenz">' + I.t('Konfidenz') + '</div></div>' +
-      rowsHtml + periodTypeHtml + '<div id="mappingWarning" class="note-box warn" style="display:none;margin-top:12px;"></div>';
+      rowsHtml + '<div id="mappingWarning" class="note-box warn" style="display:none;margin-top:12px;"></div>';
 
-    var modal = LNP.ui.openModal(U.escapeHtml(I.t(slot.title)), body, {
+    LNP.ui.openModal(U.escapeHtml(I.t(slot.title)), body, {
       maxWidth: '640px',
       footerHtml: '<button class="btn" id="mapCancel" data-t="Abbrechen">' + I.t('Abbrechen') + '</button>' +
         '<button class="btn btn-primary" id="mapConfirm" data-t="Importieren">' + I.t('Importieren') + '</button>',
@@ -104,44 +212,8 @@
             w.textContent = I.t('Pflichtfeld fehlt') + ': ' + missing.map(function (f) { return I.t(f.label); }).join(', ');
             return;
           }
-          var periodTypeSel = r.querySelector('#mapPeriodType');
-          var result = ft.parse(rows, mapping, periodTypeSel ? periodTypeSel.value : undefined);
+          var result = ft.parse(rows, mapping);
           commitImport(slot, result, rows.length);
-          LNP.ui.closeModal();
-        });
-      }
-    });
-    return modal;
-  }
-
-  function commitImport(slot, result, rawCount) {
-    var status = {
-      rows: rawCount, accepted: result.records.length, warnings: result.warnings.length,
-      loadedAt: Date.now(), aggregated: result.aggregated, originalCount: result.originalCount
-    };
-    if (slot.merge) LNP.state.mergeDestinations(result.records, slot.key, status);
-    else LNP.state.setDataset(slot.target, result.records, status);
-    LNP.state.emit('dcs');
-    LNP.ui.toast(I.tf('{0}: {1} {2}', I.t(slot.title), I.fmtInt(result.records.length), I.t('Zeilen übernommen')), 'good');
-    if (result.warnings.length) {
-      LNP.ui.toast(result.warnings.slice(0, 3).join(' / ') + (result.warnings.length > 3 ? ' …' : ''), 'bad');
-    }
-  }
-
-  function openPositionalModal(slot, rows2d) {
-    var result = LNP.importer.parseDcTranslationPositional(rows2d);
-    var preview = rows2d.slice(0, 6).map(function (r) { return '<tr>' + r.map(function (c) { return '<td>' + U.escapeHtml(c) + '</td>'; }).join('') + '</tr>'; }).join('');
-    var body = '<p class="help">' + I.tf('{0} {1}', result.records.length, I.t('Zeilen übernommen')) + '</p>' +
-      '<div class="note-box">Diese Datei enthält zwei Spalten mit dem Namen &bdquo;V&amp;B/ISI Shipping point&ldquo; (Code, dann Beschreibung) — die Zuordnung erfolgt daher positionsbasiert (Spalte 1 = Code, Spalte 2 = Beschreibung, Spalte mit Kopfzeile &bdquo;DC&ldquo; = Distributionszentrum).</div>' +
-      '<div class="table-wrap"><table class="tbl">' + preview + '</table></div>';
-    LNP.ui.openModal(U.escapeHtml(I.t(slot.title)), body, {
-      maxWidth: '600px',
-      footerHtml: '<button class="btn" id="posCancel" data-t="Abbrechen">' + I.t('Abbrechen') + '</button>' +
-        '<button class="btn btn-primary" id="posConfirm" data-t="Importieren">' + I.t('Importieren') + '</button>',
-      onMount: function (r) {
-        r.querySelector('#posCancel').addEventListener('click', LNP.ui.closeModal);
-        r.querySelector('#posConfirm').addEventListener('click', function () {
-          commitImport(slot, result, rows2d.length - 1);
           LNP.ui.closeModal();
         });
       }
@@ -149,17 +221,19 @@
   }
 
   function handleFile(slot, file) {
-    if (slot.positional) {
+    if (slot.kind === 'wide' || slot.kind === 'structural' || slot.kind === 'positional') {
       U.readWorkbookFileRaw(file, function (err, rows2d) {
         if (err) { LNP.ui.toast('Fehler beim Lesen: ' + err.message, 'bad'); return; }
-        openPositionalModal(slot, rows2d);
-      });
+        if (slot.kind === 'wide') openForecastModal(slot, rows2d);
+        else if (slot.kind === 'structural') openStructuralModal(slot, rows2d);
+        else openPositionalModal(slot, rows2d);
+      }, slot.file);
     } else {
       U.readWorkbookFile(file, function (err, res) {
         if (err) { LNP.ui.toast('Fehler beim Lesen: ' + err.message, 'bad'); return; }
         var headers = LNP.importer.headersFromRows(res.rows);
         openMappingModal(slot, headers, res.rows);
-      });
+      }, slot.file);
     }
   }
 
@@ -199,16 +273,16 @@
         '</tr>';
     }).join('');
     return '<div class="card"><h2>' + I.t('Region') + ' &ndash; ' + I.t('Koordinaten') + '</h2>' +
-      '<p class="help">Automatisch aus den Ship-to-Adressen (Stadt/Land) ermittelt; bei Bedarf manuell überschreibbar.</p>' +
+      '<p class="help">Distrikt-Zentroid = mengengewichtetes Mittel der Länder, die laut Sales Hierarchie/Sales History zu diesem Distrikt gehören; bei Bedarf manuell überschreibbar.</p>' +
       '<div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Region">' + I.t('Region') + '</th><th>' + I.t('Breitengrad') + '</th><th>' + I.t('Längengrad') + '</th><th data-t="Quelle">' + I.t('Quelle') + '</th></tr></thead><tbody>' + rows + '</tbody></table></div></div>';
   }
 
   function dataStatusSection() {
     var d = LNP.state.data;
     var rows = [
-      ['Forecast', d.forecast.length], ['Sales History', d.history.length], ['Destinations / Ship-to', d.destinations.length],
+      ['Forecast', d.forecast.length], ['Sales History', d.history.length], ['Destinations', d.destinations.length],
       ['SKU View', d.skus.length], ['DC Translation', d.dcTranslation.length], ['Sales Hierarchie', d.salesHierarchy.length],
-      [I.t('Distributionszentren'), d.dcs.length]
+      ['Ship-to-Address', d.shipToAddresses.length], [I.t('Distributionszentren'), d.dcs.length]
     ];
     var body = rows.map(function (r) { return '<tr><td>' + U.escapeHtml(r[0]) + '</td><td class="num">' + I.fmtInt(r[1]) + '</td></tr>'; }).join('');
     return '<div class="card"><div class="card-head"><h2 data-t="Datenbestand">' + I.t('Datenbestand') + '</h2>' +
@@ -240,8 +314,7 @@
       btn.addEventListener('click', function () {
         var slotKey = btn.getAttribute('data-slot');
         var slot = SLOTS.filter(function (s) { return s.key === slotKey; })[0];
-        if (!slot.merge) LNP.state.clearDataset(slot.target);
-        else { delete LNP.state.fileStatus[slot.key]; LNP.state.emit('fileStatus'); }
+        LNP.state.clearDataset(slot.target);
       });
     });
     var coverageGlobal = container.querySelector('#setCoverageGlobal');
@@ -257,7 +330,7 @@
         LNP.state.updateSettings({ coverageWeeksByCategory: map });
       });
     });
-    function bindRegionInput(sel, axis) {
+    function bindRegionInput(sel) {
       container.querySelectorAll(sel).forEach(function (inp) {
         inp.addEventListener('change', function () {
           var district = inp.getAttribute('data-district');
@@ -271,7 +344,7 @@
         });
       });
     }
-    bindRegionInput('.js-region-lat', 'lat'); bindRegionInput('.js-region-lng', 'lng');
+    bindRegionInput('.js-region-lat'); bindRegionInput('.js-region-lng');
 
     var resetBtn = container.querySelector('#resetAllBtn');
     if (resetBtn) resetBtn.addEventListener('click', function () {

@@ -28,17 +28,17 @@
     if (!selectedDistrict) selectedDistrict = districts[0].district;
     var topN = LNP.state.settings.countryAllocationTopN;
     var options = districts.map(function (d) { return '<option value="' + U.escapeHtml(d.district) + '"' + (d.district === selectedDistrict ? ' selected' : '') + '>' + U.escapeHtml(d.name) + '</option>'; }).join('');
-    var report = LNP.sim.countryDistrictAllocation(selectedDistrict, topN);
+    var report = LNP.sim.countryAllocationForDistrict(selectedDistrict, topN);
     var rows = report.rows.map(function (r) {
-      return '<tr' + (r.isRest ? ' class="muted"' : '') + '><td>' + U.escapeHtml(r.countryName) + '</td><td class="num">' + I.fmtPct(r.share, 1) + '</td><td class="num">' + I.fmtInt(r.count) + '</td></tr>';
+      return '<tr' + (r.isRest ? ' class="muted"' : '') + '><td>' + U.escapeHtml(r.unit) + '</td><td class="num">' + I.fmtPct(r.share, 1) + '</td><td class="num">' + I.fmtInt(r.esu) + '</td></tr>';
     }).join('');
     return '<div class="field-row">' +
       '<div class="field" style="max-width:320px"><label data-t="Region">' + I.t('Region') + '</label><select id="repDistrict">' + options + '</select></div>' +
       '<div class="field" style="max-width:160px"><label>Top-N Länder</label><input type="number" min="1" max="30" id="repTopN" value="' + topN + '"></div>' +
       '</div>' +
-      '<div class="note-box">Anteil je Land = Anzahl Ship-to-Kunden(Land) ÷ Anzahl Ship-to-Kunden(Distrikt) — ein Mengen-Proxy, da in den Quelldaten keine kundenscharfen Volumina vorliegen. Länder außerhalb der Top-N werden als &bdquo;Rest&ldquo; gebündelt.</div>' +
+      '<div class="note-box">Anteil je Land/Einheit = reale ESU-Menge aus der Sales History (Distrikt-Hierarchie), kein Zähl-Proxy. Länder außerhalb der Top-N werden als &bdquo;Rest&ldquo; gebündelt.</div>' +
       '<div class="chart-box"><canvas id="chartAlloc"></canvas></div>' +
-      '<div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Land">' + I.t('Land') + '</th><th class="num">Anteil %</th><th class="num">Ship-to-Kunden</th></tr></thead><tbody>' + (rows || '<tr><td colspan="3" class="muted">–</td></tr>') + '</tbody></table></div>';
+      '<div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Land">' + I.t('Land') + '</th><th class="num">Anteil %</th><th class="num">ESU</th></tr></thead><tbody>' + (rows || '<tr><td colspan="3" class="muted">–</td></tr>') + '</tbody></table></div>';
   }
 
   function skuPanel() {
@@ -107,8 +107,8 @@
 
   function renderCharts(container) {
     if (activeTab === 'alloc') {
-      var report = LNP.sim.countryDistrictAllocation(selectedDistrict, LNP.state.settings.countryAllocationTopN);
-      LNP.charts.bar('chartAlloc', report.rows.map(function (r) { return r.countryName; }), [{ label: '%', data: report.rows.map(function (r) { return +(r.share * 100).toFixed(1); }) }]);
+      var report = LNP.sim.countryAllocationForDistrict(selectedDistrict, LNP.state.settings.countryAllocationTopN);
+      LNP.charts.bar('chartAlloc', report.rows.map(function (r) { return r.unit; }), [{ label: '%', data: report.rows.map(function (r) { return +(r.share * 100).toFixed(1); }) }]);
     } else if (activeTab === 'sku') {
       var skuRep = LNP.sim.skuCountPerDcReport();
       LNP.charts.bar('chartSku', skuRep.map(function (r) { return r.dcName; }), [

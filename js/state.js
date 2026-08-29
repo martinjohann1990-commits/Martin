@@ -41,7 +41,7 @@
       skus: [],
       dcTranslation: [],
       salesHierarchy: [],
-      shipTo: []
+      shipToAddresses: []
     };
   }
 
@@ -84,13 +84,13 @@
     return null;
   }
 
+  /* extra is applied only when the DC is newly created — an existing DC (possibly already
+     hand-edited by the user) is returned untouched, so re-importing a file never silently
+     overwrites capacity, coordinates, cost overrides etc. that were customized in the UI. */
   function getOrCreateDc(name, extra) {
     if (!name) return null;
     var dc = findDcByName(name);
-    if (dc) {
-      if (extra) Object.assign(dc, filterUndefined(extra));
-      return dc;
-    }
+    if (dc) return dc;
     dc = newDcSkeleton(name);
     if (extra) Object.assign(dc, filterUndefined(extra));
     state.data.dcs.push(dc);
@@ -173,16 +173,6 @@
     emit('fileStatus');
   }
 
-  /* Destinations_.csv and Ship-to-adress.csv share the same shape and both feed
-     state.data.destinations; merge (not replace) so either upload alone is enough, and both
-     together fill in each other's gaps. statusKey keeps their own upload-card status separate
-     even though the target array is shared. */
-  function mergeDestinations(rows, statusKey, status) {
-    state.data.destinations = LNP.importer.mergeDestinations(state.data.destinations, rows);
-    state.fileStatus[statusKey] = status || { rows: rows.length, loadedAt: Date.now() };
-    emit('destinations'); emit('fileStatus');
-  }
-
   function clearDataset(key) {
     state.data[key] = [];
     delete state.fileStatus[key];
@@ -238,7 +228,7 @@
       out.skus = state.data.skus;
       out.dcTranslation = state.data.dcTranslation;
       out.salesHierarchy = state.data.salesHierarchy;
-      out.shipTo = state.data.shipTo;
+      out.shipToAddresses = state.data.shipToAddresses;
     }
     return out;
   }
@@ -283,7 +273,7 @@
     nd.skus = obj.skus || [];
     nd.dcTranslation = obj.dcTranslation || [];
     nd.salesHierarchy = obj.salesHierarchy || [];
-    nd.shipTo = obj.shipTo || [];
+    nd.shipToAddresses = obj.shipToAddresses || [];
     replaceData(nd);
     state.fileStatus = obj.fileStatus || {};
   }
@@ -320,7 +310,7 @@
     findDcByName: findDcByName, getOrCreateDc: getOrCreateDc,
     saveScenario: saveScenario, removeScenario: removeScenario,
     setAssignment: setAssignment, getAssignment: getAssignment, removeAssignment: removeAssignment,
-    setDataset: setDataset, clearDataset: clearDataset, mergeDestinations: mergeDestinations, resetAll: resetAll,
+    setDataset: setDataset, clearDataset: clearDataset, resetAll: resetAll,
     updateSettings: updateSettings,
     init: function () { loadPersisted(); },
     persistNow: persistNow,
@@ -328,7 +318,7 @@
     exportProjectFile: exportProjectFile, importProjectFile: importProjectFile,
     totalRecordCount: function () {
       return state.data.forecast.length + state.data.history.length + state.data.destinations.length +
-        state.data.skus.length + state.data.dcTranslation.length + state.data.salesHierarchy.length;
+        state.data.skus.length + state.data.dcTranslation.length + state.data.salesHierarchy.length + state.data.shipToAddresses.length;
     }
   };
 })();

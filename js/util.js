@@ -152,6 +152,14 @@
     return null;
   }
 
+  /* Converts a JS Date (as produced by SheetJS with cellDates:true for a real Excel date
+     column) to its calendar month period. Accepts a Date object or an ISO-ish date string. */
+  function monthPeriodFromDate(v) {
+    var d = (v instanceof Date) ? v : new Date(v);
+    if (!d || isNaN(d.getTime())) return null;
+    return monthPeriodOf(d.getUTCFullYear(), d.getUTCMonth() + 1);
+  }
+
   /* Converts a "Calendar week/year" value (e.g. 202401) to the calendar month that contains it. */
   function weekIntToMonthPeriod(raw) {
     var cw = parseCalendarWeekInt(raw);
@@ -246,7 +254,27 @@
   }
 
   /* ---------------- file reading ---------------- */
-  function readWorkbookFile(file, cb) {
+
+  /* The real export bundles all 7 source tables as separate tabs in ONE workbook (plus a
+     leftover hidden SAP-BI sheet) — picking sheet[0] blindly would silently read the wrong
+     tab for every slot but one. Match by name instead (falls back to sheet[0] for a genuine
+     single-sheet upload or when nothing matches well enough). */
+  function pickSheetName(sheetNames, preferredName) {
+    if (!sheetNames || !sheetNames.length) return null;
+    if (!preferredName || sheetNames.length === 1) return sheetNames[0];
+    var normPref = normHeader(preferredName);
+    var best = null, bestScore = -1;
+    for (var i = 0; i < sheetNames.length; i++) {
+      var normName = normHeader(sheetNames[i]);
+      var score = 0;
+      if (normName === normPref) score = 100;
+      else if (normName.indexOf(normPref) !== -1 || normPref.indexOf(normName) !== -1) score = 60;
+      if (score > bestScore) { bestScore = score; best = sheetNames[i]; }
+    }
+    return bestScore > 0 ? best : sheetNames[0];
+  }
+
+  function readWorkbookFile(file, cb, preferredSheetName) {
     var name = file.name || '';
     var ext = name.split('.').pop().toLowerCase();
     if (ext === 'xlsx' || ext === 'xlsm' || ext === 'xlsb' || ext === 'xls') {
@@ -254,7 +282,7 @@
       reader.onload = function (e) {
         try {
           var wb = window.XLSX.read(new Uint8Array(e.target.result), { type: 'array', cellDates: true });
-          var sheetName = wb.SheetNames[0];
+          var sheetName = pickSheetName(wb.SheetNames, preferredSheetName);
           var sheet = wb.Sheets[sheetName];
           var json = window.XLSX.utils.sheet_to_json(sheet, { defval: null, raw: true });
           cb(null, { rows: json, sheetNames: wb.SheetNames, sheetName: sheetName, workbook: wb });
@@ -271,10 +299,10 @@
     }
   }
 
-  /* Reads a file as an array-of-arrays (no header interpretation) — needed for files with
-     duplicate column headers such as DC_Translation_Table_.csv (spec: two "V&B/ISI Shipping
-     point" columns, code then description, which collide under header:true parsing). */
-  function readWorkbookFileRaw(file, cb) {
+  /* Reads a file as an array-of-arrays (no header interpretation) — needed for sheets with
+     duplicate column headers (e.g. two "V&B/ISI Shipping point" columns) or multi-row headers,
+     which would collide under header:true parsing. */
+  function readWorkbookFileRaw(file, cb, preferredSheetName) {
     var name = file.name || '';
     var ext = name.split('.').pop().toLowerCase();
     if (ext === 'xlsx' || ext === 'xlsm' || ext === 'xlsb' || ext === 'xls') {
@@ -282,7 +310,8 @@
       reader.onload = function (e) {
         try {
           var wb = window.XLSX.read(new Uint8Array(e.target.result), { type: 'array', cellDates: true });
-          var sheet = wb.Sheets[wb.SheetNames[0]];
+          var sheetName = pickSheetName(wb.SheetNames, preferredSheetName);
+          var sheet = wb.Sheets[sheetName];
           var rows = window.XLSX.utils.sheet_to_json(sheet, { header: 1, defval: null, raw: true });
           cb(null, rows);
         } catch (err) { cb(err); }
@@ -315,7 +344,7 @@
     sum: sum, groupBy: groupBy, sortByDesc: sortByDesc, topNWithRest: topNWithRest,
     parseLocaleNumber: parseLocaleNumber, parsePeriod: parsePeriod, parseCalendarWeekInt: parseCalendarWeekInt,
     parseYearMonthInt: parseYearMonthInt, weekIntToMonthPeriod: weekIntToMonthPeriod, parsePeriodByType: parsePeriodByType,
-    monthPeriodOf: monthPeriodOf,
+    monthPeriodOf: monthPeriodOf, monthPeriodFromDate: monthPeriodFromDate,
     pad: pad, readWorkbookFile: readWorkbookFile, readWorkbookFileRaw: readWorkbookFileRaw,
     downloadBlob: downloadBlob, normHeader: normHeader
   };

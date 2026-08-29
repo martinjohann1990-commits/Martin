@@ -12,31 +12,38 @@
       (sub ? '<div class="kpi-sub">' + sub + '</div>' : '') + '</div>';
   }
 
-  /* Sales History has no period/customer dimension, so it is used purely as a reference
-     ("Ist") value alongside the forecast total per district — it does not feed the district->DC
-     split, which is derived from the Destinations/Ship-to-Address structure (see sim.js). */
-  function historyComparisonHtml() {
+  /* Sales History's real per-district ESU (canonical-level rows only, see sim.js) vs. the
+     Forecast's derived district footprint (each DC's own forecast total fanned out through its
+     historical district shares). Since the footprint's MIX is itself derived from Sales
+     History, this is not an independent check of the split shape — but it is a meaningful
+     absolute-volume comparison: it shows which districts are projected to grow or shrink,
+     because it reflects each serving DC's own forecast trend against its historical baseline. */
+  function historyComparisonHtml(demand) {
     var history = LNP.state.data.history;
+    var canonical = LNP.sim.canonicalDistrictSet();
     if (!history.length) return '';
-    var forecastByDistrict = {};
-    LNP.state.data.forecast.forEach(function (r) { forecastByDistrict[r.district] = (forecastByDistrict[r.district] || 0) + r.qty; });
-    var historyByDistrict = {};
-    history.forEach(function (r) { historyByDistrict[r.district] = (historyByDistrict[r.district] || { name: r.districtName || r.district, qty: 0 }); historyByDistrict[r.district].qty += r.qty; historyByDistrict[r.district].name = r.districtName || historyByDistrict[r.district].name; });
-    var districts = Object.keys(historyByDistrict);
+    var histByDistrict = {};
+    history.forEach(function (r) {
+      if (!r.districtLabel || !canonical[r.districtLabel]) return;
+      histByDistrict[r.districtLabel] = (histByDistrict[r.districtLabel] || 0) + (r.qtyEsu || 0);
+    });
+    var districts = Object.keys(histByDistrict);
+    if (!districts.length) return '';
     var rows = districts.map(function (d) {
-      var histQty = historyByDistrict[d].qty;
-      var fcQty = forecastByDistrict[d] || 0;
+      var histQty = histByDistrict[d];
+      var fcQty = (demand.byDistrict[d] && demand.byDistrict[d].qty) || 0;
       var ratio = histQty > 0 ? fcQty / histQty : null;
-      return { name: historyByDistrict[d].name, histQty: histQty, fcQty: fcQty, ratio: ratio };
+      return { name: d, histQty: histQty, fcQty: fcQty, ratio: ratio };
     }).sort(function (a, b) { return b.histQty - a.histQty; });
     var tableRows = rows.map(function (r) {
       return '<tr><td>' + U.escapeHtml(r.name) + '</td><td class="num">' + I.fmtInt(r.histQty) + '</td><td class="num">' + I.fmtInt(r.fcQty) + '</td>' +
         '<td class="num">' + (r.ratio !== null ? I.fmtPct(r.ratio, 0) : '–') + '</td></tr>';
     }).join('');
     return '<div class="card"><h2>Ist (Sales History) vs. Forecast je Distrikt</h2>' +
-      '<p class="help">Sales History liefert keine Perioden- oder Kundenebene und dient hier nur als historischer Referenzwert (Gesamtsumme) neben der Forecast-Summe über den geladenen Zeitraum — sie fließt nicht in die Distrikt→DC-Aufteilung ein (diese basiert auf Destinations/Ship-to-Address).</p>' +
+      '<p class="help">Ist = reale historische ESU-Menge je Distrikt aus der Sales History (Zeitraum It. Quelldatei, i.d.R. 12 Monate). Forecast = abgeleiteter Distrikt-Fußabdruck über den gesamten geladenen Forecast-Horizont (Menge je DC, verteilt nach dessen historischem Distrikt-Mix). ' +
+      '<b>Achtung:</b> Forecast-Mengen liegen in Stück, Sales History in ESU (Equivalent Sales Unit) vor — beide Skalen sind nicht 1:1 vergleichbar, zusätzlich deckt der Forecast meist einen längeren Zeitraum ab. Die absolute Kennzahl „Forecast/Ist“ ist daher nur ein grober Anhaltspunkt; aussagekräftiger ist die <i>relative</i> Verteilung über die Distrikte in beiden Spalten.</p>' +
       '<div class="chart-box"><canvas id="chartHistoryVsForecast"></canvas></div>' +
-      '<div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Region">' + I.t('Region') + '</th><th class="num">Ist ESU</th><th class="num">Forecast ESU</th><th class="num">Forecast / Ist</th></tr></thead><tbody>' + tableRows + '</tbody></table></div></div>';
+      '<div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Region">' + I.t('Region') + '</th><th class="num">Ist (ESU)</th><th class="num">Forecast (Stück)</th><th class="num">Forecast / Ist</th></tr></thead><tbody>' + tableRows + '</tbody></table></div></div>';
   }
 
   function render(container) {
@@ -55,34 +62,28 @@
 
     var settings = LNP.state.settings;
     var net = LNP.sim.computeScenarioNetwork(null, { category: 'all', settings: settings });
+    var demand = LNP.sim.demandFor({ category: 'all', settings: settings });
     var dcs = LNP.sim.candidateDcs();
     var skus = LNP.state.data.skus;
-    var destinations = LNP.state.data.destinations;
+    var shipTo = LNP.state.data.shipToAddresses.length ? LNP.state.data.shipToAddresses : LNP.state.data.destinations;
 
     var totalPallets = net.totalPallets;
     var totalQty = net.totalQty;
     var avgPerDc = dcs.length ? totalPallets / dcs.length : 0;
-    var periodCount = {};
-    LNP.state.data.forecast.forEach(function (r) { periodCount[r.periodKey] = true; });
-    var monthCount = Object.keys(periodCount).length;
+    var monthCount = Object.keys(U.groupBy(LNP.state.data.forecast, function (r) { return r.periodKey; })).length;
 
     var kpis =
       kpiTile('Prognose Paletten (Gesamt)', I.fmtInt(totalPallets), monthCount ? monthCount + ' ' + (monthCount === 1 ? 'Monat' : 'Monate') : '') +
       kpiTile('Prognose ESU (Gesamt)', I.fmtInt(totalQty)) +
       kpiTile('Aktive Distributionszentren', I.fmtInt(dcs.length)) +
       kpiTile('SKUs im Bestand', I.fmtInt(skus.length)) +
-      kpiTile('Ship-to-Kunden', I.fmtInt(destinations.length)) +
+      kpiTile('Ship-to-Kunden', I.fmtInt(shipTo.length)) +
       kpiTile('Ø Paletten je DC', I.fmtInt(avgPerDc)) +
       kpiTile('Ziel-Reichweite (Wochen)', I.fmtNum(settings.coverageWeeksGlobal, 1)) +
-      (net.unassignedPallets > 0.5 ? kpiTile('Nicht zugeordnete Paletten', I.fmtInt(net.unassignedPallets), I.t('ohne Distrikt→DC-Zuordnung'), 'warn') : '');
+      (net.unassignedPallets > 0.5 ? kpiTile('Nicht zugeordnete Paletten', I.fmtInt(net.unassignedPallets), '', 'warn') : '');
 
-    var byDistrict = {};
-    LNP.state.data.forecast.forEach(function (r) {
-      byDistrict[r.district] = byDistrict[r.district] || { name: r.districtName || r.district, pallets: 0 };
-      byDistrict[r.district].pallets += r.pallets;
-    });
-    var districtRows = Object.keys(byDistrict).map(function (k) { return byDistrict[k]; });
-    var topDistricts = U.topNWithRest(districtRows, function (r) { return r.pallets; }, function (r) { return r.name; }, 10);
+    var districtRows = Object.keys(demand.byDistrict).map(function (k) { return demand.byDistrict[k]; });
+    var topDistricts = U.topNWithRest(districtRows, function (r) { return r.pallets; }, function (r) { return r.districtName; }, 10);
 
     var byPeriod = {};
     LNP.state.data.forecast.forEach(function (r) {
@@ -115,7 +116,7 @@
       '</div>' +
       '<div class="card"><h2 data-t="Prognoseverlauf je Periode">' + I.t('Prognoseverlauf je Periode') + '</h2>' +
       '<div class="chart-box"><canvas id="chartTrend"></canvas></div></div>' +
-      historyComparisonHtml() +
+      historyComparisonHtml(demand) +
       '<div class="card"><h2 data-t="Netzwerkkarte">' + I.t('Netzwerkkarte') + '</h2>' +
       '<div class="map-box" id="dashboardMap"></div></div>' +
       '<div class="card"><h2 data-t="Details">' + I.t('Details') + '</h2>' +
@@ -133,14 +134,16 @@
     LNP.charts.line('chartTrend', periodKeys, [{ label: 'PAL', data: periodKeys.map(function (k) { return Math.round(byPeriod[k].pallets); }) }]);
 
     if (LNP.state.data.history.length && document.getElementById('chartHistoryVsForecast')) {
-      var forecastByDistrict2 = {};
-      LNP.state.data.forecast.forEach(function (r) { forecastByDistrict2[r.district] = (forecastByDistrict2[r.district] || 0) + r.qty; });
-      var historyByDistrict2 = {};
-      LNP.state.data.history.forEach(function (r) { historyByDistrict2[r.district] = historyByDistrict2[r.district] || { name: r.districtName || r.district, qty: 0 }; historyByDistrict2[r.district].qty += r.qty; });
-      var hDistricts = Object.keys(historyByDistrict2).sort(function (a, b) { return historyByDistrict2[b].qty - historyByDistrict2[a].qty; });
-      LNP.charts.bar('chartHistoryVsForecast', hDistricts.map(function (d) { return historyByDistrict2[d].name; }), [
-        { label: 'Ist (Sales History)', data: hDistricts.map(function (d) { return Math.round(historyByDistrict2[d].qty); }) },
-        { label: 'Forecast', data: hDistricts.map(function (d) { return Math.round(forecastByDistrict2[d] || 0); }) }
+      var canonical = LNP.sim.canonicalDistrictSet();
+      var histByDistrict = {};
+      LNP.state.data.history.forEach(function (r) {
+        if (!r.districtLabel || !canonical[r.districtLabel]) return;
+        histByDistrict[r.districtLabel] = (histByDistrict[r.districtLabel] || 0) + (r.qtyEsu || 0);
+      });
+      var hDistricts = Object.keys(histByDistrict).sort(function (a, b) { return histByDistrict[b] - histByDistrict[a]; });
+      LNP.charts.bar('chartHistoryVsForecast', hDistricts, [
+        { label: 'Ist (ESU)', data: hDistricts.map(function (d) { return Math.round(histByDistrict[d]); }) },
+        { label: 'Forecast (Stück)', data: hDistricts.map(function (d) { return Math.round((demand.byDistrict[d] && demand.byDistrict[d].qty) || 0); }) }
       ]);
     }
 
@@ -154,11 +157,9 @@
         lanes.push({ fromLat: dc.lat, fromLng: dc.lng, toLat: c.lat, toLng: c.lng, dcId: dc.id, volume: d.districts[district] });
       });
     });
-    var regions = districtRows.map(function (r, i) {
-      var keys = Object.keys(byDistrict);
-      var district = keys[i];
-      var c = LNP.sim.districtCentroid(district);
-      return c ? { district: district, name: r.name, lat: c.lat, lng: c.lng, volume: r.pallets } : null;
+    var regions = districtRows.map(function (r) {
+      var c = LNP.sim.districtCentroid(r.district);
+      return c ? { district: r.district, name: r.districtName, lat: c.lat, lng: c.lng, volume: r.pallets } : null;
     }).filter(Boolean);
     LNP.mapview.render('dashboardMap', { dcs: dcs.filter(function (d) { return U.isNum(d.lat); }), regions: regions, lanes: lanes });
   }

@@ -1,6 +1,9 @@
 /* NetPlan+ sim.js — calculation core. No DOM access. Numbers in, numbers out (spec §7).
-   All cross-file joins (category via SKU_View, DC via DC_Translation_Table + Destinations,
-   distance via a country/city centroid lookup) are resolved here, lazily, from state.data. */
+   Forecast is DC-native (each row already carries its own "DC"), so the demand-by-DC total is
+   exact, not a proxy. The geographic footprint of each DC (which districts/customers it
+   historically serves) comes from Sales History, which links Shipping Point (-> DC via
+   DC_Translation_Table) to District with real ESU volume — this is what feeds distance-based
+   scoring, scenario re-routing after a consolidation, and the geographic reports. */
 (function () {
   'use strict';
   var LNP = window.LNP = window.LNP || {};
@@ -8,20 +11,25 @@
 
   function S() { return LNP.state; }
 
+  /* Known real-world coordinates for a handful of Villeroy & Boch sites, used only to pre-fill
+     a DC's country/coordinates the first time it is auto-created from the Forecast file — never
+     overrides a value the user has already set, and is always shown as source 'automatisch'
+     (editable/overridable in DC-Verwaltung like any other coordinate). */
+  var KNOWN_DC_HINTS = {
+    bassano: { country: 'IT', lat: 45.77, lng: 11.73 },
+    armitage: { country: 'GB', lat: 52.73, lng: -1.80 },
+    sevelievo: { country: 'BG', lat: 43.03, lng: 25.11 },
+    sevlievo: { country: 'BG', lat: 43.03, lng: 25.11 },
+    wittlich: { country: 'DE', lat: 49.99, lng: 6.89 },
+    losheim: { country: 'DE', lat: 49.52, lng: 6.75 },
+    dole: { country: 'FR', lat: 47.09, lng: 5.49 },
+    wroclaw: { country: 'PL', lat: 51.11, lng: 17.04 },
+    "valence d' agen": { country: 'FR', lat: 44.13, lng: 0.91 },
+    "valence d'agen": { country: 'FR', lat: 44.13, lng: 0.91 }
+  };
+  function dcHintFor(name) { return KNOWN_DC_HINTS[String(name || '').trim().toLowerCase()] || null; }
+
   /* ================= lazy join maps ================= */
-  function materialCategoryMap() {
-    var map = {};
-    var skus = S().data.skus;
-    for (var i = 0; i < skus.length; i++) {
-      var s = skus[i];
-      map[s.material] = { category: s.marketingView || s.productLine || null, dc: s.dc };
-    }
-    return map;
-  }
-  function categoryFor(idx, material) {
-    var e = idx[material];
-    return (e && e.category) ? e.category : 'Unbekannt';
-  }
   function shippingPointDcMap() {
     var map = {};
     var rows = S().data.dcTranslation;
@@ -40,10 +48,6 @@
   }
   function candidateDcs() { return S().data.dcs.filter(function (dc) { return dc.active !== false; }); }
 
-  /* Active DCs, optionally narrowed to an explicit allow-list (params.candidateDcIds) so the
-     Simulation view can let the user pick which sites are even considered. An empty array is a
-     deliberate "none selected" and must yield zero candidates, not fall back to "all" — only a
-     missing/null list means "no filter applied". */
   function resolveCandidates(params) {
     var all = candidateDcs();
     if (!params || !params.candidateDcIds) return all;
@@ -51,120 +55,118 @@
     params.candidateDcIds.forEach(function (id) { allow[id] = true; });
     return all.filter(function (dc) { return allow[dc.id]; });
   }
-  function allDestinations() { return S().data.destinations; }
 
   var _cache = {};
   function invalidateCaches() { _cache = {}; }
   S().onChange(function (evt) {
     if (evt === 'destinations' || evt === 'dcTranslation' || evt === 'dcs' || evt === 'skus' ||
-      evt === 'records' || evt === 'reset' || evt === 'project') invalidateCaches();
+      evt === 'records' || evt === 'salesHierarchy' || evt === 'reset' || evt === 'project') invalidateCaches();
   });
 
-  /* district -> {dcId: share 0..1} from real ship-to -> shipping point -> DC assignment (base topology) */
-  function districtDcShares() {
-    if (_cache.districtDcShares) return _cache.districtDcShares;
+  /* Canonical districts = the top level of the Sales Hierarchie ("District" column), e.g.
+     DACH, UK / IR, Western Europe... The finer "Land / Einheit" rows (Austria, Nordics, ...)
+     are each rolled up into exactly one of these. */
+  function canonicalDistrictSet() {
+    if (_cache.canonicalDistricts) return _cache.canonicalDistricts;
+    var set = {};
+    S().data.salesHierarchy.forEach(function (r) { if (r.district) set[r.district] = true; });
+    _cache.canonicalDistricts = set;
+    return set;
+  }
+  function allDistricts() {
+    var set = canonicalDistrictSet();
+    return Object.keys(set).sort().map(function (d) { return { district: d, name: d }; });
+  }
+
+  /* ================= Sales History -> DC x District real volume shares =================
+     Sales History reports the same underlying facts at BOTH the District level (e.g. "DACH")
+     and its constituent "Land / Einheit" level (e.g. "Austria") simultaneously — the District
+     row IS the sum of its children. Only the District-level rows are used here, or the share
+     computation would double- (or triple-) count. */
+  function dcDistrictShares() {
+    if (_cache.dcDistrictShares) return _cache.dcDistrictShares;
     var spMap = shippingPointDcMap();
-    var byDistrict = U.groupBy(allDestinations(), function (d) { return d.district || '—'; });
+    var canonical = canonicalDistrictSet();
+    var totals = {}; // dcName -> { district: esu }
+    S().data.history.forEach(function (r) {
+      if (!r.districtLabel || !canonical[r.districtLabel]) return;
+      var dcName = r.shippingPoint ? spMap[r.shippingPoint] : null;
+      if (!dcName) return;
+      totals[dcName] = totals[dcName] || {};
+      totals[dcName][r.districtLabel] = (totals[dcName][r.districtLabel] || 0) + (r.qtyEsu || 0);
+    });
     var out = {};
-    for (var district in byDistrict) {
-      if (!byDistrict.hasOwnProperty(district)) continue;
-      var rows = byDistrict[district], counts = {}, total = 0;
-      for (var i = 0; i < rows.length; i++) {
-        var dcName = rows[i].shippingPoint ? spMap[rows[i].shippingPoint] : null;
-        if (!dcName) continue;
-        counts[dcName] = (counts[dcName] || 0) + 1; total++;
-      }
+    Object.keys(totals).forEach(function (dcName) {
+      var id = dcId(dcName);
+      if (!id) return;
+      var byDistrict = totals[dcName];
+      var sum = 0;
+      Object.keys(byDistrict).forEach(function (d) { sum += Math.max(0, byDistrict[d]); });
       var shares = {};
-      if (total > 0) {
-        for (var name in counts) {
-          if (!counts.hasOwnProperty(name)) continue;
-          var id = dcId(name);
-          if (id) shares[id] = (shares[id] || 0) + counts[name] / total;
-        }
-      }
-      out[district] = shares;
-    }
-    _cache.districtDcShares = out;
+      if (sum > 0) Object.keys(byDistrict).forEach(function (d) { shares[d] = Math.max(0, byDistrict[d]) / sum; });
+      out[id] = { totalEsu: sum, shares: shares };
+    });
+    _cache.dcDistrictShares = out;
     return out;
   }
 
-  /* district -> {shares:[{country,share,count}], total} — proxy via ship-to customer counts
-     (no per-customer volume exists in the source data; documented in the Reports view). */
-  function districtCountryShares() {
-    if (_cache.districtCountryShares) return _cache.districtCountryShares;
-    var byDistrict = U.groupBy(allDestinations(), function (d) { return d.district || '—'; });
-    var out = {};
-    for (var district in byDistrict) {
-      if (!byDistrict.hasOwnProperty(district)) continue;
-      var rows = byDistrict[district], counts = {}, total = 0;
-      for (var i = 0; i < rows.length; i++) {
-        var c = GEO.normalizeCountryKey(rows[i].country);
-        if (!c) continue;
-        counts[c] = (counts[c] || 0) + 1; total++;
-      }
-      var shares = [];
-      for (var code in counts) if (counts.hasOwnProperty(code)) shares.push({ country: code, share: counts[code] / (total || 1), count: counts[code] });
-      shares.sort(function (a, b) { return b.share - a.share; });
-      out[district] = { shares: shares, total: total };
-    }
-    _cache.districtCountryShares = out;
-    return out;
+  /* Real country/region mix WITHIN a district, from Sales History's "Land / Einheit"-level rows
+     (the leaves of the same hierarchy dcDistrictShares uses at the District level) — a genuine
+     volume-weighted breakdown, not a customer-count proxy. */
+  function districtCountryBreakdown(districtName) {
+    var key = 'districtCountryBreakdown:' + districtName;
+    if (_cache[key]) return _cache[key];
+    var units = {};
+    S().data.salesHierarchy.forEach(function (r) { if (r.district === districtName && r.unit) units[r.unit] = true; });
+    var totals = {};
+    S().data.history.forEach(function (r) {
+      if (!r.districtLabel || !units[r.districtLabel]) return;
+      totals[r.districtLabel] = (totals[r.districtLabel] || 0) + (r.qtyEsu || 0);
+    });
+    var rows = Object.keys(units).map(function (u) { return { unit: u, esu: totals[u] || 0 }; });
+    rows.sort(function (a, b) { return b.esu - a.esu; });
+    _cache[key] = rows;
+    return rows;
   }
 
   function districtCentroid(district) {
     var override = S().settings.districtCoordOverrides && S().settings.districtCoordOverrides[district];
-    if (override && U.isNum(override.lat) && U.isNum(override.lng)) return { lat: override.lat, lng: override.lng, n: null, source: 'manuell' };
-    _cache.districtCentroid = _cache.districtCentroid || {};
-    if (_cache.districtCentroid.hasOwnProperty(district)) return _cache.districtCentroid[district];
-    var rows = allDestinations().filter(function (d) { return d.district === district; });
-    var sumLat = 0, sumLng = 0, n = 0;
-    for (var i = 0; i < rows.length; i++) {
-      var r = GEO.resolve({ city: rows[i].city, country: rows[i].country });
-      if (r) { sumLat += r.lat; sumLng += r.lng; n++; }
-    }
-    var out = n > 0 ? { lat: sumLat / n, lng: sumLng / n, n: n, source: 'automatisch' } : null;
-    _cache.districtCentroid[district] = out;
+    if (override && U.isNum(override.lat) && U.isNum(override.lng)) return { lat: override.lat, lng: override.lng, source: 'manuell' };
+    var key = 'districtCentroid:' + district;
+    if (_cache[key] !== undefined) return _cache[key];
+    var rows = districtCountryBreakdown(district);
+    var sumLat = 0, sumLng = 0, weight = 0;
+    var haveVolume = rows.some(function (r) { return r.esu > 0; });
+    rows.forEach(function (r) {
+      var w = haveVolume ? r.esu : 1;
+      if (haveVolume && r.esu <= 0) return;
+      var countries = GEO.expandUnitToCountries(r.unit);
+      if (!countries.length) return;
+      var cLat = 0, cLng = 0, n = 0;
+      countries.forEach(function (code) {
+        var c = GEO.COUNTRY[code];
+        if (c) { cLat += c.lat; cLng += c.lng; n++; }
+      });
+      if (!n) return;
+      sumLat += (cLat / n) * w; sumLng += (cLng / n) * w; weight += w;
+    });
+    var out = weight > 0 ? { lat: sumLat / weight, lng: sumLng / weight, source: 'automatisch' } : null;
+    _cache[key] = out;
     return out;
   }
 
-  function countryDisplayName(code) {
-    var hier = S().data.salesHierarchy;
-    for (var i = 0; i < hier.length; i++) if (hier[i].code === code) return hier[i].unit;
-    return GEO.countryName(code);
-  }
+  function countryDisplayName(unit) { return unit; }
 
-  function allDistricts() {
-    var set = {};
-    S().data.forecast.forEach(function (r) { set[r.district] = r.districtName || r.district; });
-    S().data.destinations.forEach(function (r) { if (r.district) set[r.district] = r.districtName || set[r.district] || r.district; });
-    return Object.keys(set).map(function (k) { return { district: k, name: set[k] }; });
-  }
-
-  function allCategories() {
-    var idx = materialCategoryMap(), set = {};
-    S().data.forecast.forEach(function (r) { set[categoryFor(idx, r.material)] = true; });
-    return Object.keys(set).sort();
-  }
-
-  function periodRange() {
-    var rows = S().data.forecast;
-    var min = null, max = null;
-    for (var i = 0; i < rows.length; i++) {
-      if (min === null || rows[i].periodTs < min) min = rows[i].periodTs;
-      if (max === null || rows[i].periodTs > max) max = rows[i].periodTs;
-    }
-    return { min: min, max: max };
-  }
-
-  /* ================= demand ================= */
+  /* ================= demand (DC-native, exact) ================= */
   function filterForecast(params) {
     params = params || {};
-    var rows = S().data.forecast, idx = materialCategoryMap(), out = [];
+    var rows = S().data.forecast, out = [];
     for (var i = 0; i < rows.length; i++) {
       var r = rows[i];
       if (U.isNum(params.periodFrom) && r.periodTs < params.periodFrom) continue;
       if (U.isNum(params.periodTo) && r.periodTs > params.periodTo) continue;
-      if (params.category && params.category !== 'all' && categoryFor(idx, r.material) !== params.category) continue;
+      if (params.category && params.category !== 'all' && r.category !== params.category) continue;
+      if (params.dc && r.dc !== params.dc) continue;
       out.push(r);
     }
     return out;
@@ -173,26 +175,42 @@
   function distinctPeriodDays(rows) {
     var seen = {}, total = 0;
     for (var i = 0; i < rows.length; i++) { if (!seen[rows[i].periodKey]) { seen[rows[i].periodKey] = true; total += rows[i].periodDays; } }
-    return total || 7;
+    return total || 30.44;
   }
 
+  /* demand.byDc is the primary, exact figure (straight from Forecast). demand.byDistrict is a
+     DERIVED footprint — each DC's total fanned out through dcDistrictShares() — used only for
+     distance/service scoring and maps, never as the source of truth for DC totals. */
   function demandFor(params) {
     var rows = filterForecast(params);
     var totalDays = distinctPeriodDays(rows);
-    var byDistrict = U.groupBy(rows, function (r) { return r.district; });
-    var out = {};
-    for (var d in byDistrict) {
-      if (!byDistrict.hasOwnProperty(d)) continue;
-      var recs = byDistrict[d];
-      out[d] = {
-        district: d, districtName: recs[0].districtName || d,
-        pallets: U.sum(recs, function (r) { return r.pallets; }),
-        qty: U.sum(recs, function (r) { return r.qty; }),
-        volume: U.sum(recs, function (r) { return r.volume; }),
-        totalDays: totalDays
-      };
+    var byDcRows = U.groupBy(rows, function (r) { return r.dc; });
+    var byDc = {};
+    for (var dcName in byDcRows) {
+      if (!byDcRows.hasOwnProperty(dcName)) continue;
+      var recs = byDcRows[dcName];
+      byDc[dcName] = { dc: dcName, pallets: U.sum(recs, function (r) { return r.pallets; }), qty: U.sum(recs, function (r) { return r.qty; }) };
     }
-    return { byDistrict: out, totalDays: totalDays, rows: rows };
+    var shares = dcDistrictShares();
+    var byDistrict = {};
+    Object.keys(byDc).forEach(function (dcName) {
+      var id = dcId(dcName);
+      var s = id ? shares[id] : null;
+      var d = byDc[dcName];
+      if (s && Object.keys(s.shares).length) {
+        Object.keys(s.shares).forEach(function (district) {
+          byDistrict[district] = byDistrict[district] || { district: district, districtName: district, pallets: 0, qty: 0 };
+          byDistrict[district].pallets += d.pallets * s.shares[district];
+          byDistrict[district].qty += d.qty * s.shares[district];
+        });
+      } else {
+        var key = '(ohne Distrikt-Zuordnung)';
+        byDistrict[key] = byDistrict[key] || { district: key, districtName: key, pallets: 0, qty: 0 };
+        byDistrict[key].pallets += d.pallets;
+        byDistrict[key].qty += d.qty;
+      }
+    });
+    return { byDc: byDc, byDistrict: byDistrict, totalDays: totalDays, rows: rows };
   }
 
   function resolveCoverageWeeks(category, settings) {
@@ -205,8 +223,24 @@
 
   function scopeSkuCount(rows) {
     var set = {};
-    for (var i = 0; i < rows.length; i++) set[rows[i].material] = true;
+    for (var i = 0; i < rows.length; i++) set[rows[i].article] = true;
     return Object.keys(set).length;
+  }
+
+  function allCategories() {
+    var set = {};
+    S().data.forecast.forEach(function (r) { set[r.category || 'Unbekannt'] = true; });
+    return Object.keys(set).sort();
+  }
+
+  function periodRange() {
+    var rows = S().data.forecast;
+    var min = null, max = null;
+    for (var i = 0; i < rows.length; i++) {
+      if (min === null || rows[i].periodTs < min) min = rows[i].periodTs;
+      if (max === null || rows[i].periodTs > max) max = rows[i].periodTs;
+    }
+    return { min: min, max: max };
   }
 
   /* ================= distance / cost / transit ================= */
@@ -308,14 +342,14 @@
     };
   }
 
+  function totalPalletsOf(demand) { return U.sum(Object.keys(demand.byDc), function (k) { return demand.byDc[k].pallets; }); }
+
   function runSingle(params) {
     var settings = params.settings || S().settings;
     var demand = demandFor(params);
-    var districtPalletsMap = {}, totalPallets = 0;
-    for (var d in demand.byDistrict) {
-      if (!demand.byDistrict.hasOwnProperty(d)) continue;
-      districtPalletsMap[d] = demand.byDistrict[d].pallets; totalPallets += demand.byDistrict[d].pallets;
-    }
+    var districtPalletsMap = {};
+    Object.keys(demand.byDistrict).forEach(function (d) { districtPalletsMap[d] = demand.byDistrict[d].pallets; });
+    var totalPallets = totalPalletsOf(demand);
     var weeks = demand.totalDays / 7 || 1;
     var coverageWeeks = resolveCoverageWeeks(params.category, settings);
     var storageDemand = (totalPallets / weeks) * coverageWeeks * (settings.stockFactor || 1);
@@ -379,11 +413,10 @@
     var candidates = resolveCandidates(params);
     var poolSize = params.candidatePoolSize || Math.min(candidates.length, 5) || 1;
 
-    var districtPalletsMapFull = {}, totalPallets = 0;
-    for (var d in demand.byDistrict) {
-      if (!demand.byDistrict.hasOwnProperty(d)) continue;
-      districtPalletsMapFull[d] = demand.byDistrict[d].pallets; totalPallets += demand.byDistrict[d].pallets;
-    }
+    var districtPalletsMapFull = {};
+    Object.keys(demand.byDistrict).forEach(function (d) { districtPalletsMapFull[d] = demand.byDistrict[d].pallets; });
+    var totalPallets = totalPalletsOf(demand);
+
     var quickScored = candidates.map(function (dc) { return { dc: dc, cpp: avgTransportCostPerPallet(dc, districtPalletsMapFull, settings) }; })
       .filter(function (x) { return x.cpp !== null; });
     quickScored.sort(function (a, b) { return a.cpp - b.cpp; });
@@ -481,11 +514,9 @@
     var coverageWeeks = resolveCoverageWeeks(params.category, settings);
     var skuCount = scopeSkuCount(demand.rows);
     var pickingBins = Math.ceil(skuCount / (settings.skusPerBin || 1));
-    var districtPalletsMapFull = {}, totalPallets = 0;
-    for (var d in demand.byDistrict) {
-      if (!demand.byDistrict.hasOwnProperty(d)) continue;
-      districtPalletsMapFull[d] = demand.byDistrict[d].pallets; totalPallets += demand.byDistrict[d].pallets;
-    }
+    var districtPalletsMapFull = {};
+    Object.keys(demand.byDistrict).forEach(function (d) { districtPalletsMapFull[d] = demand.byDistrict[d].pallets; });
+    var totalPallets = totalPalletsOf(demand);
     var slotFactor = weeks > 0 ? (coverageWeeks * (settings.stockFactor || 1)) / weeks : 0;
     var ids = Object.keys(shareMap).filter(function (id) { return shareMap[id] > 0; });
 
@@ -549,41 +580,56 @@
     return resolveTarget(mapping, next, guard);
   }
 
+  /* SKU count per DC: primary source is Forecast's own distinct (dc, article) pairs — the
+     future-state assignment, and more reliable than SKU_View's historical, heavily-masked data. */
   function skuCountByDc(scenario) {
     var mapping = (scenario && scenario.dcMapping) || {};
-    var groups = {}, skus = S().data.skus;
-    for (var i = 0; i < skus.length; i++) {
-      var srcId = dcId(skus[i].dc);
-      if (!srcId) continue;
+    var groups = {};
+    S().data.forecast.forEach(function (r) {
+      var srcId = dcId(r.dc);
+      if (!srcId) return;
       var target = resolveTarget(mapping, srcId);
       groups[target] = groups[target] || {};
-      groups[target][skus[i].material] = true;
-    }
+      groups[target][r.article] = true;
+    });
     var counts = {};
     for (var id in groups) if (groups.hasOwnProperty(id)) counts[id] = Object.keys(groups[id]).length;
     return counts;
   }
 
+  /* Fans each DC's own (exact) forecast total out into district-level pieces via
+     dcDistrictShares(), then routes each piece to its scenario target (regionOverrides first,
+     else the scenario's dcMapping). Districts with no Sales-History coverage for that DC route
+     as one undifferentiated piece so no volume is silently dropped. */
   function allocateToDcs(demand, scenario) {
-    var shares = districtDcShares();
+    var shares = dcDistrictShares();
     var mapping = (scenario && scenario.dcMapping) || {};
     var overrides = (scenario && scenario.regionOverrides) || {};
-    var alloc = {}, unassignedPallets = 0;
-    function add(id, d, share) {
-      if (!id) return;
-      alloc[id] = alloc[id] || { pallets: 0, qty: 0, volume: 0, districts: {} };
-      alloc[id].pallets += d.pallets * share; alloc[id].qty += d.qty * share; alloc[id].volume += d.volume * share;
-      alloc[id].districts[d.district] = (alloc[id].districts[d.district] || 0) + d.pallets * share;
+    var alloc = {};
+    function add(targetId, district, pallets, qty) {
+      if (!targetId) return;
+      alloc[targetId] = alloc[targetId] || { pallets: 0, qty: 0, districts: {} };
+      alloc[targetId].pallets += pallets; alloc[targetId].qty += qty;
+      alloc[targetId].districts[district] = (alloc[targetId].districts[district] || 0) + pallets;
     }
-    for (var district in demand.byDistrict) {
-      if (!demand.byDistrict.hasOwnProperty(district)) continue;
-      var d = demand.byDistrict[district];
-      if (overrides[district]) { add(resolveTarget(mapping, overrides[district]), d, 1); continue; }
-      var ds = shares[district];
-      if (!ds || !Object.keys(ds).length) { unassignedPallets += d.pallets; continue; }
-      for (var srcId in ds) { if (ds.hasOwnProperty(srcId)) add(resolveTarget(mapping, srcId), d, ds[srcId]); }
-    }
-    return { alloc: alloc, unassignedPallets: unassignedPallets };
+    Object.keys(demand.byDc).forEach(function (dcName) {
+      var d = demand.byDc[dcName];
+      var srcId = dcId(dcName);
+      if (!srcId) return;
+      var s = shares[srcId];
+      if (s && Object.keys(s.shares).length) {
+        Object.keys(s.shares).forEach(function (district) {
+          var frac = s.shares[district];
+          var target = overrides[district] || resolveTarget(mapping, srcId);
+          add(target, district, d.pallets * frac, d.qty * frac);
+        });
+      } else {
+        var fallbackDistrict = '(ohne Distrikt-Zuordnung)';
+        var target2 = overrides[fallbackDistrict] || resolveTarget(mapping, srcId);
+        add(target2, fallbackDistrict, d.pallets, d.qty);
+      }
+    });
+    return { alloc: alloc, unassignedPallets: 0 };
   }
 
   function computeScenarioNetwork(scenario, params) {
@@ -604,7 +650,7 @@
       var utilization = dc.capacity > 0 ? ((dc.usedSlots || 0) + storageDemand) / dc.capacity : null;
       perDc.push({
         dcId: id, dcName: dc.name, active: dc.active !== false,
-        pallets: a.pallets, qty: a.qty, volume: a.volume,
+        pallets: a.pallets, qty: a.qty,
         weeklyRate: weeklyRate, storageDemandPallets: storageDemand,
         utilization: utilization, capacity: dc.capacity,
         skuCount: skuCount, pickingBins: pickingBins, districts: a.districts
@@ -637,19 +683,19 @@
     var dcs = candidateDcs();
     var bassano = findDcByPattern(/bassano/i);
     var armitage = findDcByPattern(/armitage/i);
-    var sevlievo = findDcByPattern(/sevliev/i);
-    var saar = findDcByPattern(/saar|losheim|merzig/i);
+    var sevlievo = findDcByPattern(/sev.{0,2}liev/i);
+    var saar = findDcByPattern(/saar|losheim|merzig|wittlich/i);
     var mapping = {}, warnings = [];
     function keep(dc) { if (dc) mapping[dc.id] = dc.id; }
 
     if (templateKey === 'central-eu-consolidation') {
       keep(bassano); keep(armitage); keep(sevlievo);
-      var hub = saar || findDcByPattern(/dole|wroclaw|vda/i);
+      var hub = saar || findDcByPattern(/dole|wroclaw|vda|valence/i);
       dcs.forEach(function (dc) {
         if (dc === bassano || dc === armitage || dc === sevlievo) return;
         mapping[dc.id] = hub ? hub.id : dc.id;
       });
-      if (!hub) warnings.push('Kein Standort passend zu "Saar" gefunden — bitte Ziel-DC für die Konsolidierung im Szenario-Editor wählen.');
+      if (!hub) warnings.push('Kein Standort passend zu "Saar/Losheim/Wittlich" gefunden — bitte Ziel-DC für die Konsolidierung im Szenario-Editor wählen.');
     } else if (templateKey === 'full-ee') {
       keep(bassano); keep(armitage);
       dcs.forEach(function (dc) {
@@ -673,17 +719,17 @@
   }
 
   /* ================= reports ================= */
-  function countryDistrictAllocation(district, topN) {
+  function countryAllocationForDistrict(district, topN) {
     topN = topN || S().settings.countryAllocationTopN || 10;
-    var cs = districtCountryShares()[district];
-    if (!cs) return { district: district, rows: [], total: 0 };
-    var rows = cs.shares.slice(0, topN).map(function (s) {
-      return { country: s.country, countryName: countryDisplayName(s.country), share: s.share, count: s.count };
+    var rows = districtCountryBreakdown(district);
+    var total = U.sum(rows, function (r) { return Math.max(0, r.esu); });
+    var top = rows.slice(0, topN).map(function (r) {
+      return { unit: r.unit, share: total > 0 ? Math.max(0, r.esu) / total : 0, esu: r.esu };
     });
-    var restShare = 0, restCount = 0;
-    for (var i = topN; i < cs.shares.length; i++) { restShare += cs.shares[i].share; restCount += cs.shares[i].count; }
-    if (restCount > 0) rows.push({ country: 'REST', countryName: 'Rest', share: restShare, count: restCount, isRest: true });
-    return { district: district, rows: rows, total: cs.total };
+    var restEsu = 0;
+    for (var i = topN; i < rows.length; i++) restEsu += Math.max(0, rows[i].esu);
+    if (rows.length > topN && restEsu > 0) top.push({ unit: 'Rest', share: total > 0 ? restEsu / total : 0, esu: restEsu, isRest: true });
+    return { district: district, rows: top, total: total };
   }
 
   function skuCountPerDcReport() {
@@ -700,6 +746,8 @@
     return keywords.some(function (k) { return low.indexOf(String(k).toLowerCase()) !== -1; });
   }
 
+  /* Proxy: each (DC, Article, Month) forecast line stands in for a dispatch line, since the
+     source data has no order/delivery-line grain. */
   function avgShipmentSize(params) {
     var settings = params.settings || S().settings;
     var rows = filterForecast(params);
@@ -709,57 +757,46 @@
       { label: bounds[0].toFixed(1) + '–' + bounds[1].toFixed(1) + ' ESU', min: bounds[0], max: bounds[1], count: 0, qtySum: 0 },
       { label: '> ' + bounds[1].toFixed(1) + ' ESU', min: bounds[1], max: Infinity, count: 0, qtySum: 0 }
     ];
-    var perDc = {}, shares = districtDcShares(), totalQty = 0;
+    var perDc = {}, totalQty = 0;
     rows.forEach(function (r) {
       totalQty += r.qty;
       for (var c = 0; c < clusters.length; c++) {
         if (r.qty > clusters[c].min && r.qty <= clusters[c].max) { clusters[c].count++; clusters[c].qtySum += r.qty; break; }
       }
-      var ds = shares[r.district];
-      if (ds) {
-        Object.keys(ds).forEach(function (id) {
-          perDc[id] = perDc[id] || { count: 0, qtySum: 0 };
-          perDc[id].count += ds[id]; perDc[id].qtySum += r.qty * ds[id];
-        });
-      }
+      perDc[r.dc] = perDc[r.dc] || { count: 0, qtySum: 0 };
+      perDc[r.dc].count++; perDc[r.dc].qtySum += r.qty;
     });
-    var perDcOut = Object.keys(perDc).map(function (id) {
-      var dc = dcById(id);
-      return { dcId: id, dcName: dc ? dc.name : id, avg: perDc[id].count > 0 ? perDc[id].qtySum / perDc[id].count : null, lines: perDc[id].count };
+    var perDcOut = Object.keys(perDc).map(function (dcName) {
+      var d = perDc[dcName];
+      return { dcId: dcId(dcName), dcName: dcName, avg: d.count > 0 ? d.qtySum / d.count : null, lines: d.count };
     }).sort(function (a, b) { return (b.avg || 0) - (a.avg || 0); });
     return { europeAvg: rows.length > 0 ? totalQty / rows.length : null, totalLines: rows.length, totalQty: totalQty, clusters: clusters, perDc: perDcOut };
   }
 
+  /* Proxy: a (DC, Month) bundle of forecast lines stands in for a shipment/delivery. */
   function shipmentComposition(params) {
     var settings = params.settings || S().settings;
     var rows = filterForecast(Object.assign({}, params, { category: 'all' }));
-    var idx = materialCategoryMap();
-    var bundles = U.groupBy(rows, function (r) { return r.district + '|' + r.periodKey; });
+    var bundles = U.groupBy(rows, function (r) { return r.dc + '|' + r.periodKey; });
     var totalBundles = 0, tapsOnly = 0, mixed = 0, noTaps = 0;
-    var perDc = {}, shares = districtDcShares();
+    var perDc = {};
     Object.keys(bundles).forEach(function (key) {
       var lines = bundles[key];
-      var district = lines[0].district;
+      var dcName = lines[0].dc;
       var hasTaps = false, hasOther = false;
       lines.forEach(function (l) {
-        var cat = categoryFor(idx, l.material);
-        if (isTapsCategory(cat, settings.tapsKeywords)) hasTaps = true; else hasOther = true;
+        if (isTapsCategory(l.category, settings.tapsKeywords)) hasTaps = true; else hasOther = true;
       });
       totalBundles++;
       var kind = (hasTaps && hasOther) ? 'mixed' : (hasTaps ? 'tapsOnly' : 'noTaps');
       if (kind === 'mixed') mixed++; else if (kind === 'tapsOnly') tapsOnly++; else noTaps++;
-      var ds = shares[district];
-      if (ds) {
-        Object.keys(ds).forEach(function (id) {
-          perDc[id] = perDc[id] || { total: 0, tapsOnly: 0, mixed: 0, noTaps: 0 };
-          perDc[id].total += ds[id]; perDc[id][kind] += ds[id];
-        });
-      }
+      perDc[dcName] = perDc[dcName] || { total: 0, tapsOnly: 0, mixed: 0, noTaps: 0 };
+      perDc[dcName].total++; perDc[dcName][kind]++;
     });
-    var perDcOut = Object.keys(perDc).map(function (id) {
-      var dc = dcById(id), p = perDc[id];
+    var perDcOut = Object.keys(perDc).map(function (dcName) {
+      var p = perDc[dcName];
       return {
-        dcId: id, dcName: dc ? dc.name : id,
+        dcId: dcId(dcName), dcName: dcName,
         tapsOnlyShare: p.total > 0 ? p.tapsOnly / p.total : null,
         mixedShare: p.total > 0 ? p.mixed / p.total : null,
         noTapsShare: p.total > 0 ? p.noTaps / p.total : null, total: p.total
@@ -775,34 +812,36 @@
   }
 
   var FORMULA_REFERENCE = [
-    { title: 'Paletten', formula: 'Paletten = PalÄq → Paletten → Volumen ÷ VolProPal → Menge ÷ StückProPal', note: 'Bei den 7 Quelldateien liegen Paletten (Sum of Pallet load) bereits direkt vor; die Umrechnungskette wird nicht benötigt.' },
+    { title: 'Paletten', formula: 'Paletten = Menge (ESU je Monat) ÷ Pallett Load (artikelspezifisch, aus dem Forecast)', note: 'Der Forecast liegt bereits je DC vor (nicht je Distrikt) — die Palettenzahl je DC ist damit exakt, keine Näherung.' },
     { title: 'Bedarf/Tag', formula: 'Bedarf/Tag = Σ Paletten ÷ Σ echte Tageslängen der Perioden im Filter' },
-    { title: 'Ziel-Bestand (Lagerbedarf)', formula: 'Ziel-Bestand = Bedarf/Tag × 7 × Coverage(Wochen) × Sicherheitsaufschlag', note: 'Coverage (Ziel-Reichweite) ist global und je Kategorie/DC dynamisch einstellbar.' },
-    { title: 'Distanz', formula: 'Distanz = Haversine(DC, Distrikt-Zentroid) × 1,28', note: 'Distrikt-Zentroid = Mittel der geokodierten Ship-to-Adressen des Distrikts.' },
+    { title: 'Ziel-Bestand (Lagerbedarf)', formula: 'Ziel-Bestand = Bedarf/Tag × 7 × Coverage(Wochen) × Sicherheitsaufschlag' },
+    { title: 'Geografischer Fußabdruck je DC', formula: 'Distrikt-Anteil(DC) = Sales History ESU(DC, Distrikt) ÷ Sales History ESU(DC, alle Distrikte)', note: 'Aus den echten historischen Mengen der Sales History (Shipping Point → DC via DC Translation Table), nicht aus einer Kundenanzahl-Näherung. Nur die Distrikt-Ebene wird summiert — die feinere Land/Einheit-Ebene ist in denselben Zahlen bereits enthalten (Vermeidung von Doppelzählung).' },
+    { title: 'Distanz', formula: 'Distanz = Haversine(DC, Distrikt-Zentroid) × 1,28', note: 'Distrikt-Zentroid = mengengewichtetes Mittel der Länder-Zentroide, die laut Sales Hierarchie/Sales History zu diesem Distrikt gehören.' },
     { title: '€ / Palette', formula: 'Regionspauschale, sonst Grundkosten + €/km × Distanz' },
     { title: 'Transit', formula: 'Transit = Handlingtage + Distanz ÷ km pro Tag' },
     { title: 'Kapazitäts-Score', formula: 'Auslastung ≤ Grenze: 100 − 50 × (Auslastung ÷ Grenze); Grenze…100%: 50 × (1 − (Auslastung − Grenze) ÷ (1 − Grenze)); darüber: 0' },
     { title: 'Transport-Score', formula: '100 × günstigste €/Palette im Bewerberfeld ÷ eigene €/Palette' },
-    { title: 'Service-Score (Reichweite)', formula: '100 × (0,7 × Bestandsfähigkeit + 0,3 × Reaktionsfähigkeit)', note: 'Eigene, transparent dokumentierte Ausformulierung: Bestandsfähigkeit = relative Nähe der eigenen Transitzeit zur schnellsten im Bewerberfeld; Reaktionsfähigkeit = 1 − Transit ÷ (Coverage in Tagen), begrenzt auf [0,1]. Die Original-Formel aus berechnungslogik.md lag für diesen Nachbau nicht vor.' },
+    { title: 'Service-Score (Reichweite)', formula: '100 × (0,7 × Bestandsfähigkeit + 0,3 × Reaktionsfähigkeit)', note: 'Eigene, transparent dokumentierte Ausformulierung: Bestandsfähigkeit = relative Nähe der eigenen Transitzeit zur schnellsten im Bewerberfeld; Reaktionsfähigkeit = 1 − Transit ÷ (Coverage in Tagen), begrenzt auf [0,1].' },
     { title: 'Gesamt-Score', formula: 'Σ normierte Gewichte × Teil-Scores (Kapazität/Transport/Service)' },
-    { title: 'Länder-Distrikt-Zuordnung', formula: 'Anteil Land = Ship-to-Kunden(Land, Distrikt) ÷ Ship-to-Kunden(Distrikt)', note: 'Anzahl-basierter Proxy, da keine kundenscharfen Volumina in den Quelldaten vorliegen.' },
-    { title: 'SKU / Picking Bins je DC', formula: 'Picking Bins = ⌈SKU-Anzahl ÷ SKUs je Bin⌉' },
-    { title: 'Ø Sendungsgröße', formula: 'Mittelwert von Forecast qty ESU je (Distrikt, Periode, Material)-Zeile', note: 'Proxy für eine Sendung, da keine Auftrags-/Lieferpositionen vorliegen.' },
-    { title: 'Sendungszusammensetzung', formula: 'Anteil (Distrikt, Periode)-Bündel, die ausschließlich "Taps"-Kategorien enthalten vs. gemischt' }
+    { title: 'Szenario-Konsolidierung', formula: 'Beim Zusammenlegen von DC X in DC Y wird der Distrikt-Fußabdruck von X (s.o.) 1:1 auf Y übertragen, gewichtet mit dem Forecast-Volumen von X.' },
+    { title: 'SKU / Picking Bins je DC', formula: 'SKU-Anzahl = Anzahl unterschiedlicher Artikel im Forecast je DC; Picking Bins = ⌈SKU-Anzahl ÷ SKUs je Bin⌉' },
+    { title: 'Ø Sendungsgröße', formula: 'Mittelwert von Forecast-Menge (ESU) je (DC, Artikel, Monat)-Zeile', note: 'Proxy für eine Sendung, da keine Auftrags-/Lieferpositionen vorliegen.' },
+    { title: 'Sendungszusammensetzung', formula: 'Anteil (DC, Monat)-Bündel, die ausschließlich "Taps"-Kategorien enthalten vs. gemischt' }
   ];
 
   LNP.sim = {
-    materialCategoryMap: materialCategoryMap, categoryFor: categoryFor,
-    districtDcShares: districtDcShares, districtCountryShares: districtCountryShares,
-    districtCentroid: districtCentroid, countryDisplayName: countryDisplayName,
-    allDistricts: allDistricts, allCategories: allCategories, periodRange: periodRange,
+    dcId: dcId, dcById: dcById, candidateDcs: candidateDcs, resolveCandidates: resolveCandidates,
+    dcHintFor: dcHintFor,
+    allDistricts: allDistricts, canonicalDistrictSet: canonicalDistrictSet, allCategories: allCategories, periodRange: periodRange,
+    dcDistrictShares: dcDistrictShares, districtCountryBreakdown: districtCountryBreakdown, districtCentroid: districtCentroid,
+    countryDisplayName: countryDisplayName,
     demandFor: demandFor, resolveCoverageWeeks: resolveCoverageWeeks,
     distanceKm: distanceKm, transportCostPerPallet: transportCostPerPallet, transitDaysFor: transitDaysFor,
-    evaluateDC: evaluateDC, dcById: dcById, candidateDcs: candidateDcs, resolveCandidates: resolveCandidates,
+    evaluateDC: evaluateDC,
     runSingle: runSingle, runSplit: runSplit, runManual: runManual, runAll: runAll, applyResult: applyResult,
     skuCountByDc: skuCountByDc, allocateToDcs: allocateToDcs, computeScenarioNetwork: computeScenarioNetwork,
     resolveTarget: resolveTarget, buildScenarioTemplate: buildScenarioTemplate, SCENARIO_TEMPLATES: SCENARIO_TEMPLATES,
-    countryDistrictAllocation: countryDistrictAllocation, skuCountPerDcReport: skuCountPerDcReport,
+    countryAllocationForDistrict: countryAllocationForDistrict, skuCountPerDcReport: skuCountPerDcReport,
     avgShipmentSize: avgShipmentSize, shipmentComposition: shipmentComposition,
     invalidateCaches: invalidateCaches, FORMULA_REFERENCE: FORMULA_REFERENCE
   };
