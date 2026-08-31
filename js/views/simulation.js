@@ -97,6 +97,8 @@
       (warnings.length ? warnings.map(function (w) { return '<div class="reco-warn">' + U.escapeHtml(w) + '</div>'; }).join(' ') : '') +
       '<div class="reco-kpis">' +
       recoKpi(I.t('Ziel-Palettenbestand'), I.fmtInt(U.sum(active.parts, function (p) { return p.slots; }))) +
+      recoKpi('davon Zyklusbestand', I.fmtInt(U.sum(active.parts, function (p) { return p.cycleStock || 0; }))) +
+      recoKpi('davon Sicherheitsbestand', I.fmtInt(U.sum(active.parts, function (p) { return p.safetyStock || 0; }))) +
       recoKpi(I.t('Forecast-Menge im Zeitraum'), I.fmtInt(active.demand.totalPallets)) +
       recoKpi(I.t('Ziel-Reichweite (Monate)'), I.fmtNum(active.targetDays / 30.44, 1)) +
       recoKpi('Ø €/Palette', best.transportCostPerPallet !== null ? I.fmtNum(best.transportCostPerPallet, 2) : '–') +
@@ -151,10 +153,13 @@
       var p = row.p, dc = row.dc;
       var shareInput = '<input type="number" min="0" step="1" class="js-manual-share" data-id="' + dc.id + '" value="' + (ui.manualShares[dc.id] || (p ? Math.round(p.share * 100) : 0)) + '">';
       var shareCell = isManual ? shareInput : I.fmtInt((p ? p.share : 0) * 100) + ' %';
+      var slotsCell = p ? '<b>' + I.fmtInt(p.slots) + '</b>' +
+        (U.isNum(p.cycleStock) && U.isNum(p.safetyStock) ?
+          '<div class="muted" style="font-size:11px">Zyklus ' + I.fmtInt(p.cycleStock) + ' + Sicherheit ' + I.fmtInt(p.safetyStock) + '</div>' : '') : '–';
       return '<tr><td>' + U.escapeHtml(dc.name) + '</td>' +
         '<td class="num">' + shareCell + '</td>' +
         '<td class="num">' + (p ? I.fmtInt(p.pallets) : '–') + '</td>' +
-        '<td class="num">' + (p ? I.fmtInt(p.slots) : '–') + '</td>' +
+        '<td class="num">' + slotsCell + '</td>' +
         '<td class="num">' + (p && p.transportCost !== null ? I.fmtNum(p.transportCost, 2) : '–') + '</td>' +
         '<td class="num">' + (p ? I.fmtCur(p.totalCost) : '–') + '</td>' +
         '<td class="num">' + (p ? I.fmtInt(p.score) : '–') + '</td>' +
@@ -166,7 +171,7 @@
       '<div class="actions">' + (isManual ? '<button class="btn btn-sm" id="simRecalcManual">Neu berechnen</button>' : '') +
       '<button class="btn btn-sm btn-primary" id="simApplyBtn" data-t="Übernehmen">' + I.t('Übernehmen') + '</button></div></div>' +
       (isManual ? '<p class="help">Anteile eintragen (relative Gewichte, müssen nicht auf 100 summieren) und neu berechnen.</p>' : '') +
-      '<p class="help">PAL = Forecast-Durchsatz im gewählten Zeitraum (Basis für Transportkosten/Anteil). Slots = Ziel-Palettenbestand je Standort = Zyklusbestand (Ø Menge × Reichweite) + Sicherheitsbestand (aus der monatlichen Schwankung am jeweiligen Standort) — sinkt bei stärkerer Konsolidierung auf weniger Standorte, siehe Formelübersicht in Berichte.</p>' +
+      '<p class="help">PAL = Forecast-Durchsatz im gewählten Zeitraum (Basis für Transportkosten/Anteil). Slots = Ziel-Palettenbestand je Standort = Zyklusbestand (Ø Menge × Reichweite, unabhängig von der Standortanzahl) + Sicherheitsbestand (aus der echten monatlichen Schwankung am jeweiligen Standort, sinkt bei Konsolidierung). Wie stark der Sicherheitsbestand insgesamt ausfällt bzw. wie stark er bei Konsolidierung sinkt, hängt von der tatsächlichen Schwankungsbreite der Monatsmengen im Forecast ab — ein sehr gleichmäßiger Forecast (Plan statt Ist-Nachfrage) zeigt entsprechend einen kleineren Effekt. Formel/Details: Berichte → Formelübersicht.</p>' +
       redundancyNote +
       '<div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Name">' + I.t('Name') + '</th><th class="num">%</th><th class="num">PAL</th>' +
       '<th class="num">Slots</th><th class="num">€/PAL</th><th class="num">' + I.t('Gesamt') + '</th><th class="num">Score</th><th data-t="Status">' + I.t('Status') + '</th></tr></thead>' +

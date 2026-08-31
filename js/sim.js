@@ -500,9 +500,11 @@
   }
 
   /* ================= per-category site simulation (spec §7/§8 "Simulation" view) ================= */
-  function buildPart(dc, evald, share, pallets, slots, settings) {
+  function buildPart(dc, evald, share, pallets, slots, settings, stockBreakdown) {
     return {
       dcId: dc.id, dcName: dc.name, share: share, pallets: pallets, slots: slots,
+      cycleStock: stockBreakdown ? stockBreakdown.cycle : null,
+      safetyStock: stockBreakdown ? stockBreakdown.safety : null,
       transportCost: evald.transportCostPerPallet,
       storageCost: (settings.storageCostPerSlotMonth || 0) * slots,
       handlingCost: (settings.handlingCostPerPallet || 0) * pallets,
@@ -565,7 +567,7 @@
     var parts = [];
     if (best) {
       var bestDc = dcById(best.dcId);
-      parts.push(buildPart(bestDc, best, 1, totalPallets, storageDemand, settings));
+      parts.push(buildPart(bestDc, best, 1, totalPallets, storageDemand, settings, { cycle: cycleStock, safety: safetyStock }));
     }
     var regions = Object.keys(districtPalletsMap).map(function (dist) {
       return { regionKey: dist, dcId: best ? best.dcId : null, pallets: districtPalletsMap[dist], distance: best ? distanceKm(dcById(best.dcId), dist) : null };
@@ -757,14 +759,16 @@
     var parts = [];
     Object.keys(perDc).forEach(function (id) {
       var dc = dcById(id);
-      var slots = perDc[id].pallets * slotFactor + safetyStockPallets(dcMonthlySeries[id], coverageMonthsForSafety, settings);
+      var dcCycleStock = perDc[id].pallets * slotFactor;
+      var dcSafetyStock = safetyStockPallets(dcMonthlySeries[id], coverageMonthsForSafety, settings);
+      var slots = dcCycleStock + dcSafetyStock;
       var ctx = {
         settings: settings, districtPalletsMap: perDc[id].districtPalletsMap,
         storageDemandPallets: slots, skuCount: skuCount, pickingBins: pickingBins,
         cheapestCpp: cheapestCpp, bestTransit: bestTransit, worstTransit: worstTransit
       };
       var evald = evaluateDC(dc, ctx);
-      parts.push(buildPart(dc, evald, totalPallets > 0 ? perDc[id].pallets / totalPallets : 0, perDc[id].pallets, slots, settings));
+      parts.push(buildPart(dc, evald, totalPallets > 0 ? perDc[id].pallets / totalPallets : 0, perDc[id].pallets, slots, settings, { cycle: dcCycleStock, safety: dcSafetyStock }));
     });
     parts.sort(function (a, b) { return b.pallets - a.pallets; });
 
@@ -819,7 +823,9 @@
       var pallets = totalPallets * shareMap[id];
       var dcMonthly = {};
       Object.keys(networkMonthly).forEach(function (pk) { dcMonthly[pk] = networkMonthly[pk] * shareMap[id]; });
-      var slots = pallets * slotFactor + safetyStockPallets(dcMonthly, coverageMonthsForSafety, settings);
+      var dcCycleStock = pallets * slotFactor;
+      var dcSafetyStock = safetyStockPallets(dcMonthly, coverageMonthsForSafety, settings);
+      var slots = dcCycleStock + dcSafetyStock;
       var scaledMap = {};
       Object.keys(districtPalletsMapFull).forEach(function (dist) { scaledMap[dist] = districtPalletsMapFull[dist] * shareMap[id]; });
       var ctx = {
@@ -827,7 +833,7 @@
         skuCount: skuCount, pickingBins: pickingBins, cheapestCpp: cheapestCpp, bestTransit: bestTransit, worstTransit: worstTransit
       };
       var evald = evaluateDC(dc, ctx);
-      return buildPart(dc, evald, shareMap[id], pallets, slots, settings);
+      return buildPart(dc, evald, shareMap[id], pallets, slots, settings, { cycle: dcCycleStock, safety: dcSafetyStock });
     });
 
     var regions = Object.keys(districtPalletsMapFull).map(function (district) {
