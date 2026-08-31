@@ -248,9 +248,14 @@
       '<h2 data-t="Mengenlogik">' + I.t('Mengenlogik') + '</h2>' +
       '<div class="field-row">' +
       '<div class="field"><label data-t="Globale Ziel-Reichweite (Monate)">' + I.t('Globale Ziel-Reichweite (Monate)') + '</label>' +
-      '<input type="number" min="0" step="0.1" id="setCoverageGlobal" value="' + settings.coverageMonthsGlobal + '"></div>' +
+      '<input type="number" min="0" step="0.1" id="setCoverageGlobal" value="' + settings.coverageMonthsGlobal + '">' +
+      '<div class="help">&asymp; ' + I.fmtNum(settings.coverageMonthsGlobal * 30.44 / 7, 1) + ' Wochen</div></div>' +
       '<div class="field"><label data-t="Sicherheitsaufschlag">' + I.t('Sicherheitsaufschlag') + '</label>' +
-      '<input type="number" min="0" step="0.05" id="setStockFactor" value="' + settings.stockFactor + '"></div>' +
+      '<input type="number" min="0" step="0.05" id="setStockFactor" value="' + settings.stockFactor + '">' +
+      '<div class="help">Aufschlag auf den Zyklusbestand (Ø Menge × Reichweite).</div></div>' +
+      '<div class="field"><label>Sicherheits-Faktor z (Std.-Abw.)</label>' +
+      '<input type="number" min="0" step="0.1" id="setSafetyZ" value="' + settings.safetyZFactor + '">' +
+      '<div class="help">Für den zusätzlichen Sicherheitsbestand aus der monatlichen Schwankung — z. B. z=1 &asymp; 84&nbsp;%, z=1,65 &asymp; 95&nbsp;% Servicegrad.</div></div>' +
       '<div class="field"><label>SKUs je Picking Bin</label><input type="number" min="1" step="1" id="setSkusPerBin" value="' + settings.skusPerBin + '"></div>' +
       '</div>' +
       (cats.length ? '<h3 data-t="Ziel-Reichweite je Kategorie">' + I.t('Ziel-Reichweite je Kategorie') + '</h3>' +
@@ -325,6 +330,8 @@
     if (coverageGlobal) coverageGlobal.addEventListener('change', function () { LNP.state.updateSettings({ coverageMonthsGlobal: parseFloat(coverageGlobal.value) || 0 }); });
     var stockFactor = container.querySelector('#setStockFactor');
     if (stockFactor) stockFactor.addEventListener('change', function () { LNP.state.updateSettings({ stockFactor: parseFloat(stockFactor.value) || 0 }); });
+    var safetyZ = container.querySelector('#setSafetyZ');
+    if (safetyZ) safetyZ.addEventListener('change', function () { LNP.state.updateSettings({ safetyZFactor: parseFloat(safetyZ.value) || 0 }); });
     var skusPerBin = container.querySelector('#setSkusPerBin');
     if (skusPerBin) skusPerBin.addEventListener('change', function () { LNP.state.updateSettings({ skusPerBin: parseFloat(skusPerBin.value) || 1 }); });
     container.querySelectorAll('.js-cat-coverage').forEach(function (inp) {

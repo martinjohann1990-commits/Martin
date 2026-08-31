@@ -12,6 +12,7 @@
       coverageMonthsGlobal: 0.7, /* ~3 Wochen, dem alten Wochen-Standardwert entsprechend */
       coverageMonthsByCategory: {},
       stockFactor: 1.0,
+      safetyZFactor: 1.0, /* Sicherheitsbestand = safetyZFactor x Std.-Abw. der Monatsmenge x sqrt(Reichweite in Monaten) */
       skusPerBin: 1,
       binsPerSlotFactor: 1,
       costPerPalletKm: 0.045,

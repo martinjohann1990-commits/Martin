@@ -330,6 +330,68 @@
     return totalPallets > 0 ? blendedStorageDemand(params, settings, totalPallets, weeks) / totalPallets : 0;
   }
 
+  /* ================= Sicherheitsbestand (pooling-aware safety stock) =================
+     blendedStorageDemand/effectiveSlotFactor above give the CYCLE stock (Ø Menge x Reichweite)
+     — a pure pipeline figure that is, by construction, the same total regardless of how many
+     sites the same demand is split across. That is deliberate for cycle stock, but it means a
+     "Ziel-Palettenbestand" built from cycle stock alone can never show the real-world effect
+     where consolidating demand into fewer sites needs LESS total buffer stock than spreading it
+     across many (classical safety-stock/risk-pooling): each additional site needs its own buffer
+     against ITS OWN month-to-month variability, and variability doesn't simply add up 1:1 when
+     summed across sites unless their demand is perfectly correlated.
+     This adds that second, additive term: Sicherheitsbestand = z x sigma(monatliche Menge) x
+     sqrt(Reichweite in Monaten) — the standard safety-stock formula, with sigma computed from
+     the REAL observed month-to-month pallet totals for whatever demand actually lands at a given
+     site (or, for a single "Alleinzuordnung" DC, the whole network's monthly series). Because
+     sigma is computed directly from each site's own combined monthly series rather than added
+     from independently-assumed per-district variances, the pooling benefit of consolidation
+     falls out of the real data automatically — including showing zero benefit if the underlying
+     demand really is perfectly correlated across sites (e.g. driven by the same seasonal plan). */
+  function monthlySeriesFromRows(rows) {
+    var out = {};
+    rows.forEach(function (r) { out[r.periodKey] = (out[r.periodKey] || 0) + r.pallets; });
+    return out;
+  }
+  function stdDevOfMap(map) {
+    var values = Object.keys(map).map(function (k) { return map[k]; });
+    var n = values.length;
+    if (n < 2) return 0;
+    var mean = U.sum(values, function (v) { return v; }) / n;
+    var variance = U.sum(values, function (v) { return (v - mean) * (v - mean); }) / n;
+    return Math.sqrt(variance);
+  }
+  function safetyStockPallets(monthlySeriesMap, coverageMonths, settings) {
+    var z = U.isNum(settings.safetyZFactor) ? settings.safetyZFactor : 1;
+    var sigma = stdDevOfMap(monthlySeriesMap || {});
+    return z * sigma * Math.sqrt(Math.max(coverageMonths, 0));
+  }
+  /* District-level monthly series (each row's pallets fanned via dcDistrictShares, same as every
+     other geographic split in this file), used to reconstruct an individual DC's own monthly
+     series when it only receives a FRACTION of a district's pool (runSplit's district-greedy
+     assignment) — that DC's period value = fraction-of-district-received x that district's own
+     period value, summed over every district it receives a share of. Exact whenever a whole
+     district goes to one DC (the common case); an assumption of proportionally-uniform-by-month
+     splitting only where capacity constraints force a district to be split across DCs. */
+  function districtMonthlySeries(rows) {
+    var shares = dcDistrictShares();
+    var out = {};
+    rows.forEach(function (row) {
+      var srcId = dcId(row.dc);
+      var s = srcId ? shares[srcId] : null;
+      if (s && Object.keys(s.shares).length) {
+        Object.keys(s.shares).forEach(function (d) {
+          out[d] = out[d] || {};
+          out[d][row.periodKey] = (out[d][row.periodKey] || 0) + row.pallets * s.shares[d];
+        });
+      } else {
+        var key = '(ohne Distrikt-Zuordnung)';
+        out[key] = out[key] || {};
+        out[key][row.periodKey] = (out[key][row.periodKey] || 0) + row.pallets;
+      }
+    });
+    return out;
+  }
+
   function scopeSkuCount(rows) {
     var set = {};
     for (var i = 0; i < rows.length; i++) set[rows[i].article] = true;
@@ -461,7 +523,12 @@
     var totalPallets = totalPalletsOf(demand);
     var weeks = demand.totalDays / 7 || 1;
     var coverageWeeksEq = coverageWeeksEquivalent(params.category, settings);
-    var storageDemand = blendedStorageDemand(params, settings, totalPallets, weeks);
+    /* Alleinzuordnung = one DC holds the ENTIRE network's demand, so its safety stock is
+       computed from the network's own combined monthly series (exact — no site-fraction
+       reconstruction needed, unlike runSplit). */
+    var cycleStock = blendedStorageDemand(params, settings, totalPallets, weeks);
+    var safetyStock = safetyStockPallets(monthlySeriesFromRows(demand.rows), resolveCoverageMonths(params.category, settings), settings);
+    var storageDemand = cycleStock + safetyStock;
     var skuCount = scopeSkuCount(demand.rows);
     var pickingBins = Math.ceil(skuCount / (settings.skusPerBin || 1));
 
@@ -546,16 +613,29 @@
 
     var shares = dcDistrictShares();
     var districtPalletsMapFull = {};
+    var districtMonthlySeriesMap = {}; /* district -> {periodKey: pallets}, non-forced only */
     var forcedTotalByDc = {}, forcedDistrictByDc = {};
+    var forcedMonthlyByDc = {}; /* dcId -> {periodKey: pallets}, exact */
     var consolidatedArticles = {}, consolidatedPallets = 0;
-    function fanIntoDistricts(targetMap, srcDcName, pallets) {
+    function fanIntoDistricts(targetTotalMap, targetMonthlyMap, srcDcName, pallets, periodKey) {
       var srcId = srcDcName ? dcId(srcDcName) : null;
       var s = srcId ? shares[srcId] : null;
       if (s && Object.keys(s.shares).length) {
-        Object.keys(s.shares).forEach(function (d) { targetMap[d] = (targetMap[d] || 0) + pallets * s.shares[d]; });
+        Object.keys(s.shares).forEach(function (d) {
+          var portion = pallets * s.shares[d];
+          targetTotalMap[d] = (targetTotalMap[d] || 0) + portion;
+          if (targetMonthlyMap) {
+            targetMonthlyMap[d] = targetMonthlyMap[d] || {};
+            targetMonthlyMap[d][periodKey] = (targetMonthlyMap[d][periodKey] || 0) + portion;
+          }
+        });
       } else {
         var key = '(ohne Distrikt-Zuordnung)';
-        targetMap[key] = (targetMap[key] || 0) + pallets;
+        targetTotalMap[key] = (targetTotalMap[key] || 0) + pallets;
+        if (targetMonthlyMap) {
+          targetMonthlyMap[key] = targetMonthlyMap[key] || {};
+          targetMonthlyMap[key][periodKey] = (targetMonthlyMap[key][periodKey] || 0) + pallets;
+        }
       }
     }
     demand.rows.forEach(function (row) {
@@ -565,10 +645,12 @@
         consolidatedPallets += row.pallets;
         forcedTotalByDc[forcedId] = (forcedTotalByDc[forcedId] || 0) + row.pallets;
         forcedDistrictByDc[forcedId] = forcedDistrictByDc[forcedId] || {};
-        fanIntoDistricts(forcedDistrictByDc[forcedId], row.dc, row.pallets);
+        fanIntoDistricts(forcedDistrictByDc[forcedId], null, row.dc, row.pallets, row.periodKey);
+        forcedMonthlyByDc[forcedId] = forcedMonthlyByDc[forcedId] || {};
+        forcedMonthlyByDc[forcedId][row.periodKey] = (forcedMonthlyByDc[forcedId][row.periodKey] || 0) + row.pallets;
         return;
       }
-      fanIntoDistricts(districtPalletsMapFull, row.dc, row.pallets);
+      fanIntoDistricts(districtPalletsMapFull, districtMonthlySeriesMap, row.dc, row.pallets, row.periodKey);
     });
 
     var quickScored = candidates.map(function (dc) { return { dc: dc, cpp: avgTransportCostPerPallet(dc, districtPalletsMapFull, settings) }; })
@@ -648,10 +730,34 @@
     var bestTransit = transits.length ? Math.min.apply(Math, transits) : null;
     var worstTransit = transits.length ? Math.max.apply(Math, transits) : null;
 
+    /* Each DC's own combined monthly series (forced-exact + district-fraction reconstruction),
+       used only for the pooling-aware safety-stock term below — this is what makes
+       Ziel-Palettenbestand actually respond to consolidation (see safetyStockPallets doc). */
+    var coverageMonthsForSafety = resolveCoverageMonths(params.category, settings);
+    var dcMonthlySeries = {};
+    Object.keys(districtAssignment).forEach(function (district) {
+      var districtTotal = districtPalletsMapFull[district];
+      if (!districtTotal) return;
+      var series = districtMonthlySeriesMap[district] || {};
+      Object.keys(districtAssignment[district]).forEach(function (id) {
+        var fraction = districtAssignment[district][id] / districtTotal;
+        dcMonthlySeries[id] = dcMonthlySeries[id] || {};
+        Object.keys(series).forEach(function (pk) {
+          dcMonthlySeries[id][pk] = (dcMonthlySeries[id][pk] || 0) + fraction * series[pk];
+        });
+      });
+    });
+    Object.keys(forcedMonthlyByDc).forEach(function (id) {
+      dcMonthlySeries[id] = dcMonthlySeries[id] || {};
+      Object.keys(forcedMonthlyByDc[id]).forEach(function (pk) {
+        dcMonthlySeries[id][pk] = (dcMonthlySeries[id][pk] || 0) + forcedMonthlyByDc[id][pk];
+      });
+    });
+
     var parts = [];
     Object.keys(perDc).forEach(function (id) {
       var dc = dcById(id);
-      var slots = perDc[id].pallets * slotFactor;
+      var slots = perDc[id].pallets * slotFactor + safetyStockPallets(dcMonthlySeries[id], coverageMonthsForSafety, settings);
       var ctx = {
         settings: settings, districtPalletsMap: perDc[id].districtPalletsMap,
         storageDemandPallets: slots, skuCount: skuCount, pickingBins: pickingBins,
@@ -689,6 +795,11 @@
     Object.keys(demand.byDistrict).forEach(function (d) { districtPalletsMapFull[d] = demand.byDistrict[d].pallets; });
     var totalPallets = totalPalletsOf(demand);
     var slotFactor = effectiveSlotFactor(params, settings, totalPallets, weeks);
+    var coverageMonthsForSafety = resolveCoverageMonths(params.category, settings);
+    /* Manual mode splits every period by the same flat percentage (no district reasoning), so
+       each DC's own monthly series is simply that share of the network's combined monthly
+       series — consistent with how its pallets/districtPalletsMap are already scaled below. */
+    var networkMonthly = monthlySeriesFromRows(demand.rows);
     var ids = Object.keys(shareMap).filter(function (id) { return shareMap[id] > 0; });
 
     var cpps = [], transits = [];
@@ -706,7 +817,9 @@
     var parts = ids.map(function (id) {
       var dc = dcById(id);
       var pallets = totalPallets * shareMap[id];
-      var slots = pallets * slotFactor;
+      var dcMonthly = {};
+      Object.keys(networkMonthly).forEach(function (pk) { dcMonthly[pk] = networkMonthly[pk] * shareMap[id]; });
+      var slots = pallets * slotFactor + safetyStockPallets(dcMonthly, coverageMonthsForSafety, settings);
       var scaledMap = {};
       Object.keys(districtPalletsMapFull).forEach(function (dist) { scaledMap[dist] = districtPalletsMapFull[dist] * shareMap[id]; });
       var ctx = {
@@ -1105,7 +1218,9 @@
   var FORMULA_REFERENCE = [
     { title: 'Paletten', formula: 'Paletten = Menge (Stück je Monat, Spalten L–AI im Forecast-File) ÷ Pallett Load (artikelspezifisch, aus dem Forecast)', note: 'Der Forecast liegt bereits je DC vor (nicht je Distrikt) — die Palettenzahl je DC ist damit exakt, keine Näherung. Fehlt die Pallett Load für einen Artikel im Quellfile (reale Daten: ca. 28 % der Menge, meist Kleinteile/Ersatzteile), wird ersatzweise der Median-Wert der Produkt(unter)gruppe angesetzt, statt die Menge mit 0 Paletten zu verlieren — betroffene Importe werden im Upload-Dialog als Warnung ausgewiesen.' },
     { title: 'Bedarf/Tag', formula: 'Bedarf/Tag = Σ Paletten ÷ Σ echte Tageslängen der Perioden im Filter' },
-    { title: 'Ziel-Bestand (Lagerbedarf)', formula: 'Ziel-Bestand = Bedarf/Tag × 30,44 × Coverage(Monate) × Sicherheitsaufschlag', note: 'Ziel-Reichweite wird in Monaten gepflegt (30,44 Tage/Monat, mittlere Monatslänge). Bei Kategorie "Alle" wird nicht ein einzelner globaler Coverage-Wert auf die Gesamtmenge angewandt: jede Kategorie wird mit ihrer eigenen (ggf. individuell hinterlegten) Ziel-Reichweite gerechnet und die Ergebnisse werden aufsummiert — sonst würde eine je Kategorie unterschiedliche Reichweite unbemerkt überschrieben.' },
+    { title: 'Ziel-Palettenbestand', formula: 'Ziel-Palettenbestand = Zyklusbestand + Sicherheitsbestand', note: 'Zwei getrennte Bestandteile, siehe unten. Bei Kategorie "Alle" wird für den Zyklusbestand nicht ein einzelner globaler Coverage-Wert auf die Gesamtmenge angewandt: jede Kategorie wird mit ihrer eigenen (ggf. individuell hinterlegten) Ziel-Reichweite gerechnet und die Ergebnisse werden aufsummiert — sonst würde eine je Kategorie unterschiedliche Reichweite unbemerkt überschrieben.' },
+    { title: 'Zyklusbestand', formula: 'Zyklusbestand = Bedarf/Tag × 30,44 × Reichweite(Monate) × Sicherheitsaufschlag', note: 'Reine Durchlaufmenge (Ø Menge im Zeitraum × Reichweite) — bei gleicher Gesamtmenge unabhängig davon, auf wie viele Standorte sie verteilt wird. Reichweite wird in Monaten gepflegt (30,44 Tage/Monat, mittlere Monatslänge).' },
+    { title: 'Sicherheitsbestand', formula: 'Sicherheitsbestand(Standort) = z × σ(monatliche Palettenmenge am Standort) × √Reichweite(Monate)', note: 'Klassische Sicherheitsbestandsformel. σ wird direkt aus der monatlichen Ist-Verteilung der tatsächlich an diesem Standort landenden Menge berechnet (nicht aus einer angenommenen Kennzahl) — dadurch sinkt der GESAMTE Sicherheitsbestand automatisch, wenn Nachfrage auf weniger Standorte konsolidiert wird (Pooling-Effekt), und steigt bei Aufteilung auf mehr Standorte, sofern die Monatsmengen nicht perfekt korreliert sind. z ist der einstellbare "Sicherheits-Faktor" (Daten & Import → Mengenlogik; z=1 ≈ 84 %, z=1,65 ≈ 95 % Servicegrad, Normalverteilung angenommen).' },
     { title: 'Geografischer Fußabdruck je DC', formula: 'Distrikt-Anteil(DC) = Sales History ESU(DC, Distrikt) ÷ Sales History ESU(DC, alle Distrikte)', note: 'Aus den echten historischen Mengen der Sales History (Shipping Point → DC via DC Translation Table), nicht aus einer Kundenanzahl-Näherung. Nur die Distrikt-Ebene wird summiert — die feinere Land/Einheit-Ebene ist in denselben Zahlen bereits enthalten (Vermeidung von Doppelzählung).' },
     { title: 'Distrikt-Zentroid (Distanzgrundlage)', formula: 'Primär: mengengewichtetes Mittel echter Kundenkoordinaten (Destinations-ESU je Ship-to-Party × Ship-to-Address-Ort/Land); ersatzweise mengengewichtetes Mittel der Länder-Zentroide laut Sales Hierarchie/Sales History.', note: 'Destinations liefert je Versandpunkt die belieferten Ship-to-Parties mit echter ESU-Menge; Ship-to-Address liefert deren tatsächliches Land/Ort. Wo sich beide verknüpfen lassen, ist der Distrikt-Standort damit kundenscharf statt länderweit gemittelt — Quelle wird in Daten & Import je Distrikt angezeigt.' },
     { title: 'Distanz', formula: 'Distanz = Haversine(DC, Distrikt-Zentroid) × 1,28' },

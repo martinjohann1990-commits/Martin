@@ -166,7 +166,7 @@
       '<div class="actions">' + (isManual ? '<button class="btn btn-sm" id="simRecalcManual">Neu berechnen</button>' : '') +
       '<button class="btn btn-sm btn-primary" id="simApplyBtn" data-t="Übernehmen">' + I.t('Übernehmen') + '</button></div></div>' +
       (isManual ? '<p class="help">Anteile eintragen (relative Gewichte, müssen nicht auf 100 summieren) und neu berechnen.</p>' : '') +
-      '<p class="help">PAL = Forecast-Durchsatz im gewählten Zeitraum (Basis für Transportkosten/Anteil). Slots = Ziel-Palettenbestand je Standort (Ø Menge × Reichweite) — die planungsrelevante Größe für Kapazität/Lagerfläche.</p>' +
+      '<p class="help">PAL = Forecast-Durchsatz im gewählten Zeitraum (Basis für Transportkosten/Anteil). Slots = Ziel-Palettenbestand je Standort = Zyklusbestand (Ø Menge × Reichweite) + Sicherheitsbestand (aus der monatlichen Schwankung am jeweiligen Standort) — sinkt bei stärkerer Konsolidierung auf weniger Standorte, siehe Formelübersicht in Berichte.</p>' +
       redundancyNote +
       '<div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Name">' + I.t('Name') + '</th><th class="num">%</th><th class="num">PAL</th>' +
       '<th class="num">Slots</th><th class="num">€/PAL</th><th class="num">' + I.t('Gesamt') + '</th><th class="num">Score</th><th data-t="Status">' + I.t('Status') + '</th></tr></thead>' +
