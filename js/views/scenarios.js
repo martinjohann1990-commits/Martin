@@ -1,11 +1,13 @@
-/* NetPlan+ views/scenarios.js — "Szenarien": Base + 3 consolidation templates + custom editor,
-   KPI comparison including "aktueller Stand", two charts, assignment matrix (spec §8/§5.5). */
+/* NetPlan+ views/scenarios.js — "Szenarien": Base + custom editor + Simulation-based Szenarien,
+   KPI comparison including "aktueller Stand", two charts, assignment matrix, geografische
+   Heatmap (spec §8/§5.5). */
 (function () {
   'use strict';
   var LNP = window.LNP = window.LNP || {};
   var U = LNP.util, I = LNP.i18n;
 
   var selectedIds = ['base'];
+  var heatmapScenarioId = 'base';
 
   function scenarioObjById(id) {
     if (id === 'base') return null;
@@ -151,15 +153,46 @@
     LNP.charts.bar('chartScenarioStorage', results.map(function (r) { return r.label; }), [{ label: 'Storage PAL', data: results.map(function (r) { return Math.round(U.sum(r.net.perDc, function (d) { return d.storageDemandPallets; })); }) }]);
   }
 
+  /* Geografische Heatmap: für das gewählte Szenario, welche DCs beteiligt sind (candidateDcIds/
+     Zielstandorte, LNP.sim.scenarioCandidateDcIds) und wo genau deren Kunden liegen — die
+     einzelnen, adressgenauen Kundenpunkte aus Destinations x Ship-to-Adresse
+     (LNP.sim.scenarioCustomerHeatmapPoints), eingefärbt nach dem DC, der den jeweiligen Distrikt
+     unter diesem Szenario versorgt. Kein Distrikt-Zentroid mehr — jeder Punkt behält seine eigene
+     Kundenkoordinate, nur die Zuordnung "wer versorgt diesen Distrikt" kommt vom Szenario. */
+  function renderHeatmapCard(container) {
+    var mapEl = container.querySelector('#scenarioHeatmapMap');
+    if (!mapEl) return;
+    var scenario = scenarioObjById(heatmapScenarioId);
+    var candidateIds = LNP.sim.scenarioCandidateDcIds(scenario);
+    var allDcs = LNP.sim.candidateDcs();
+    var dcs = (candidateIds ? allDcs.filter(function (d) { return candidateIds.indexOf(d.id) !== -1; }) : allDcs)
+      .filter(function (d) { return U.isNum(d.lat) && U.isNum(d.lng); });
+    var points = LNP.sim.scenarioCustomerHeatmapPoints(scenario).filter(function (p) { return U.isNum(p.lat) && U.isNum(p.lng); });
+
+    LNP.mapview.renderScenarioHeatmap('scenarioHeatmapMap', { points: points, dcs: dcs });
+
+    var legendEl = container.querySelector('#scenarioHeatmapLegend');
+    if (legendEl) {
+      var colors = LNP.charts.palette();
+      var items = dcs.map(function (dc, i) {
+        return '<span><span class="dot" style="background:' + colors[i % colors.length] + '"></span>' + U.escapeHtml(dc.name) + '</span>';
+      });
+      if (points.some(function (p) { return !p.dcId; })) {
+        items.push('<span><span class="dot" style="background:#8992a3"></span>' + I.t('Nicht zugeordnet') + '</span>');
+      }
+      legendEl.innerHTML = items.length ? items.join('') : '<span class="muted">Keine Standorte mit Koordinaten für dieses Szenario.</span>';
+    }
+  }
+
   function render(container) {
     if (!LNP.state.data.forecast.length) {
       container.innerHTML = '<div class="empty card"><h2 data-t="Keine Daten geladen">' + I.t('Keine Daten geladen') + '</h2></div>';
       return;
     }
     var savedScenarios = LNP.state.scenarios;
-    var templateButtons = LNP.sim.SCENARIO_TEMPLATES.filter(function (t) { return t.key !== 'base'; }).map(function (t) {
-      return '<button class="btn btn-sm js-new-template" data-key="' + t.key + '">' + U.escapeHtml(t.name) + '</button>';
-    }).join(' ');
+    if (heatmapScenarioId !== 'base' && !scenarioObjById(heatmapScenarioId)) heatmapScenarioId = 'base';
+    var heatmapOptions = '<option value="base"' + (heatmapScenarioId === 'base' ? ' selected' : '') + '>' + I.t('Aktueller Stand') + '</option>' +
+      savedScenarios.map(function (s) { return '<option value="' + s.id + '"' + (heatmapScenarioId === s.id ? ' selected' : '') + '>' + U.escapeHtml(s.name) + '</option>'; }).join('');
     var listRows = savedScenarios.map(function (s) {
       var simBadge = s.simParams ? ' <span class="badge badge-info">Simulation</span>' : '';
       return '<tr><td>' + U.escapeHtml(s.name) + simBadge + '</td><td>' + I.fmtDate(new Date(s.createdAt)) + '</td>' +
@@ -170,17 +203,24 @@
 
     container.innerHTML =
       '<div class="card"><div class="card-head"><h2 data-t="Szenarien">' + I.t('Szenarien') + '</h2>' +
-      '<div class="actions">' + templateButtons + ' <button class="btn btn-sm" id="scNewCustom">Benutzerdefiniert</button></div></div>' +
+      '<div class="actions"><button class="btn btn-sm" id="scNewCustom">Benutzerdefiniert</button></div></div>' +
       (savedScenarios.length ?
         '<div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Name">' + I.t('Name') + '</th><th data-t="Erstellt">' + I.t('Erstellt') + '</th><th data-t="Vergleichen">' + I.t('Vergleichen') + '</th><th data-t="Aktionen">' + I.t('Aktionen') + '</th></tr></thead><tbody>' + listRows + '</tbody></table></div>' :
-        '<p class="help">Noch keine Szenarien gespeichert. Vorlage wählen oder benutzerdefiniert anlegen.</p>') +
+        '<p class="help">Noch keine Szenarien gespeichert. Benutzerdefiniert anlegen oder ein Simulationsergebnis als Szenario speichern.</p>') +
       '<div class="checkbox-row" style="margin-top:10px"><input type="checkbox" id="scSelectBase"' + (selectedIds.indexOf('base') !== -1 ? ' checked' : '') + '>' +
       '<label style="margin:0" for="scSelectBase" data-t="Aktueller Stand">' + I.t('Aktueller Stand') + '</label></div>' +
       '</div>' +
+      '<div class="card"><div class="card-head"><h2>Geografische Heatmap</h2>' +
+      '<div class="actions"><select id="scHeatmapScenario">' + heatmapOptions + '</select></div></div>' +
+      '<p class="help">Zeigt die am gewählten Szenario beteiligten DCs und, adressgenau auf Basis der Ship-to-Adressdaten, wo deren Kunden liegen — je Standort in dessen eigener Farbe eingefärbt.</p>' +
+      '<div class="map-box" id="scenarioHeatmapMap" style="height:460px"></div>' +
+      '<div class="score-legend" id="scenarioHeatmapLegend" style="margin-top:10px"></div>' +
+      '</div>' +
       '<div id="scenarioCompare"></div>';
 
-    container.querySelectorAll('.js-new-template').forEach(function (btn) { btn.addEventListener('click', function () { openScenarioEditor(null, btn.getAttribute('data-key')); }); });
     var customBtn = container.querySelector('#scNewCustom'); if (customBtn) customBtn.addEventListener('click', function () { openScenarioEditor(null, null); });
+    var heatmapSel = container.querySelector('#scHeatmapScenario');
+    if (heatmapSel) heatmapSel.addEventListener('change', function () { heatmapScenarioId = heatmapSel.value; renderHeatmapCard(container); });
     container.querySelectorAll('.js-edit-scenario').forEach(function (btn) {
       btn.addEventListener('click', function () { var s = scenarioObjById(btn.getAttribute('data-id')); if (s) openScenarioEditor(s, null); });
     });
@@ -209,6 +249,7 @@
       renderCompare(container);
     });
 
+    renderHeatmapCard(container);
     renderCompare(container);
   }
 

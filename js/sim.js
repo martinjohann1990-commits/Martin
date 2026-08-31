@@ -166,12 +166,15 @@
     _cache.countryToDistrict = map;
     return map;
   }
-  /* District -> ESU-weighted average of real Ship-to-address coordinates (city if resolvable,
-     else the customer's own country) for every Destinations row that joins to an address. */
-  function districtCustomerGeo() {
-    if (_cache.districtCustomerGeo) return _cache.districtCustomerGeo;
+  /* Every Destinations row that joins to a Ship-to-address, resolved down to one real customer
+     point (lat/lng, ESU weight, district). The raw material behind districtCustomerGeo's
+     per-district centroid AND the scenario heatmap (scenarioCustomerHeatmapPoints), which needs
+     the individual points rather than an already-averaged centroid to render at address-level
+     precision. */
+  function resolvedCustomerPoints() {
+    if (_cache.resolvedCustomerPoints) return _cache.resolvedCustomerPoints;
     var idx = shipToIndex(), countryDistrict = countryToDistrictMap();
-    var acc = {};
+    var out = [];
     S().data.destinations.forEach(function (r) {
       var shipToKey = normShipToId(r.vbShipTo) || normShipToId(r.isiShipTo);
       if (!shipToKey) return;
@@ -182,9 +185,21 @@
       var geo = GEO.resolve({ city: addr.city, country: addr.country });
       if (!geo) return;
       var w = Math.max(0, r.qtyEsu || 0) || 0.01;
-      acc[district] = acc[district] || { sumLat: 0, sumLng: 0, weight: 0, customers: 0 };
-      acc[district].sumLat += geo.lat * w; acc[district].sumLng += geo.lng * w;
-      acc[district].weight += w; acc[district].customers++;
+      out.push({ lat: geo.lat, lng: geo.lng, weight: w, district: district, city: addr.city, country: addr.country, shipTo: shipToKey });
+    });
+    _cache.resolvedCustomerPoints = out;
+    return out;
+  }
+
+  /* District -> ESU-weighted average of real Ship-to-address coordinates (city if resolvable,
+     else the customer's own country) for every Destinations row that joins to an address. */
+  function districtCustomerGeo() {
+    if (_cache.districtCustomerGeo) return _cache.districtCustomerGeo;
+    var acc = {};
+    resolvedCustomerPoints().forEach(function (p) {
+      acc[p.district] = acc[p.district] || { sumLat: 0, sumLng: 0, weight: 0, customers: 0 };
+      acc[p.district].sumLat += p.lat * p.weight; acc[p.district].sumLng += p.lng * p.weight;
+      acc[p.district].weight += p.weight; acc[p.district].customers++;
     });
     var out = {};
     Object.keys(acc).forEach(function (d) {
@@ -933,6 +948,72 @@
     return null;
   }
 
+  /* Which DC dominantly SUPPLIES each district today, from Sales History's real ESU volume
+     (dcDistrictShares, inverted from DC->district to district->DC) — the "current state" a
+     scenario's district->DC map falls back to when the district isn't covered by a scenario's
+     own routing. */
+  function districtDominantSourceDc() {
+    if (_cache.districtDominantSourceDc) return _cache.districtDominantSourceDc;
+    var shares = dcDistrictShares();
+    var byDistrict = {};
+    Object.keys(shares).forEach(function (sourceDcId) {
+      var s = shares[sourceDcId];
+      Object.keys(s.shares).forEach(function (district) {
+        var esu = s.shares[district] * s.totalEsu;
+        byDistrict[district] = byDistrict[district] || {};
+        byDistrict[district][sourceDcId] = (byDistrict[district][sourceDcId] || 0) + esu;
+      });
+    });
+    var out = {};
+    Object.keys(byDistrict).forEach(function (district) {
+      var best = null, bestEsu = -1;
+      Object.keys(byDistrict[district]).forEach(function (candidateId) {
+        if (byDistrict[district][candidateId] > bestEsu) { bestEsu = byDistrict[district][candidateId]; best = candidateId; }
+      });
+      out[district] = best;
+    });
+    _cache.districtDominantSourceDc = out;
+    return out;
+  }
+
+  /* District -> serving DC id under a given Szenario (or the current state if scenario is
+     null/unsaved) — the join point between "which DC serves which district" and the address-level
+     customer points from resolvedCustomerPoints(), used to color the Szenarien heatmap by DC.
+     Simulation-based Szenarien already compute this directly (runScenarioSimulation's own
+     district fan-out, `.regions`); dcMapping-based (template/custom) and the base/no-scenario
+     case reuse the same real-volume dominant-source-DC per district (districtDominantSourceDc),
+     routed through the scenario's own regionOverrides/dcMapping exactly like allocateToDcs does. */
+  function scenarioDistrictToDc(scenario) {
+    var map = {};
+    if (scenario && scenario.simParams) {
+      var simResult = runScenarioSimulation(scenario);
+      simResult.regions.forEach(function (r) { if (r.dcId) map[r.regionKey] = r.dcId; });
+      return map;
+    }
+    var dominant = districtDominantSourceDc();
+    var mapping = (scenario && scenario.dcMapping) || {};
+    var overrides = (scenario && scenario.regionOverrides) || {};
+    Object.keys(dominant).forEach(function (district) {
+      var srcId = dominant[district];
+      if (!srcId) return;
+      var target = overrides[district] || resolveTarget(mapping, srcId);
+      if (target) map[district] = target;
+    });
+    return map;
+  }
+
+  /* Real, address-level heatmap points for the Szenarien view: every resolved customer point
+     (resolvedCustomerPoints — Destinations x Ship-to-address, real coordinates, real ESU weight)
+     tagged with the DC that serves its district under the given Szenario. Precision comes from
+     using the individual customer point, not a per-district centroid — the district is only used
+     to look up which DC serves it, never to blur the point's own location. */
+  function scenarioCustomerHeatmapPoints(scenario) {
+    var districtDc = scenarioDistrictToDc(scenario);
+    return resolvedCustomerPoints().map(function (p) {
+      return { lat: p.lat, lng: p.lng, weight: p.weight, district: p.district, dcId: districtDc[p.district] || null };
+    });
+  }
+
   /* Re-runs the actual Simulation (runSingle/runSplit/runManual) from a saved scenario's stored
      parameters, rather than approximating it as a static DC-to-DC mapping — a simulation's
      allocation (district fan-out, redundancy-aware article routing, capacity-constrained greedy
@@ -1368,6 +1449,8 @@
     allDistricts: allDistricts, canonicalDistrictSet: canonicalDistrictSet, allCategories: allCategories, periodRange: periodRange,
     dcDistrictShares: dcDistrictShares, districtCountryBreakdown: districtCountryBreakdown, districtCentroid: districtCentroid,
     districtCustomerGeo: districtCustomerGeo, countryToDistrictMap: countryToDistrictMap,
+    resolvedCustomerPoints: resolvedCustomerPoints, scenarioDistrictToDc: scenarioDistrictToDc,
+    scenarioCustomerHeatmapPoints: scenarioCustomerHeatmapPoints,
     countryDisplayName: countryDisplayName,
     demandFor: demandFor, resolveCoverageMonths: resolveCoverageMonths,
     distanceKm: distanceKm, transportCostPerPallet: transportCostPerPallet, transitDaysFor: transitDaysFor,
