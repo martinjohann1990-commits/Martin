@@ -7,9 +7,11 @@
 
   var activeTab = 'alloc';
   var selectedDistrict = null;
+  var articleFilter = { minShare: 0.6, query: '', recommendation: 'all' };
 
   var TABS = [
     { key: 'alloc', label: 'Länder-Distrikt-Zuordnung' },
+    { key: 'articles', label: 'Artikel-Standortanalyse' },
     { key: 'sku', label: 'SKU je DC' },
     { key: 'storage', label: 'Paletten-/Lagerbedarf je DC' },
     { key: 'shipment', label: 'Ø Sendungsgröße' },
@@ -39,6 +41,65 @@
       '<div class="note-box">Anteil je Land/Einheit = reale ESU-Menge aus der Sales History (Distrikt-Hierarchie), kein Zähl-Proxy. Länder außerhalb der Top-N werden als &bdquo;Rest&ldquo; gebündelt.</div>' +
       '<div class="chart-box"><canvas id="chartAlloc"></canvas></div>' +
       '<div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Land">' + I.t('Land') + '</th><th class="num">Anteil %</th><th class="num">ESU</th></tr></thead><tbody>' + (rows || '<tr><td colspan="3" class="muted">–</td></tr>') + '</tbody></table></div>';
+  }
+
+  var REC_LABEL = { zentral: 'Zentral', regional: 'Regional', mehrere: 'Mehrere Standorte' };
+  var REC_BADGE = { zentral: 'badge-warn', regional: 'badge-good', mehrere: 'badge-info' };
+  var REC_ORDER = ['regional', 'zentral', 'mehrere'];
+
+  function articlePanel() {
+    var analysis = LNP.sim.articleLocationAnalysis({ minShareForRegional: articleFilter.minShare });
+    var rows = analysis.rows;
+    var counts = { zentral: 0, regional: 0, mehrere: 0 };
+    var volByRec = { zentral: 0, regional: 0, mehrere: 0 };
+    rows.forEach(function (r) { counts[r.recommendation]++; volByRec[r.recommendation] += r.totalEsu; });
+
+    var filtered = rows.filter(function (r) {
+      if (articleFilter.recommendation !== 'all' && r.recommendation !== articleFilter.recommendation) return false;
+      if (articleFilter.query) {
+        var q = articleFilter.query.toLowerCase();
+        if ((r.article || '').toLowerCase().indexOf(q) === -1 && (r.articleName || '').toLowerCase().indexOf(q) === -1) return false;
+      }
+      return true;
+    });
+    var LIMIT = 150;
+    var shown = filtered.slice(0, LIMIT);
+
+    var tableRows = shown.map(function (r) {
+      var dcName = r.recommendedDc ? r.recommendedDc.name : '–';
+      return '<tr><td>' + U.escapeHtml(r.article) + (r.articleName ? '<div class="muted" style="font-size:11px">' + U.escapeHtml(r.articleName) + '</div>' : '') + '</td>' +
+        '<td><span class="badge ' + REC_BADGE[r.recommendation] + '">' + I.t(REC_LABEL[r.recommendation]) + '</span></td>' +
+        '<td>' + U.escapeHtml(dcName) + '</td>' +
+        '<td>' + U.escapeHtml(r.topDistrict || '–') + '</td>' +
+        '<td class="num">' + (r.topDistrict ? I.fmtPct(r.topShare, 0) : '–') + '</td>' +
+        '<td>' + r.abcClass + '</td>' +
+        '<td class="num">' + I.fmtInt(r.totalEsu) + '</td>' +
+        '<td class="muted" style="font-size:11px;max-width:280px">' + U.escapeHtml(r.reason) + '</td></tr>';
+    }).join('');
+
+    var kpis = REC_ORDER.map(function (key) {
+      return '<div class="kpi"><div class="kpi-label">' + I.t(REC_LABEL[key]) + '</div>' +
+        '<div class="kpi-value">' + I.fmtInt(counts[key]) + '</div>' +
+        '<div class="muted" style="font-size:11px">' + I.fmtPct(analysis.grandTotal ? volByRec[key] / analysis.grandTotal : 0, 0) + ' der Menge</div></div>';
+    }).join('');
+
+    return '<div class="note-box">Je Artikel wird das SKU-View-Volumen (Shipping Point → DC → Distrikt, mit demselben Verteilschlüssel aus der Sales History wie überall sonst) in seine Distrikt-Anteile zerlegt. ' +
+      '<b>Zentral</b> = geringe Drehung (C-Artikel, unterste 5&nbsp;% der kumulierten Menge) — Streuung auf mehrere Standorte würde den Sicherheitsbestand vervielfachen, ohne den Servicegrad spürbar zu verbessern. ' +
+      '<b>Regional</b> = ein einzelner Distrikt vereint mindestens den unten eingestellten Anteil des Artikelvolumens auf sich. ' +
+      '<b>Mehrere Standorte</b> = echtes Volumen, aber netzweit verteilt ohne dominanten Distrikt. Empfohlenes DC je Distrikt = der Standort, der diesen Distrikt laut Sales History bereits am stärksten beliefert.</div>' +
+      '<div class="grid grid-3" style="margin-bottom:14px;">' + kpis + '</div>' +
+      '<div class="chart-box" style="max-width:340px;margin:0 auto 16px;"><canvas id="chartArticleRec"></canvas></div>' +
+      '<div class="field-row">' +
+      '<div class="field" style="max-width:220px"><label>Schwelle „Regional“ (Anteil)</label><input type="number" min="0.1" max="1" step="0.05" id="repMinShare" value="' + articleFilter.minShare + '"></div>' +
+      '<div class="field" style="max-width:220px"><label data-t="Empfehlung">' + I.t('Empfehlung') + '</label><select id="repRecFilter">' +
+      '<option value="all"' + (articleFilter.recommendation === 'all' ? ' selected' : '') + '>' + I.t('Alle') + '</option>' +
+      REC_ORDER.map(function (key) { return '<option value="' + key + '"' + (articleFilter.recommendation === key ? ' selected' : '') + '>' + I.t(REC_LABEL[key]) + '</option>'; }).join('') +
+      '</select></div>' +
+      '<div class="field" style="max-width:260px"><label>Artikel / Bezeichnung suchen</label><input type="text" id="repArticleSearch" value="' + U.escapeHtml(articleFilter.query) + '" placeholder="z. B. Artikelnummer"></div>' +
+      '</div>' +
+      '<p class="help">' + I.fmtInt(filtered.length) + ' von ' + I.fmtInt(rows.length) + ' Artikeln entsprechen dem Filter' + (filtered.length > LIMIT ? ' — die ersten ' + LIMIT + ' nach Volumen angezeigt' : '') + '.</p>' +
+      '<div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Artikel">Artikel</th><th data-t="Empfehlung">' + I.t('Empfehlung') + '</th><th>Empfohlenes DC</th><th data-t="Region">' + I.t('Region') + '</th><th class="num">Anteil</th><th>ABC</th><th class="num">ESU</th><th>Begründung</th></tr></thead>' +
+      '<tbody>' + (tableRows || '<tr><td colspan="8" class="muted">–</td></tr>') + '</tbody></table></div>';
   }
 
   function skuPanel() {
@@ -109,6 +170,12 @@
     if (activeTab === 'alloc') {
       var report = LNP.sim.countryAllocationForDistrict(selectedDistrict, LNP.state.settings.countryAllocationTopN);
       LNP.charts.bar('chartAlloc', report.rows.map(function (r) { return r.unit; }), [{ label: '%', data: report.rows.map(function (r) { return +(r.share * 100).toFixed(1); }) }]);
+    } else if (activeTab === 'articles') {
+      var analysis = LNP.sim.articleLocationAnalysis({ minShareForRegional: articleFilter.minShare });
+      var volByRec = { zentral: 0, regional: 0, mehrere: 0 };
+      analysis.rows.forEach(function (r) { volByRec[r.recommendation] += r.totalEsu; });
+      LNP.charts.doughnut('chartArticleRec', REC_ORDER.map(function (k) { return I.t(REC_LABEL[k]); }),
+        REC_ORDER.map(function (k) { return analysis.grandTotal ? +(volByRec[k] / analysis.grandTotal * 100).toFixed(1) : 0; }));
     } else if (activeTab === 'sku') {
       var skuRep = LNP.sim.skuCountPerDcReport();
       LNP.charts.bar('chartSku', skuRep.map(function (r) { return r.dcName; }), [
@@ -147,10 +214,20 @@
       LNP.state.updateSettings({ tapsKeywords: tapsInput.value.split(',').map(function (s) { return s.trim(); }).filter(Boolean) });
       renderPanel(container);
     });
+    var minShare = container.querySelector('#repMinShare');
+    if (minShare) minShare.addEventListener('change', function () {
+      articleFilter.minShare = U.clamp(parseFloat(minShare.value) || 0.6, 0.1, 1);
+      renderPanel(container);
+    });
+    var recFilter = container.querySelector('#repRecFilter');
+    if (recFilter) recFilter.addEventListener('change', function () { articleFilter.recommendation = recFilter.value; renderPanel(container); });
+    var articleSearch = container.querySelector('#repArticleSearch');
+    if (articleSearch) articleSearch.addEventListener('change', function () { articleFilter.query = articleSearch.value.trim(); renderPanel(container); });
   }
 
   function panelHtml() {
     if (activeTab === 'alloc') return allocPanel();
+    if (activeTab === 'articles') return articlePanel();
     if (activeTab === 'sku') return skuPanel();
     if (activeTab === 'storage') return storagePanel();
     if (activeTab === 'shipment') return shipmentPanel();

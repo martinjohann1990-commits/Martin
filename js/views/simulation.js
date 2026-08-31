@@ -46,7 +46,7 @@
       '<div class="field"><label data-t="Auslastungsgrenze">' + I.t('Auslastungsgrenze') + '</label>' +
       '<input type="range" id="simMaxUtil" min="0.5" max="1" step="0.01" value="' + ui.maxUtilization + '">' +
       '<div class="help"><output id="simMaxUtilOut">' + I.fmtPct(ui.maxUtilization, 0) + '</output></div></div>' +
-      '<p class="help">Datenbasis: Forecast (Sales History enthält keine Perioden-/Kategoriedimension und eignet sich nicht für diese Standortsimulation).</p>' +
+      '<p class="help">Mengenbasis: Forecast (Perioden/Kategorien nur dort vorhanden). Der geografische Fußabdruck je Standort — und damit Distanz/Transportkosten/Score je Kandidat — stammt aus der echten Sales History (siehe Formelübersicht in Berichte). Eine artikelscharfe Standortempfehlung liefert der Bericht „Artikel-Standortanalyse“.</p>' +
       '<button class="btn btn-primary" id="simRunBtn" data-t="Simulation starten">' + I.t('Simulation starten') + '</button>' +
       '</div>';
   }

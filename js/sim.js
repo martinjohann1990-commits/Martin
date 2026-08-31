@@ -854,6 +854,121 @@
     }).sort(function (a, b) { return b.skuCount - a.skuCount; });
   }
 
+  /* ================= Article-level location & turnover analysis =================
+     SKU View has no district dimension of its own (only Shipping Point x Article x ESU), so its
+     volume is fanned into districts using the SAME DC<->District shares Sales History already
+     established (dcDistrictShares — the real historical footprint, not a proxy). This turns "how
+     is this article's demand spread across the network" into a real, ESU-weighted answer, which
+     is what a stocking-location decision actually needs — not just an aggregate, article-blind
+     network score. */
+  function articleDistrictBreakdown() {
+    if (_cache.articleDistrictBreakdown) return _cache.articleDistrictBreakdown;
+    var spMap = shippingPointDcMap();
+    var shares = dcDistrictShares();
+    var out = {};
+    S().data.skus.forEach(function (r) {
+      if (!r.article) return;
+      var esu = Math.max(0, r.qtyEsu || 0);
+      if (!esu) return;
+      var dcName = r.shippingPoint ? spMap[r.shippingPoint] : null;
+      var id = dcName ? dcId(dcName) : null;
+      var s = id ? shares[id] : null;
+      out[r.article] = out[r.article] || { totalEsu: 0, byDistrict: {}, articleName: null };
+      if (r.articleName && !out[r.article].articleName) out[r.article].articleName = r.articleName;
+      if (s && Object.keys(s.shares).length) {
+        Object.keys(s.shares).forEach(function (d) {
+          var portion = esu * s.shares[d];
+          out[r.article].byDistrict[d] = (out[r.article].byDistrict[d] || 0) + portion;
+          out[r.article].totalEsu += portion;
+        });
+      } else {
+        var key = '(ohne Distrikt-Zuordnung)';
+        out[r.article].byDistrict[key] = (out[r.article].byDistrict[key] || 0) + esu;
+        out[r.article].totalEsu += esu;
+      }
+    });
+    _cache.articleDistrictBreakdown = out;
+    return out;
+  }
+
+  /* The candidate DC that historically already serves a district most (by Sales-History share);
+     falls back to the geographically nearest candidate when Sales History has no coverage there. */
+  function bestDcForDistrict(district) {
+    var shares = dcDistrictShares();
+    var best = null, bestShare = -1;
+    Object.keys(shares).forEach(function (id) {
+      var s = shares[id].shares[district];
+      if (s !== undefined && s > bestShare) { bestShare = s; best = id; }
+    });
+    if (best) return dcById(best);
+    var candidates = candidateDcs(), bestDc = null, bestDist = Infinity;
+    candidates.forEach(function (dc) {
+      var d = distanceKm(dc, district);
+      if (d !== null && d < bestDist) { bestDist = d; bestDc = dc; }
+    });
+    return bestDc;
+  }
+
+  /* Per article: total volume (turnover proxy), which district it concentrates in (if any), and
+     a stocking recommendation combining both — a classic ABC/regional-pattern read, not a single
+     network-wide "best site" that treats every article the same:
+       - "zentral": bottom of the ABC volume ranking (C-class, last 5% of cumulative volume) — a
+         slow mover multiplies safety-stock overhead at every extra site it's stocked at, without
+         a matching service-level payoff, so it belongs at one hub location regardless of its
+         regional pattern.
+       - "regional": a single district accounts for >= minShareForRegional of the article's volume
+         — a genuine regional concentration, worth stocking close to that demand.
+       - "mehrere": everything else — real volume, but spread across the network with no dominant
+         region, so multi-site (or network-wide) stocking is the sensible default. */
+  function articleLocationAnalysis(params) {
+    params = params || {};
+    var minShareForRegional = U.isNum(params.minShareForRegional) ? params.minShareForRegional : 0.6;
+    var breakdown = articleDistrictBreakdown();
+    var rows = Object.keys(breakdown).map(function (article) {
+      var b = breakdown[article];
+      var top = null, topEsu = -1;
+      Object.keys(b.byDistrict).forEach(function (d) {
+        if (d === '(ohne Distrikt-Zuordnung)') return;
+        if (b.byDistrict[d] > topEsu) { topEsu = b.byDistrict[d]; top = d; }
+      });
+      var topShare = (b.totalEsu > 0 && top) ? topEsu / b.totalEsu : 0;
+      return { article: article, articleName: b.articleName, totalEsu: b.totalEsu, topDistrict: top, topShare: topShare, byDistrict: b.byDistrict };
+    });
+    rows.sort(function (a, b) { return b.totalEsu - a.totalEsu; });
+
+    var grandTotal = U.sum(rows, function (r) { return r.totalEsu; });
+    var cum = 0;
+    rows.forEach(function (r) {
+      cum += r.totalEsu;
+      var cumShare = grandTotal > 0 ? cum / grandTotal : 0;
+      r.abcClass = cumShare <= 0.8 ? 'A' : cumShare <= 0.95 ? 'B' : 'C';
+    });
+
+    var networkHubId = null, networkHubVol = -1;
+    var sharesAll = dcDistrictShares();
+    Object.keys(sharesAll).forEach(function (id) {
+      if (sharesAll[id].totalEsu > networkHubVol) { networkHubVol = sharesAll[id].totalEsu; networkHubId = id; }
+    });
+    var networkHubDc = networkHubId ? dcById(networkHubId) : null;
+
+    rows.forEach(function (r) {
+      if (r.abcClass === 'C') {
+        r.recommendation = 'zentral';
+        r.recommendedDc = networkHubDc;
+        r.reason = 'Geringe Drehung (C-Artikel, unterste 5 % der kumulierten Menge) — Streuung auf mehrere Standorte würde den Sicherheitsbestand vervielfachen, ohne den Servicegrad spürbar zu verbessern.';
+      } else if (r.topDistrict && r.topShare >= minShareForRegional) {
+        r.recommendation = 'regional';
+        r.recommendedDc = bestDcForDistrict(r.topDistrict);
+        r.reason = Math.round(r.topShare * 100) + ' % des Volumens entfällt auf ' + r.topDistrict + ' — starker regionaler Zusammenhang.';
+      } else {
+        r.recommendation = 'mehrere';
+        r.recommendedDc = null;
+        r.reason = 'Nachfrage ist netzweit verteilt, kein Distrikt dominiert — Lagerung an mehreren Standorten sinnvoll.';
+      }
+    });
+    return { rows: rows, grandTotal: grandTotal, networkHubDc: networkHubDc, minShareForRegional: minShareForRegional };
+  }
+
   function isTapsCategory(cat, keywords) {
     if (!cat) return false;
     var low = cat.toLowerCase();
@@ -958,6 +1073,7 @@
     skuCountByDc: skuCountByDc, allocateToDcs: allocateToDcs, computeScenarioNetwork: computeScenarioNetwork,
     resolveTarget: resolveTarget, buildScenarioTemplate: buildScenarioTemplate, SCENARIO_TEMPLATES: SCENARIO_TEMPLATES,
     countryAllocationForDistrict: countryAllocationForDistrict, skuCountPerDcReport: skuCountPerDcReport,
+    articleLocationAnalysis: articleLocationAnalysis, bestDcForDistrict: bestDcForDistrict,
     avgShipmentSize: avgShipmentSize, shipmentComposition: shipmentComposition,
     invalidateCaches: invalidateCaches, FORMULA_REFERENCE: FORMULA_REFERENCE
   };
