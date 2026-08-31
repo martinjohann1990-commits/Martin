@@ -96,7 +96,8 @@
       '<div class="reco-reason">' + reasonSentence(best) + '</div>' +
       (warnings.length ? warnings.map(function (w) { return '<div class="reco-warn">' + U.escapeHtml(w) + '</div>'; }).join(' ') : '') +
       '<div class="reco-kpis">' +
-      recoKpi(I.t('Prognose Paletten (Gesamt)'), I.fmtInt(active.demand.totalPallets)) +
+      recoKpi(I.t('Ziel-Palettenbestand'), I.fmtInt(U.sum(active.parts, function (p) { return p.slots; }))) +
+      recoKpi(I.t('Forecast-Menge im Zeitraum'), I.fmtInt(active.demand.totalPallets)) +
       recoKpi(I.t('Ziel-Reichweite (Monate)'), I.fmtNum(active.targetDays / 30.44, 1)) +
       recoKpi('Ø €/Palette', best.transportCostPerPallet !== null ? I.fmtNum(best.transportCostPerPallet, 2) : '–') +
       recoKpi('Ø Transit (Tage)', best.transitDays !== null ? I.fmtNum(best.transitDays, 1) : '–') +
@@ -159,10 +160,14 @@
         '<td class="num">' + (p ? I.fmtInt(p.score) : '–') + '</td>' +
         '<td>' + (p ? (p.feasible ? '<span class="badge badge-good">OK</span>' : '<span class="badge badge-bad">!</span>') : '–') + '</td></tr>';
     }).join('');
+    var redundancyNote = (active.redundancy && active.redundancy.pallets > 0) ?
+      '<div class="note-box">Redundanzvermeidung aktiv: ' + I.fmtInt(active.redundancy.articleCount) + ' Artikel (' + I.fmtInt(active.redundancy.pallets) + ' PAL) wurden gemäß Artikel-Standortanalyse direkt ihrem einen empfohlenen Standort zugewiesen (zentral bei geringer Drehung, regional bei starkem Distrikt-Bezug), statt über mehrere Standorte gestreut zu werden — vermeidet doppelten Sicherheitsbestand für dasselbe Volumen. Details je Artikel: Berichte → Artikel-Standortanalyse.</div>' : '';
     return '<div class="card"><div class="card-head"><h2 data-t="Aufteilungstabelle">' + I.t('Aufteilungstabelle') + '</h2>' +
       '<div class="actions">' + (isManual ? '<button class="btn btn-sm" id="simRecalcManual">Neu berechnen</button>' : '') +
       '<button class="btn btn-sm btn-primary" id="simApplyBtn" data-t="Übernehmen">' + I.t('Übernehmen') + '</button></div></div>' +
       (isManual ? '<p class="help">Anteile eintragen (relative Gewichte, müssen nicht auf 100 summieren) und neu berechnen.</p>' : '') +
+      '<p class="help">PAL = Forecast-Durchsatz im gewählten Zeitraum (Basis für Transportkosten/Anteil). Slots = Ziel-Palettenbestand je Standort (Ø Menge × Reichweite) — die planungsrelevante Größe für Kapazität/Lagerfläche.</p>' +
+      redundancyNote +
       '<div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Name">' + I.t('Name') + '</th><th class="num">%</th><th class="num">PAL</th>' +
       '<th class="num">Slots</th><th class="num">€/PAL</th><th class="num">' + I.t('Gesamt') + '</th><th class="num">Score</th><th data-t="Status">' + I.t('Status') + '</th></tr></thead>' +
       '<tbody>' + (rows || '<tr><td colspan="8" class="muted">–</td></tr>') + '</tbody></table></div></div>';

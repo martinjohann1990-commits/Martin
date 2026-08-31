@@ -32,6 +32,7 @@
     'Aktive Distributionszentren': 'Active distribution centers', 'SKUs im Bestand': 'SKUs on file',
     'Ship-to-Kunden': 'Ship-to customers', 'Ø Paletten je DC': 'Avg. pallets per DC',
     'Ziel-Reichweite (Monate)': 'Target coverage (months)', 'Volumen je Distributionszentrum': 'Volume per distribution center',
+    'Ziel-Palettenbestand': 'Target pallet stock', 'Forecast-Menge im Zeitraum': 'Forecast quantity in period',
     'Top-10 Vertriebsgebiete': 'Top 10 sales districts', 'Prognoseverlauf je Periode': 'Forecast trend per period',
     'Netzwerkkarte': 'Network map', 'Keine Daten geladen': 'No data loaded',
     'Bitte laden Sie Ihre Excel-/CSV-Dateien im Bereich “Daten & Import” hoch oder starten Sie mit den Demodaten.':

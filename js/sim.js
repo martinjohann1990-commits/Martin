@@ -525,10 +525,51 @@
        cheapest-on-average ones. params.candidatePoolSize still lets a caller restrict the
        pool explicitly (e.g. for performance with a very large DC list). */
     var poolSize = params.candidatePoolSize || candidates.length || 1;
-
-    var districtPalletsMapFull = {};
-    Object.keys(demand.byDistrict).forEach(function (d) { districtPalletsMapFull[d] = demand.byDistrict[d].pallets; });
+    var candidateIdSet = {};
+    candidates.forEach(function (dc) { candidateIdSet[dc.id] = true; });
     var totalPallets = totalPalletsOf(demand);
+
+    /* Redundancy-aware pre-routing (only meaningful when several DCs are candidates at once):
+       the Artikel-Standortanalyse classifies each article as "zentral" (slow mover — stocking it
+       at every site multiplies safety-stock overhead for volume that doesn't need more than one
+       storage point), "regional" (strongly concentrated in one district) or "mehrere" (genuinely
+       network-spread). Only "mehrere" volume — plus any zentral/regional article whose
+       recommended DC isn't among the currently selected candidates — goes through the district
+       greedy-assignment below; the rest is routed straight to its one recommended DC, so it never
+       gets fragmented across multiple sites in the first place. */
+    var artTarget = {};
+    var analysis = articleLocationAnalysis({});
+    analysis.rows.forEach(function (r) {
+      if (r.recommendation === 'mehrere') return;
+      if (r.recommendedDc && candidateIdSet[r.recommendedDc.id]) artTarget[r.article] = r.recommendedDc.id;
+    });
+
+    var shares = dcDistrictShares();
+    var districtPalletsMapFull = {};
+    var forcedTotalByDc = {}, forcedDistrictByDc = {};
+    var consolidatedArticles = {}, consolidatedPallets = 0;
+    function fanIntoDistricts(targetMap, srcDcName, pallets) {
+      var srcId = srcDcName ? dcId(srcDcName) : null;
+      var s = srcId ? shares[srcId] : null;
+      if (s && Object.keys(s.shares).length) {
+        Object.keys(s.shares).forEach(function (d) { targetMap[d] = (targetMap[d] || 0) + pallets * s.shares[d]; });
+      } else {
+        var key = '(ohne Distrikt-Zuordnung)';
+        targetMap[key] = (targetMap[key] || 0) + pallets;
+      }
+    }
+    demand.rows.forEach(function (row) {
+      var forcedId = artTarget[row.article];
+      if (forcedId) {
+        consolidatedArticles[row.article] = true;
+        consolidatedPallets += row.pallets;
+        forcedTotalByDc[forcedId] = (forcedTotalByDc[forcedId] || 0) + row.pallets;
+        forcedDistrictByDc[forcedId] = forcedDistrictByDc[forcedId] || {};
+        fanIntoDistricts(forcedDistrictByDc[forcedId], row.dc, row.pallets);
+        return;
+      }
+      fanIntoDistricts(districtPalletsMapFull, row.dc, row.pallets);
+    });
 
     var quickScored = candidates.map(function (dc) { return { dc: dc, cpp: avgTransportCostPerPallet(dc, districtPalletsMapFull, settings) }; })
       .filter(function (x) { return x.cpp !== null; });
@@ -539,6 +580,11 @@
     var slotFactor = effectiveSlotFactor(params, settings, totalPallets, weeks);
     var remainingCapacity = {};
     pool.forEach(function (dc) { remainingCapacity[dc.id] = Math.max(0, (dc.capacity || 0) - (dc.usedSlots || 0)); });
+    /* Capacity already committed to the forced (redundancy-avoided) consolidation above must be
+       reserved before the greedy district assignment below spends the same slots twice. */
+    Object.keys(forcedTotalByDc).forEach(function (id) {
+      if (remainingCapacity[id] !== undefined) remainingCapacity[id] = Math.max(0, remainingCapacity[id] - forcedTotalByDc[id] * slotFactor);
+    });
 
     var regionsSorted = Object.keys(districtPalletsMapFull).sort(function (a, b) { return districtPalletsMapFull[b] - districtPalletsMapFull[a]; });
     var districtAssignment = {};
@@ -576,6 +622,17 @@
         perDc[id] = perDc[id] || { pallets: 0, districtPalletsMap: {} };
         var p = districtAssignment[district][id];
         perDc[id].pallets += p; perDc[id].districtPalletsMap[district] = p;
+      });
+    });
+    /* Merge in the forced (redundancy-avoided) consolidation — still tagged with its real
+       geographic origin (fanned via Sales History same as everything else) purely so
+       transport-cost/transit averaging for that DC stays representative; it's never split
+       across multiple DCs the way the greedy district assignment above would have. */
+    Object.keys(forcedTotalByDc).forEach(function (id) {
+      perDc[id] = perDc[id] || { pallets: 0, districtPalletsMap: {} };
+      perDc[id].pallets += forcedTotalByDc[id];
+      Object.keys(forcedDistrictByDc[id]).forEach(function (d) {
+        perDc[id].districtPalletsMap[d] = (perDc[id].districtPalletsMap[d] || 0) + forcedDistrictByDc[id][d];
       });
     });
 
@@ -616,6 +673,7 @@
       periodFrom: params.periodFrom, periodTo: params.periodTo, targetDays: coverageWeeksEq * 7, createdAt: Date.now(),
       demand: { totalPallets: totalPallets, weeklyRate: totalPallets / weeks, totalDays: demand.totalDays, byDistrict: demand.byDistrict },
       parts: parts, regions: regions, recommended: null,
+      redundancy: { articleCount: Object.keys(consolidatedArticles).length, pallets: consolidatedPallets },
       warnings: parts.some(function (p) { return !p.feasible; }) ? ['Mindestens ein Standort überschreitet die Kapazitätsgrenze.'] : []
     };
   }
@@ -923,6 +981,8 @@
   function articleLocationAnalysis(params) {
     params = params || {};
     var minShareForRegional = U.isNum(params.minShareForRegional) ? params.minShareForRegional : 0.6;
+    var cacheKey = 'articleLocationAnalysis:' + minShareForRegional;
+    if (_cache[cacheKey]) return _cache[cacheKey];
     var breakdown = articleDistrictBreakdown();
     var rows = Object.keys(breakdown).map(function (article) {
       var b = breakdown[article];
@@ -966,7 +1026,9 @@
         r.reason = 'Nachfrage ist netzweit verteilt, kein Distrikt dominiert — Lagerung an mehreren Standorten sinnvoll.';
       }
     });
-    return { rows: rows, grandTotal: grandTotal, networkHubDc: networkHubDc, minShareForRegional: minShareForRegional };
+    var result = { rows: rows, grandTotal: grandTotal, networkHubDc: networkHubDc, minShareForRegional: minShareForRegional };
+    _cache[cacheKey] = result;
+    return result;
   }
 
   function isTapsCategory(cat, keywords) {
