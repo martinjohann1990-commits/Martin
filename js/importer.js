@@ -134,6 +134,13 @@
     { key: 'palletLoad', label: 'Pallett Load', required: true, synonyms: ['Pallet Load', 'Palettenladung', 'Units per pallet', 'Stück je Palette', 'Stueck je Palette'] }
   ];
 
+  function median(arr) {
+    if (!arr.length) return null;
+    var sorted = arr.slice().sort(function (a, b) { return a - b; });
+    var mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+  }
+
   function detectMonthColumns(headerRow) {
     var cols = [];
     for (var c = 0; c < headerRow.length; c++) {
@@ -161,7 +168,15 @@
     }
     if (!monthCols.length) warnings.push('Keine Monatsspalten (Datumsüberschriften) erkannt.');
 
-    var records = [];
+    /* Pass 1: read each row's own attributes and, where its own "Pallett Load" is present,
+       collect it as a sample for its Product Sub Group / Mid Group. In the real source file
+       roughly a third of articles (mostly small accessories/spare parts) carry NO Pallett Load
+       at all (0 or blank) — dividing by that would silently zero out their pallets, dropping a
+       real share of the forecast volume (observed: ~28% of total quantity) from every
+       pallet-based figure (Dashboard, Simulation, Szenarien) even though the piece quantity was
+       there in the file. */
+    var parsedRows = [];
+    var subGroupSamples = {}, midGroupSamples = {}, allSamples = [];
     for (var r = 1; r < rows2d.length; r++) {
       var row = rows2d[r];
       if (!row || !row.length) continue;
@@ -169,25 +184,56 @@
       if (!dcRaw || !articleRaw) continue;
       var dc = String(dcRaw).trim();
       var article = String(articleRaw).trim();
-      var palletLoad = idMapping.palletLoad !== undefined ? U.parseLocaleNumber(row[idMapping.palletLoad]) : null;
+      var ownPalletLoad = idMapping.palletLoad !== undefined ? U.parseLocaleNumber(row[idMapping.palletLoad]) : null;
       var category = idMapping.category !== undefined && row[idMapping.category] ? String(row[idMapping.category]).trim() : 'Unbekannt';
       var subCategory = idMapping.subCategory !== undefined && row[idMapping.subCategory] ? String(row[idMapping.subCategory]).trim() : null;
+      if (U.isNum(ownPalletLoad) && ownPalletLoad > 0) {
+        allSamples.push(ownPalletLoad);
+        if (subCategory) (subGroupSamples[subCategory] = subGroupSamples[subCategory] || []).push(ownPalletLoad);
+        (midGroupSamples[category] = midGroupSamples[category] || []).push(ownPalletLoad);
+      }
+      parsedRows.push({ row: row, dc: dc, article: article, ownPalletLoad: ownPalletLoad, category: category, subCategory: subCategory });
+    }
+    var globalMedian = median(allSamples);
+    var subGroupMedian = {}, midGroupMedian = {};
+    Object.keys(subGroupSamples).forEach(function (k) { subGroupMedian[k] = median(subGroupSamples[k]); });
+    Object.keys(midGroupSamples).forEach(function (k) { midGroupMedian[k] = median(midGroupSamples[k]); });
+
+    /* Pass 2: build records, substituting the Product Sub Group's (else Mid Group's, else the
+       whole file's) median Pallett Load whenever a row's own value is missing, so that volume
+       still counts in pallets instead of vanishing — flagged via palletLoadEstimated so it stays
+       visible (import warning + can be surfaced per-record later) rather than silently guessed. */
+    var records = [];
+    var estimatedQty = 0, totalQty = 0, estimatedArticles = {};
+    for (var p = 0; p < parsedRows.length; p++) {
+      var pr = parsedRows[p];
+      var palletLoad = pr.ownPalletLoad, estimated = false;
+      if (!(U.isNum(palletLoad) && palletLoad > 0)) {
+        palletLoad = (pr.subCategory && subGroupMedian[pr.subCategory]) || midGroupMedian[pr.category] || globalMedian || null;
+        estimated = U.isNum(palletLoad) && palletLoad > 0;
+      }
       for (var m = 0; m < monthCols.length; m++) {
-        var cell = row[monthCols[m].index];
+        var cell = pr.row[monthCols[m].index];
         var qty = U.parseLocaleNumber(cell);
         if (!qty) continue;
+        totalQty += qty;
         var pallets = (U.isNum(palletLoad) && palletLoad > 0) ? qty / palletLoad : 0;
+        if (estimated && pallets > 0) { estimatedQty += qty; estimatedArticles[pr.article] = true; }
         records.push({
-          id: U.uid('fc'), dc: dc, article: article,
-          articleDesc: idMapping.articleDesc !== undefined ? row[idMapping.articleDesc] : null,
-          bpSp: idMapping.bpSp !== undefined ? row[idMapping.bpSp] : null,
-          category: category, subCategory: subCategory,
-          packaging: idMapping.packaging !== undefined ? row[idMapping.packaging] : null,
-          palletLoad: U.isNum(palletLoad) ? palletLoad : null,
+          id: U.uid('fc'), dc: pr.dc, article: pr.article,
+          articleDesc: idMapping.articleDesc !== undefined ? pr.row[idMapping.articleDesc] : null,
+          bpSp: idMapping.bpSp !== undefined ? pr.row[idMapping.bpSp] : null,
+          category: pr.category, subCategory: pr.subCategory,
+          packaging: idMapping.packaging !== undefined ? pr.row[idMapping.packaging] : null,
+          palletLoad: U.isNum(palletLoad) ? palletLoad : null, palletLoadEstimated: estimated,
           periodKey: monthCols[m].period.key, periodTs: monthCols[m].period.ts, periodDays: monthCols[m].period.days,
           qty: qty, pallets: pallets
         });
       }
+    }
+    if (estimatedQty > 0) {
+      warnings.push('Pallett Load fehlte im Ausgangsfile bei ' + Object.keys(estimatedArticles).length + ' Artikel(n) (' +
+        (Math.round(estimatedQty / (totalQty || 1) * 1000) / 10) + ' % der Gesamtmenge in Stück) — für diese wurde ersatzweise der Median der jeweiligen Produkt(unter)gruppe angesetzt, damit die Menge nicht mit 0 Paletten in die Simulation eingeht. Für eine exakte Rechnung bitte die Pallett-Load-Spalte im Quellfile vervollständigen.');
     }
     var agg = aggregateIfNeeded(records, function (rec) { return [rec.dc, rec.article, rec.periodKey].join('|'); }, ['qty', 'pallets'], 4000);
     return { records: agg.rows, warnings: warnings, aggregated: agg.aggregated, originalCount: agg.originalCount, idMapping: idMapping, monthCols: monthCols };
