@@ -106,6 +106,8 @@
     });
   }
 
+  LNP.app = { goTo: function (key) { if (VIEWS[key]) renderView(key); } };
+
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
   else boot();
 })();

@@ -505,6 +505,8 @@
       dcId: dc.id, dcName: dc.name, share: share, pallets: pallets, slots: slots,
       cycleStock: stockBreakdown ? stockBreakdown.cycle : null,
       safetyStock: stockBreakdown ? stockBreakdown.safety : null,
+      skuCount: evald.skuCount, pickingBins: evald.pickingBins,
+      utilization: evald.utilization, capacity: dc.capacity,
       transportCost: evald.transportCostPerPallet,
       storageCost: (settings.storageCostPerSlotMonth || 0) * slots,
       handlingCost: (settings.handlingCostPerPallet || 0) * pallets,
@@ -871,8 +873,32 @@
   }
 
   /* SKU count per DC: primary source is Forecast's own distinct (dc, article) pairs — the
-     future-state assignment, and more reliable than SKU_View's historical, heavily-masked data. */
+     future-state assignment, and more reliable than SKU_View's historical, heavily-masked data.
+     A simulation-based Szenario (scenario.simParams, see runScenarioSimulation) has no dcMapping
+     to resolve rows through — instead every article's own Artikel-Standortanalyse recommendation
+     is reused, restricted to that scenario's candidate DCs, so this stays "verlinkt" with the
+     same classification the Simulation's redundancy routing and the Artikel-Standortanalyse
+     report already use. "mehrere" (network-spread) articles are counted at every candidate DC of
+     the scenario — an honest approximation, since their demand genuinely has no single site. */
   function skuCountByDc(scenario) {
+    if (scenario && scenario.simParams) {
+      var candidateIds = scenarioCandidateDcIds(scenario);
+      var candidateSet = {};
+      candidateIds.forEach(function (id) { candidateSet[id] = true; });
+      var analysis = articleLocationAnalysis({ candidateDcIds: candidateIds });
+      var groupsSim = {};
+      analysis.rows.forEach(function (r) {
+        if (r.recommendation === 'mehrere') {
+          candidateIds.forEach(function (id) { groupsSim[id] = groupsSim[id] || {}; groupsSim[id][r.article] = true; });
+        } else if (r.recommendedDc) {
+          groupsSim[r.recommendedDc.id] = groupsSim[r.recommendedDc.id] || {};
+          groupsSim[r.recommendedDc.id][r.article] = true;
+        }
+      });
+      var countsSim = {};
+      for (var sid in groupsSim) if (groupsSim.hasOwnProperty(sid)) countsSim[sid] = Object.keys(groupsSim[sid]).length;
+      return countsSim;
+    }
     var mapping = (scenario && scenario.dcMapping) || {};
     var groups = {};
     S().data.forecast.forEach(function (r) {
@@ -885,6 +911,82 @@
     var counts = {};
     for (var id in groups) if (groups.hasOwnProperty(id)) counts[id] = Object.keys(groups[id]).length;
     return counts;
+  }
+
+  /* The set of DC ids a Szenario ultimately keeps in play — used to scope both skuCountByDc's
+     simulation branch and any report that should reflect "what's left after this scenario":
+     for a simulation-based Szenario, its own selected candidates (or all active DCs if it ran
+     unrestricted); for a dcMapping-based Szenario (template/custom), the distinct TARGET ids
+     the mapping resolves to (the sites that survive consolidation). null = no scenario, i.e.
+     "current state" / all active DCs, unrestricted. */
+  function scenarioCandidateDcIds(scenario) {
+    if (!scenario) return null;
+    if (scenario.simParams) {
+      var ids = scenario.simParams.candidateDcIds;
+      return (ids && ids.length) ? ids : candidateDcs().map(function (d) { return d.id; });
+    }
+    if (scenario.dcMapping) {
+      var targets = {};
+      Object.keys(scenario.dcMapping).forEach(function (src) { targets[resolveTarget(scenario.dcMapping, src)] = true; });
+      return Object.keys(targets);
+    }
+    return null;
+  }
+
+  /* Re-runs the actual Simulation (runSingle/runSplit/runManual) from a saved scenario's stored
+     parameters, rather than approximating it as a static DC-to-DC mapping — a simulation's
+     allocation (district fan-out, redundancy-aware article routing, capacity-constrained greedy
+     assignment) isn't representable as a simple mapping without losing exactly the precision the
+     Simulation was built for. Always evaluated against the CURRENT global settings (coverage,
+     stock factor, weights aren't re-read from the scenario beyond what's explicitly stored),
+     consistent with every other report already re-evaluating live on settings changes. */
+  function runScenarioSimulation(scenario, overrideParams) {
+    var sp = scenario.simParams;
+    var baseSettings = (overrideParams && overrideParams.settings) || S().settings;
+    var settings = Object.assign({}, baseSettings, {
+      weights: sp.weights || baseSettings.weights,
+      maxUtilization: U.isNum(sp.maxUtilization) ? sp.maxUtilization : baseSettings.maxUtilization
+    });
+    var params = {
+      /* The scenario's OWN saved category filter is authoritative — a scenario simulated for a
+         single category should keep reproducing exactly that when reused (Szenarien-Vergleich
+         always calls with category:'all', which must not silently override it). */
+      category: sp.category || (overrideParams && overrideParams.category) || 'all',
+      dataset: 'forecast',
+      periodFrom: U.isNum(sp.periodFrom) ? sp.periodFrom : null,
+      periodTo: U.isNum(sp.periodTo) ? sp.periodTo : null,
+      settings: settings,
+      candidateDcIds: sp.candidateDcIds || []
+    };
+    if (sp.mode === 'single') return runSingle(params);
+    if (sp.mode === 'manual') return runManual(params, sp.manualShares || {});
+    return runSplit(params);
+  }
+
+  /* Adapts a Simulation result's `parts` (see buildPart) into computeScenarioNetwork's `perDc`
+     shape, so every existing consumer (Szenarien-Vergleich, Paletten-/Lagerbedarf je DC) works
+     unchanged whether a Szenario is simulation-based or the older dcMapping-based kind. */
+  function networkFromSimResult(scenario, simResult, params) {
+    var weeks = simResult.demand.totalDays / 7 || 1;
+    var perDc = simResult.parts.map(function (p) {
+      return {
+        dcId: p.dcId, dcName: p.dcName, active: true,
+        pallets: p.pallets, qty: 0,
+        weeklyRate: weeks > 0 ? p.pallets / weeks : 0, storageDemandPallets: p.slots,
+        utilization: p.utilization, capacity: p.capacity,
+        skuCount: p.skuCount, pickingBins: p.pickingBins, districts: null
+      };
+    });
+    perDc.sort(function (a, b) { return b.pallets - a.pallets; });
+    var settings = (params && params.settings) || S().settings;
+    return {
+      scenarioId: scenario.id, scenarioName: scenario.name,
+      totalPallets: U.sum(perDc, function (x) { return x.pallets; }),
+      totalQty: 0,
+      unassignedPallets: 0,
+      coverageMonths: resolveCoverageMonths((params && params.category) || scenario.simParams.category, settings),
+      perDc: perDc, totalDays: simResult.demand.totalDays, weeks: weeks
+    };
   }
 
   /* Fans each DC's own (exact) forecast total out into district-level pieces via
@@ -923,6 +1025,9 @@
   }
 
   function computeScenarioNetwork(scenario, params) {
+    if (scenario && scenario.simParams) {
+      return networkFromSimResult(scenario, runScenarioSimulation(scenario, params), params);
+    }
     var settings = params.settings || S().settings;
     var demand = demandFor(params);
     var allocResult = allocateToDcs(demand, scenario);
@@ -1023,12 +1128,15 @@
     return { district: district, rows: top, total: total };
   }
 
-  function skuCountPerDcReport() {
-    var counts = skuCountByDc(null);
-    return candidateDcs().map(function (dc) {
-      var n = counts[dc.id] || 0;
+  function skuCountPerDcReport(scenario) {
+    var counts = skuCountByDc(scenario || null);
+    var dcIds = scenarioCandidateDcIds(scenario) || candidateDcs().map(function (d) { return d.id; });
+    return dcIds.map(function (id) {
+      var dc = dcById(id);
+      if (!dc) return null;
+      var n = counts[id] || 0;
       return { dcId: dc.id, dcName: dc.name, skuCount: n, pickingBins: Math.ceil(n / (S().settings.skusPerBin || 1)) };
-    }).sort(function (a, b) { return b.skuCount - a.skuCount; });
+    }).filter(function (x) { return x; }).sort(function (a, b) { return b.skuCount - a.skuCount; });
   }
 
   /* ================= Article-level location & turnover analysis =================
@@ -1069,16 +1177,21 @@
   }
 
   /* The candidate DC that historically already serves a district most (by Sales-History share);
-     falls back to the geographically nearest candidate when Sales History has no coverage there. */
-  function bestDcForDistrict(district) {
+     falls back to the geographically nearest candidate when Sales History has no coverage there.
+     candidateIdSet (optional): restrict the search to these DC ids — used when a Szenario is
+     selected (see scenarioCandidateDcIds) so the recommendation reflects the surviving/candidate
+     DCs of THAT scenario, not the whole active network. */
+  function bestDcForDistrict(district, candidateIdSet) {
     var shares = dcDistrictShares();
     var best = null, bestShare = -1;
     Object.keys(shares).forEach(function (id) {
+      if (candidateIdSet && !candidateIdSet[id]) return;
       var s = shares[id].shares[district];
       if (s !== undefined && s > bestShare) { bestShare = s; best = id; }
     });
     if (best) return dcById(best);
-    var candidates = candidateDcs(), bestDc = null, bestDist = Infinity;
+    var candidates = candidateIdSet ? Object.keys(candidateIdSet).map(dcById).filter(function (d) { return d; }) : candidateDcs();
+    var bestDc = null, bestDist = Infinity;
     candidates.forEach(function (dc) {
       var d = distanceKm(dc, district);
       if (d !== null && d < bestDist) { bestDist = d; bestDc = dc; }
@@ -1100,7 +1213,13 @@
   function articleLocationAnalysis(params) {
     params = params || {};
     var minShareForRegional = U.isNum(params.minShareForRegional) ? params.minShareForRegional : 0.6;
-    var cacheKey = 'articleLocationAnalysis:' + minShareForRegional;
+    var candidateIdSet = null;
+    if (params.candidateDcIds && params.candidateDcIds.length) {
+      candidateIdSet = {};
+      params.candidateDcIds.forEach(function (id) { candidateIdSet[id] = true; });
+    }
+    var cacheKey = 'articleLocationAnalysis:' + minShareForRegional + ':' +
+      (params.candidateDcIds ? params.candidateDcIds.slice().sort().join(',') : 'all');
     if (_cache[cacheKey]) return _cache[cacheKey];
     var breakdown = articleDistrictBreakdown();
     var rows = Object.keys(breakdown).map(function (article) {
@@ -1126,6 +1245,7 @@
     var networkHubId = null, networkHubVol = -1;
     var sharesAll = dcDistrictShares();
     Object.keys(sharesAll).forEach(function (id) {
+      if (candidateIdSet && !candidateIdSet[id]) return;
       if (sharesAll[id].totalEsu > networkHubVol) { networkHubVol = sharesAll[id].totalEsu; networkHubId = id; }
     });
     var networkHubDc = networkHubId ? dcById(networkHubId) : null;
@@ -1137,7 +1257,7 @@
         r.reason = 'Geringe Drehung (C-Artikel, unterste 5 % der kumulierten Menge) — Streuung auf mehrere Standorte würde den Sicherheitsbestand vervielfachen, ohne den Servicegrad spürbar zu verbessern.';
       } else if (r.topDistrict && r.topShare >= minShareForRegional) {
         r.recommendation = 'regional';
-        r.recommendedDc = bestDcForDistrict(r.topDistrict);
+        r.recommendedDc = bestDcForDistrict(r.topDistrict, candidateIdSet);
         r.reason = Math.round(r.topShare * 100) + ' % des Volumens entfällt auf ' + r.topDistrict + ' — starker regionaler Zusammenhang.';
       } else {
         r.recommendation = 'mehrere';
@@ -1254,6 +1374,7 @@
     evaluateDC: evaluateDC,
     runSingle: runSingle, runSplit: runSplit, runManual: runManual, runAll: runAll, applyResult: applyResult,
     skuCountByDc: skuCountByDc, allocateToDcs: allocateToDcs, computeScenarioNetwork: computeScenarioNetwork,
+    scenarioCandidateDcIds: scenarioCandidateDcIds, runScenarioSimulation: runScenarioSimulation,
     resolveTarget: resolveTarget, buildScenarioTemplate: buildScenarioTemplate, SCENARIO_TEMPLATES: SCENARIO_TEMPLATES,
     countryAllocationForDistrict: countryAllocationForDistrict, skuCountPerDcReport: skuCountPerDcReport,
     articleLocationAnalysis: articleLocationAnalysis, bestDcForDistrict: bestDcForDistrict,

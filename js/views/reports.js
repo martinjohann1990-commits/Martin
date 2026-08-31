@@ -8,6 +8,21 @@
   var activeTab = 'alloc';
   var selectedDistrict = null;
   var articleFilter = { minShare: 0.6, query: '', recommendation: 'all' };
+  var selectedScenarioId = 'base';
+
+  function scenarioObjById(id) {
+    if (!id || id === 'base') return null;
+    return LNP.state.scenarios.filter(function (s) { return s.id === id; })[0] || null;
+  }
+  /* Scenario selector shared by the three Berichte that can reflect a Szenario's DC topology
+     (Artikel-Standortanalyse, SKU je DC, Paletten-/Lagerbedarf je DC) — "verlinkt" with both the
+     Simulation (simParams-based Szenarien) and the Szenario-Editor (dcMapping-based ones). */
+  function scenarioSelectorHtml() {
+    var scenarios = LNP.state.scenarios;
+    var options = '<option value="base"' + (selectedScenarioId === 'base' ? ' selected' : '') + '>Aktueller Stand (keine Konsolidierung)</option>' +
+      scenarios.map(function (s) { return '<option value="' + s.id + '"' + (s.id === selectedScenarioId ? ' selected' : '') + '>' + U.escapeHtml(s.name) + '</option>'; }).join('');
+    return '<div class="field" style="max-width:320px"><label>Szenario</label><select id="repScenario">' + options + '</select></div>';
+  }
 
   var TABS = [
     { key: 'alloc', label: 'Länder-Distrikt-Zuordnung' },
@@ -48,7 +63,9 @@
   var REC_ORDER = ['regional', 'zentral', 'mehrere'];
 
   function articlePanel() {
-    var analysis = LNP.sim.articleLocationAnalysis({ minShareForRegional: articleFilter.minShare });
+    var scenario = scenarioObjById(selectedScenarioId);
+    var candidateDcIds = LNP.sim.scenarioCandidateDcIds(scenario);
+    var analysis = LNP.sim.articleLocationAnalysis({ minShareForRegional: articleFilter.minShare, candidateDcIds: candidateDcIds });
     var rows = analysis.rows;
     var counts = { zentral: 0, regional: 0, mehrere: 0 };
     var volByRec = { zentral: 0, regional: 0, mehrere: 0 };
@@ -83,7 +100,9 @@
         '<div class="muted" style="font-size:11px">' + I.fmtPct(analysis.grandTotal ? volByRec[key] / analysis.grandTotal : 0, 0) + ' der Menge</div></div>';
     }).join('');
 
-    return '<div class="note-box">Je Artikel wird das SKU-View-Volumen (Shipping Point → DC → Distrikt, mit demselben Verteilschlüssel aus der Sales History wie überall sonst) in seine Distrikt-Anteile zerlegt. ' +
+    return scenarioSelectorHtml() +
+      (scenario ? '<div class="note-box">Empfehlungen gelten für die ' + I.fmtInt(candidateDcIds ? candidateDcIds.length : 0) + ' im Szenario „' + U.escapeHtml(scenario.name) + '“ verbleibenden Standorte — bereits konsolidierte DCs stehen nicht mehr als Empfehlung zur Verfügung.</div>' : '') +
+      '<div class="note-box">Je Artikel wird das SKU-View-Volumen (Shipping Point → DC → Distrikt, mit demselben Verteilschlüssel aus der Sales History wie überall sonst) in seine Distrikt-Anteile zerlegt. ' +
       '<b>Zentral</b> = geringe Drehung (C-Artikel, unterste 5&nbsp;% der kumulierten Menge) — Streuung auf mehrere Standorte würde den Sicherheitsbestand vervielfachen, ohne den Servicegrad spürbar zu verbessern. ' +
       '<b>Regional</b> = ein einzelner Distrikt vereint mindestens den unten eingestellten Anteil des Artikelvolumens auf sich. ' +
       '<b>Mehrere Standorte</b> = echtes Volumen, aber netzweit verteilt ohne dominanten Distrikt. Empfohlenes DC je Distrikt = der Standort, der diesen Distrikt laut Sales History bereits am stärksten beliefert.</div>' +
@@ -103,24 +122,29 @@
   }
 
   function skuPanel() {
-    var report = LNP.sim.skuCountPerDcReport();
+    var scenario = scenarioObjById(selectedScenarioId);
+    var report = LNP.sim.skuCountPerDcReport(scenario);
     var rows = report.map(function (r) {
       return '<tr><td>' + U.escapeHtml(r.dcName) + '</td><td class="num">' + I.fmtInt(r.skuCount) + '</td><td class="num">' + I.fmtInt(r.pickingBins) + '</td></tr>';
     }).join('');
-    return '<p class="help">Picking Bins = ⌈SKU-Anzahl ÷ ' + I.fmtNum(LNP.state.settings.skusPerBin, 1) + ' SKUs je Bin⌉ (einstellbar unter Daten &amp; Import → Mengenlogik).</p>' +
+    return scenarioSelectorHtml() +
+      (scenario ? '<div class="note-box">Basis: Szenario „' + U.escapeHtml(scenario.name) + '“. Für Artikel ohne dominanten Distrikt („Mehrere Standorte“ in der Artikel-Standortanalyse) wird jedes verbleibende DC des Szenarios mitgezählt — echte Volumen ohne einen einzelnen Lagerort, daher eine bewusste Näherung nach oben.</div>' : '') +
+      '<p class="help">Picking Bins = ⌈SKU-Anzahl ÷ ' + I.fmtNum(LNP.state.settings.skusPerBin, 1) + ' SKUs je Bin⌉ (einstellbar unter Daten &amp; Import → Mengenlogik).</p>' +
       '<div class="chart-box"><canvas id="chartSku"></canvas></div>' +
       '<div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Name">' + I.t('Name') + '</th><th class="num" data-t="SKU je DC">' + I.t('SKU je DC') + '</th><th class="num">Picking Bins</th></tr></thead><tbody>' + (rows || '<tr><td colspan="3" class="muted">–</td></tr>') + '</tbody></table></div>';
   }
 
   function storagePanel() {
     var settings = LNP.state.settings;
-    var net = LNP.sim.computeScenarioNetwork(null, { category: 'all', settings: settings });
+    var scenario = scenarioObjById(selectedScenarioId);
+    var net = LNP.sim.computeScenarioNetwork(scenario, { category: 'all', settings: settings });
     var rows = net.perDc.map(function (d) {
       var utilBadge = d.utilization === null ? '–' : '<span class="badge ' + (d.utilization <= settings.maxUtilization ? 'badge-good' : d.utilization <= 1 ? 'badge-warn' : 'badge-bad') + '">' + I.fmtPct(d.utilization, 0) + '</span>';
       return '<tr><td>' + U.escapeHtml(d.dcName) + '</td><td class="num">' + I.fmtNum(d.weeklyRate, 1) + '</td>' +
         '<td class="num">' + I.fmtInt(d.storageDemandPallets) + '</td><td class="num">' + I.fmtInt(d.capacity) + '</td><td>' + utilBadge + '</td></tr>';
     }).join('');
-    return '<p class="help">Basis-Szenario (Ist-Zustand), globale Ziel-Reichweite: <b>' + I.fmtNum(settings.coverageMonthsGlobal, 1) + ' ' + I.t('Monate') + '</b> ' +
+    return scenarioSelectorHtml() +
+      '<p class="help">' + (scenario ? 'Szenario „' + U.escapeHtml(scenario.name) + '“' : 'Basis (Ist-Zustand)') + ', globale Ziel-Reichweite: <b>' + I.fmtNum(settings.coverageMonthsGlobal, 1) + ' ' + I.t('Monate') + '</b> ' +
       '(anpassbar unter Daten &amp; Import → Mengenlogik; wirkt sich sofort auf diesen Bericht aus).</p>' +
       '<div class="chart-box"><canvas id="chartStorage"></canvas></div>' +
       '<div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Name">' + I.t('Name') + '</th><th class="num">PAL/Woche</th>' +
@@ -171,19 +195,22 @@
       var report = LNP.sim.countryAllocationForDistrict(selectedDistrict, LNP.state.settings.countryAllocationTopN);
       LNP.charts.bar('chartAlloc', report.rows.map(function (r) { return r.unit; }), [{ label: '%', data: report.rows.map(function (r) { return +(r.share * 100).toFixed(1); }) }]);
     } else if (activeTab === 'articles') {
-      var analysis = LNP.sim.articleLocationAnalysis({ minShareForRegional: articleFilter.minShare });
+      var scenarioA = scenarioObjById(selectedScenarioId);
+      var analysis = LNP.sim.articleLocationAnalysis({ minShareForRegional: articleFilter.minShare, candidateDcIds: LNP.sim.scenarioCandidateDcIds(scenarioA) });
       var volByRec = { zentral: 0, regional: 0, mehrere: 0 };
       analysis.rows.forEach(function (r) { volByRec[r.recommendation] += r.totalEsu; });
       LNP.charts.doughnut('chartArticleRec', REC_ORDER.map(function (k) { return I.t(REC_LABEL[k]); }),
         REC_ORDER.map(function (k) { return analysis.grandTotal ? +(volByRec[k] / analysis.grandTotal * 100).toFixed(1) : 0; }));
     } else if (activeTab === 'sku') {
-      var skuRep = LNP.sim.skuCountPerDcReport();
+      var scenarioS = scenarioObjById(selectedScenarioId);
+      var skuRep = LNP.sim.skuCountPerDcReport(scenarioS);
       LNP.charts.bar('chartSku', skuRep.map(function (r) { return r.dcName; }), [
         { label: I.t('SKU je DC'), data: skuRep.map(function (r) { return r.skuCount; }) },
         { label: 'Picking Bins', data: skuRep.map(function (r) { return r.pickingBins; }) }
       ]);
     } else if (activeTab === 'storage') {
-      var net = LNP.sim.computeScenarioNetwork(null, { category: 'all', settings: LNP.state.settings });
+      var scenarioT = scenarioObjById(selectedScenarioId);
+      var net = LNP.sim.computeScenarioNetwork(scenarioT, { category: 'all', settings: LNP.state.settings });
       LNP.charts.bar('chartStorage', net.perDc.map(function (d) { return d.dcName; }), [{ label: 'Storage PAL', data: net.perDc.map(function (d) { return Math.round(d.storageDemandPallets); }) }]);
     } else if (activeTab === 'shipment') {
       var rep = LNP.sim.avgShipmentSize({ category: 'all', settings: LNP.state.settings });
@@ -223,6 +250,8 @@
     if (recFilter) recFilter.addEventListener('change', function () { articleFilter.recommendation = recFilter.value; renderPanel(container); });
     var articleSearch = container.querySelector('#repArticleSearch');
     if (articleSearch) articleSearch.addEventListener('change', function () { articleFilter.query = articleSearch.value.trim(); renderPanel(container); });
+    var scenarioSel = container.querySelector('#repScenario');
+    if (scenarioSel) scenarioSel.addEventListener('change', function () { selectedScenarioId = scenarioSel.value; renderPanel(container); });
   }
 
   function panelHtml() {
@@ -258,5 +287,9 @@
     renderPanel(container);
   }
 
-  LNP.viewReports = { render: render };
+  /* Sets the active tab WITHOUT rendering (no container reference here) — call right before
+     LNP.app.goTo('reports') so the subsequent render already opens on this tab. */
+  function selectTab(key) { if (TABS.some(function (t) { return t.key === key; })) activeTab = key; }
+
+  LNP.viewReports = { render: render, selectTab: selectTab };
 })();

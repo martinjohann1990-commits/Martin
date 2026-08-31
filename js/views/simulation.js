@@ -166,9 +166,10 @@
         '<td>' + (p ? (p.feasible ? '<span class="badge badge-good">OK</span>' : '<span class="badge badge-bad">!</span>') : '–') + '</td></tr>';
     }).join('');
     var redundancyNote = (active.redundancy && active.redundancy.pallets > 0) ?
-      '<div class="note-box">Redundanzvermeidung aktiv: ' + I.fmtInt(active.redundancy.articleCount) + ' Artikel (' + I.fmtInt(active.redundancy.pallets) + ' PAL) wurden gemäß Artikel-Standortanalyse direkt ihrem einen empfohlenen Standort zugewiesen (zentral bei geringer Drehung, regional bei starkem Distrikt-Bezug), statt über mehrere Standorte gestreut zu werden — vermeidet doppelten Sicherheitsbestand für dasselbe Volumen. Details je Artikel: Berichte → Artikel-Standortanalyse.</div>' : '';
+      '<div class="note-box">Redundanzvermeidung aktiv: ' + I.fmtInt(active.redundancy.articleCount) + ' Artikel (' + I.fmtInt(active.redundancy.pallets) + ' PAL) wurden gemäß Artikel-Standortanalyse direkt ihrem einen empfohlenen Standort zugewiesen (zentral bei geringer Drehung, regional bei starkem Distrikt-Bezug), statt über mehrere Standorte gestreut zu werden — vermeidet doppelten Sicherheitsbestand für dasselbe Volumen. Details je Artikel: <a href="#" class="js-goto-articles">Berichte → Artikel-Standortanalyse</a>.</div>' : '';
     return '<div class="card"><div class="card-head"><h2 data-t="Aufteilungstabelle">' + I.t('Aufteilungstabelle') + '</h2>' +
       '<div class="actions">' + (isManual ? '<button class="btn btn-sm" id="simRecalcManual">Neu berechnen</button>' : '') +
+      '<button class="btn btn-sm" id="simSaveScenarioBtn">Als Szenario speichern</button>' +
       '<button class="btn btn-sm btn-primary" id="simApplyBtn" data-t="Übernehmen">' + I.t('Übernehmen') + '</button></div></div>' +
       (isManual ? '<p class="help">Anteile eintragen (relative Gewichte, müssen nicht auf 100 summieren) und neu berechnen.</p>' : '') +
       '<p class="help">PAL = Forecast-Durchsatz im gewählten Zeitraum (Basis für Transportkosten/Anteil). Slots = Ziel-Palettenbestand je Standort = Zyklusbestand (Ø Menge × Reichweite, unabhängig von der Standortanzahl) + Sicherheitsbestand (aus der echten monatlichen Schwankung am jeweiligen Standort, sinkt bei Konsolidierung). Wie stark der Sicherheitsbestand insgesamt ausfällt bzw. wie stark er bei Konsolidierung sinkt, hängt von der tatsächlichen Schwankungsbreite der Monatsmengen im Forecast ab — ein sehr gleichmäßiger Forecast (Plan statt Ist-Nachfrage) zeigt entsprechend einen kleineren Effekt. Formel/Details: Berichte → Formelübersicht.</p>' +
@@ -232,6 +233,48 @@
     if (recalcManual) recalcManual.addEventListener('click', function () {
       container.querySelectorAll('.js-manual-share').forEach(function (inp) { ui.manualShares[inp.getAttribute('data-id')] = parseFloat(inp.value) || 0; });
       runAndRender(container);
+    });
+    var saveScenarioBtn = container.querySelector('#simSaveScenarioBtn');
+    if (saveScenarioBtn) saveScenarioBtn.addEventListener('click', function () { openSaveAsScenarioModal(); });
+    var gotoArticles = container.querySelector('.js-goto-articles');
+    if (gotoArticles) gotoArticles.addEventListener('click', function (e) {
+      e.preventDefault();
+      if (LNP.viewReports && LNP.viewReports.selectTab) LNP.viewReports.selectTab('articles');
+      if (LNP.app) LNP.app.goTo('reports');
+    });
+  }
+
+  /* Saves the CURRENT Simulation parameters (mode, filters, selected candidates, weights) as a
+     Szenario — re-run live via LNP.sim.runScenarioSimulation whenever this Szenario is used
+     (Szenarien-Vergleich, or a Szenario-aware Bericht), rather than freezing today's numbers, so
+     it always reflects the current Forecast/Sales-History data and Mengenlogik settings. */
+  function openSaveAsScenarioModal() {
+    if (!lastActive) return;
+    var modeLabel = ui.mode === 'single' ? I.t('Alleinzuordnung') : ui.mode === 'manual' ? I.t('Manuell') : I.t('Aufteilung');
+    var defaultName = 'Simulation: ' + (ui.category === 'all' ? I.t('Alle') : ui.category) + ' (' + modeLabel + ')';
+    var body = '<div class="field"><label data-t="Name">' + I.t('Name') + '</label><input type="text" id="simScName" value="' + U.escapeHtml(defaultName) + '"></div>' +
+      '<p class="help">Speichert Modus, Kategorie/Zeitraum-Filter, ausgewählte Standorte und Gewichtung dieser Simulation als Szenario. Das Szenario wird bei jeder Auswertung live mit den aktuellen Daten/Einstellungen neu berechnet.</p>';
+    LNP.ui.openModal('Als Szenario speichern', body, {
+      maxWidth: '480px',
+      footerHtml: '<button class="btn" id="simScCancel" data-t="Abbrechen">' + I.t('Abbrechen') + '</button>' +
+        '<button class="btn btn-primary" id="simScSave" data-t="Speichern">' + I.t('Speichern') + '</button>',
+      onMount: function (r) {
+        r.querySelector('#simScCancel').addEventListener('click', LNP.ui.closeModal);
+        r.querySelector('#simScSave').addEventListener('click', function () {
+          var name = r.querySelector('#simScName').value.trim() || defaultName;
+          var simParams = {
+            mode: ui.mode, category: ui.category,
+            periodFrom: ui.periodFromKey ? periodKeyToTs(ui.periodFromKey) : null,
+            periodTo: ui.periodToKey ? periodKeyToTs(ui.periodToKey) : null,
+            candidateDcIds: selectedCandidateIds(),
+            weights: Object.assign({}, ui.weights), maxUtilization: ui.maxUtilization,
+            manualShares: ui.mode === 'manual' ? Object.assign({}, ui.manualShares) : null
+          };
+          LNP.state.saveScenario({ id: null, name: name, type: 'simulation', simParams: simParams });
+          LNP.ui.closeModal();
+          LNP.ui.toast(I.t('Speichern') + ': ' + name, 'good');
+        });
+      }
     });
   }
 

@@ -123,6 +123,11 @@
     var mapRows = dcs.map(function (dc) {
       var cells = results.map(function (r) {
         var scenario = scenarioObjById(r.id);
+        if (scenario && scenario.simParams) {
+          var candIds = LNP.sim.scenarioCandidateDcIds(scenario) || [];
+          var isCandidate = candIds.indexOf(dc.id) !== -1;
+          return '<td>' + (isCandidate ? '<span class="muted">Kandidat (Simulation)</span>' : '–') + '</td>';
+        }
         var mapping = (scenario && scenario.dcMapping) || {};
         var targetId = LNP.sim.resolveTarget(mapping, dc.id);
         var target = LNP.sim.dcById(targetId);
@@ -156,9 +161,10 @@
       return '<button class="btn btn-sm js-new-template" data-key="' + t.key + '">' + U.escapeHtml(t.name) + '</button>';
     }).join(' ');
     var listRows = savedScenarios.map(function (s) {
-      return '<tr><td>' + U.escapeHtml(s.name) + '</td><td>' + I.fmtDate(new Date(s.createdAt)) + '</td>' +
+      var simBadge = s.simParams ? ' <span class="badge badge-info">Simulation</span>' : '';
+      return '<tr><td>' + U.escapeHtml(s.name) + simBadge + '</td><td>' + I.fmtDate(new Date(s.createdAt)) + '</td>' +
         '<td><input type="checkbox" class="js-select-scenario" data-id="' + s.id + '"' + (selectedIds.indexOf(s.id) !== -1 ? ' checked' : '') + '></td>' +
-        '<td class="row-actions"><button class="btn btn-sm js-edit-scenario" data-id="' + s.id + '" data-t="Bearbeiten">' + I.t('Bearbeiten') + '</button>' +
+        '<td class="row-actions">' + (s.simParams ? '' : '<button class="btn btn-sm js-edit-scenario" data-id="' + s.id + '" data-t="Bearbeiten">' + I.t('Bearbeiten') + '</button>') +
         '<button class="btn btn-sm btn-danger js-del-scenario" data-id="' + s.id + '" data-t="Löschen">' + I.t('Löschen') + '</button></td></tr>';
     }).join('');
 
