@@ -1440,7 +1440,9 @@
     { title: 'Szenario-Konsolidierung', formula: 'Beim Zusammenlegen von DC X in DC Y wird der Distrikt-Fußabdruck von X (s.o.) 1:1 auf Y übertragen, gewichtet mit dem Forecast-Volumen von X.' },
     { title: 'SKU / Picking Bins je DC', formula: 'SKU-Anzahl = Anzahl unterschiedlicher Artikel im Forecast je DC; Picking Bins = ⌈SKU-Anzahl ÷ SKUs je Bin⌉' },
     { title: 'Ø Sendungsgröße', formula: 'Mittelwert von Forecast-Menge (ESU) je (DC, Artikel, Monat)-Zeile', note: 'Proxy für eine Sendung, da keine Auftrags-/Lieferpositionen vorliegen.' },
-    { title: 'Sendungszusammensetzung', formula: 'Anteil (DC, Monat)-Bündel, die ausschließlich "Taps"-Kategorien enthalten vs. gemischt' }
+    { title: 'Sendungszusammensetzung', formula: 'Anteil (DC, Monat)-Bündel, die ausschließlich "Taps"-Kategorien enthalten vs. gemischt' },
+    { title: 'Artikel-Standortanalyse', formula: 'Je Artikel: SKU-View-Volumen über Sales-History-Distrikt-Anteile (s. Geografischer Fußabdruck je DC) auf Distrikte verteilt. ABC-Klasse = kumulierte Mengen-Rangfolge über alle Artikel (80/15/5-Grenzen). Empfehlung: "Zentral" wenn C-Klasse (unterste 5 % der kumulierten Menge); sonst "Regional" wenn ein Distrikt ≥ Schwellwert (einstellbar) des Artikelvolumens auf sich vereint, empfohlenes DC = laut Sales History stärkster Versorger dieses Distrikts; sonst "Mehrere Standorte".' },
+    { title: 'Szenario-Heatmap (adressgenau)', formula: 'Jeder Ship-to-Kunde aus Destinations × Ship-to-Address (siehe Distrikt-Zentroid) einzeln, eingefärbt nach dem DC, das seinen Distrikt unter dem gewählten Szenario versorgt.', note: 'Simulationsbasierte Szenarien: Zuordnung direkt aus der Simulation. Andere Szenarien/aktueller Stand: der laut Sales History mengenmäßig dominante Quell-DC je Distrikt, ggf. über eine regionale Override-Zuordnung umgeleitet.' }
   ];
 
   LNP.sim = {

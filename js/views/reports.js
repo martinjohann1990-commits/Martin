@@ -19,9 +19,9 @@
      Simulation (simParams-based Szenarien) and the Szenario-Editor (dcMapping-based ones). */
   function scenarioSelectorHtml() {
     var scenarios = LNP.state.scenarios;
-    var options = '<option value="base"' + (selectedScenarioId === 'base' ? ' selected' : '') + '>Aktueller Stand (keine Konsolidierung)</option>' +
+    var options = '<option value="base"' + (selectedScenarioId === 'base' ? ' selected' : '') + '>' + I.t('Aktueller Stand (keine Konsolidierung)') + '</option>' +
       scenarios.map(function (s) { return '<option value="' + s.id + '"' + (s.id === selectedScenarioId ? ' selected' : '') + '>' + U.escapeHtml(s.name) + '</option>'; }).join('');
-    return '<div class="field" style="max-width:320px"><label>Szenario</label><select id="repScenario">' + options + '</select></div>';
+    return '<div class="field" style="max-width:320px"><label data-t="Szenario">' + I.t('Szenario') + '</label><select id="repScenario">' + options + '</select></div>';
   }
 
   var TABS = [
@@ -41,7 +41,7 @@
 
   function allocPanel() {
     var districts = LNP.sim.allDistricts();
-    if (!districts.length) return '<div class="empty">Keine Distrikte importiert.</div>';
+    if (!districts.length) return '<div class="empty">' + I.t('Keine Distrikte importiert.') + '</div>';
     if (!selectedDistrict) selectedDistrict = districts[0].district;
     var topN = LNP.state.settings.countryAllocationTopN;
     var options = districts.map(function (d) { return '<option value="' + U.escapeHtml(d.district) + '"' + (d.district === selectedDistrict ? ' selected' : '') + '>' + U.escapeHtml(d.name) + '</option>'; }).join('');
@@ -50,12 +50,12 @@
       return '<tr' + (r.isRest ? ' class="muted"' : '') + '><td>' + U.escapeHtml(r.unit) + '</td><td class="num">' + I.fmtPct(r.share, 1) + '</td><td class="num">' + I.fmtInt(r.esu) + '</td></tr>';
     }).join('');
     return '<div class="field-row">' +
-      '<div class="field" style="max-width:320px"><label data-t="Region">' + I.t('Region') + '</label><select id="repDistrict">' + options + '</select></div>' +
-      '<div class="field" style="max-width:160px"><label>Top-N Länder</label><input type="number" min="1" max="30" id="repTopN" value="' + topN + '"></div>' +
+      '<div class="field" style="max-width:320px"><label data-t="Region">' + I.t('Region') + LNP.ui.infoBtn('Geografischer Fußabdruck je DC') + '</label><select id="repDistrict">' + options + '</select></div>' +
+      '<div class="field" style="max-width:160px"><label data-t="Top-N Länder">' + I.t('Top-N Länder') + '</label><input type="number" min="1" max="30" id="repTopN" value="' + topN + '"></div>' +
       '</div>' +
-      '<div class="note-box">Anteil je Land/Einheit = reale ESU-Menge aus der Sales History (Distrikt-Hierarchie), kein Zähl-Proxy. Länder außerhalb der Top-N werden als &bdquo;Rest&ldquo; gebündelt.</div>' +
+      '<div class="note-box">' + I.t('Anteil je Land/Einheit = reale ESU-Menge aus der Sales History (Distrikt-Hierarchie), kein Zähl-Proxy. Länder außerhalb der Top-N werden als &bdquo;Rest&ldquo; gebündelt.') + '</div>' +
       '<div class="chart-box"><canvas id="chartAlloc"></canvas></div>' +
-      '<div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Land">' + I.t('Land') + '</th><th class="num">Anteil %</th><th class="num">ESU</th></tr></thead><tbody>' + (rows || '<tr><td colspan="3" class="muted">–</td></tr>') + '</tbody></table></div>';
+      '<div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Land">' + I.t('Land') + '</th><th class="num" data-t="Anteil %">' + I.t('Anteil %') + '</th><th class="num">ESU</th></tr></thead><tbody>' + (rows || '<tr><td colspan="3" class="muted">–</td></tr>') + '</tbody></table></div>';
   }
 
   var REC_LABEL = { zentral: 'Zentral', regional: 'Regional', mehrere: 'Mehrere Standorte' };
@@ -97,27 +97,25 @@
     var kpis = REC_ORDER.map(function (key) {
       return '<div class="kpi"><div class="kpi-label">' + I.t(REC_LABEL[key]) + '</div>' +
         '<div class="kpi-value">' + I.fmtInt(counts[key]) + '</div>' +
-        '<div class="muted" style="font-size:11px">' + I.fmtPct(analysis.grandTotal ? volByRec[key] / analysis.grandTotal : 0, 0) + ' der Menge</div></div>';
+        '<div class="muted" style="font-size:11px">' + I.tf('{0} der Menge', I.fmtPct(analysis.grandTotal ? volByRec[key] / analysis.grandTotal : 0, 0)) + '</div></div>';
     }).join('');
 
-    return scenarioSelectorHtml() +
-      (scenario ? '<div class="note-box">Empfehlungen gelten für die ' + I.fmtInt(candidateDcIds ? candidateDcIds.length : 0) + ' im Szenario „' + U.escapeHtml(scenario.name) + '“ verbleibenden Standorte — bereits konsolidierte DCs stehen nicht mehr als Empfehlung zur Verfügung.</div>' : '') +
-      '<div class="note-box">Je Artikel wird das SKU-View-Volumen (Shipping Point → DC → Distrikt, mit demselben Verteilschlüssel aus der Sales History wie überall sonst) in seine Distrikt-Anteile zerlegt. ' +
-      '<b>Zentral</b> = geringe Drehung (C-Artikel, unterste 5&nbsp;% der kumulierten Menge) — Streuung auf mehrere Standorte würde den Sicherheitsbestand vervielfachen, ohne den Servicegrad spürbar zu verbessern. ' +
-      '<b>Regional</b> = ein einzelner Distrikt vereint mindestens den unten eingestellten Anteil des Artikelvolumens auf sich. ' +
-      '<b>Mehrere Standorte</b> = echtes Volumen, aber netzweit verteilt ohne dominanten Distrikt. Empfohlenes DC je Distrikt = der Standort, der diesen Distrikt laut Sales History bereits am stärksten beliefert.</div>' +
+    return '<h2 style="margin-top:0">' + I.t('Artikel-Standortanalyse') + LNP.ui.infoBtn('Artikel-Standortanalyse') + '</h2>' +
+      scenarioSelectorHtml() +
+      (scenario ? '<div class="note-box">' + I.tf('Empfehlungen gelten für die {0} im Szenario „{1}“ verbleibenden Standorte — bereits konsolidierte DCs stehen nicht mehr als Empfehlung zur Verfügung.', I.fmtInt(candidateDcIds ? candidateDcIds.length : 0), U.escapeHtml(scenario.name)) + '</div>' : '') +
+      '<div class="note-box">' + I.tf('Je Artikel wird das SKU-View-Volumen (Shipping Point → DC → Distrikt, mit demselben Verteilschlüssel aus der Sales History wie überall sonst) in seine Distrikt-Anteile zerlegt. <b>{0}</b> = geringe Drehung (C-Artikel, unterste 5&nbsp;% der kumulierten Menge) — Streuung auf mehrere Standorte würde den Sicherheitsbestand vervielfachen, ohne den Servicegrad spürbar zu verbessern. <b>{1}</b> = ein einzelner Distrikt vereint mindestens den unten eingestellten Anteil des Artikelvolumens auf sich. <b>{2}</b> = echtes Volumen, aber netzweit verteilt ohne dominanten Distrikt. Empfohlenes DC je Distrikt = der Standort, der diesen Distrikt laut Sales History bereits am stärksten beliefert.', I.t(REC_LABEL.zentral), I.t(REC_LABEL.regional), I.t(REC_LABEL.mehrere)) + '</div>' +
       '<div class="grid grid-3" style="margin-bottom:14px;">' + kpis + '</div>' +
       '<div class="chart-box" style="max-width:340px;margin:0 auto 16px;"><canvas id="chartArticleRec"></canvas></div>' +
       '<div class="field-row">' +
-      '<div class="field" style="max-width:220px"><label>Schwelle „Regional“ (Anteil)</label><input type="number" min="0.1" max="1" step="0.05" id="repMinShare" value="' + articleFilter.minShare + '"></div>' +
+      '<div class="field" style="max-width:220px"><label data-t="Schwelle „Regional“ (Anteil)">' + I.t('Schwelle „Regional“ (Anteil)') + '</label><input type="number" min="0.1" max="1" step="0.05" id="repMinShare" value="' + articleFilter.minShare + '"></div>' +
       '<div class="field" style="max-width:220px"><label data-t="Empfehlung">' + I.t('Empfehlung') + '</label><select id="repRecFilter">' +
       '<option value="all"' + (articleFilter.recommendation === 'all' ? ' selected' : '') + '>' + I.t('Alle') + '</option>' +
       REC_ORDER.map(function (key) { return '<option value="' + key + '"' + (articleFilter.recommendation === key ? ' selected' : '') + '>' + I.t(REC_LABEL[key]) + '</option>'; }).join('') +
       '</select></div>' +
-      '<div class="field" style="max-width:260px"><label>Artikel / Bezeichnung suchen</label><input type="text" id="repArticleSearch" value="' + U.escapeHtml(articleFilter.query) + '" placeholder="z. B. Artikelnummer"></div>' +
+      '<div class="field" style="max-width:260px"><label data-t="Artikel / Bezeichnung suchen">' + I.t('Artikel / Bezeichnung suchen') + '</label><input type="text" id="repArticleSearch" value="' + U.escapeHtml(articleFilter.query) + '" placeholder="' + I.t('z. B. Artikelnummer') + '"></div>' +
       '</div>' +
-      '<p class="help">' + I.fmtInt(filtered.length) + ' von ' + I.fmtInt(rows.length) + ' Artikeln entsprechen dem Filter' + (filtered.length > LIMIT ? ' — die ersten ' + LIMIT + ' nach Volumen angezeigt' : '') + '.</p>' +
-      '<div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Artikel">Artikel</th><th data-t="Empfehlung">' + I.t('Empfehlung') + '</th><th>Empfohlenes DC</th><th data-t="Region">' + I.t('Region') + '</th><th class="num">Anteil</th><th>ABC</th><th class="num">ESU</th><th>Begründung</th></tr></thead>' +
+      '<p class="help">' + I.tf('{0} von {1} Artikeln entsprechen dem Filter{2}.', I.fmtInt(filtered.length), I.fmtInt(rows.length), (filtered.length > LIMIT ? I.tf(' — die ersten {0} nach Volumen angezeigt', LIMIT) : '')) + '</p>' +
+      '<div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Artikel">' + I.t('Artikel') + '</th><th data-t="Empfehlung">' + I.t('Empfehlung') + '</th><th data-t="Empfohlenes DC">' + I.t('Empfohlenes DC') + '</th><th data-t="Region">' + I.t('Region') + '</th><th class="num" data-t="Anteil">' + I.t('Anteil') + '</th><th>ABC</th><th class="num">ESU</th><th data-t="Begründung">' + I.t('Begründung') + '</th></tr></thead>' +
       '<tbody>' + (tableRows || '<tr><td colspan="8" class="muted">–</td></tr>') + '</tbody></table></div>';
   }
 
@@ -128,10 +126,10 @@
       return '<tr><td>' + U.escapeHtml(r.dcName) + '</td><td class="num">' + I.fmtInt(r.skuCount) + '</td><td class="num">' + I.fmtInt(r.pickingBins) + '</td></tr>';
     }).join('');
     return scenarioSelectorHtml() +
-      (scenario ? '<div class="note-box">Basis: Szenario „' + U.escapeHtml(scenario.name) + '“. Für Artikel ohne dominanten Distrikt („Mehrere Standorte“ in der Artikel-Standortanalyse) wird jedes verbleibende DC des Szenarios mitgezählt — echte Volumen ohne einen einzelnen Lagerort, daher eine bewusste Näherung nach oben.</div>' : '') +
-      '<p class="help">Picking Bins = ⌈SKU-Anzahl ÷ ' + I.fmtNum(LNP.state.settings.skusPerBin, 1) + ' SKUs je Bin⌉ (einstellbar unter Daten &amp; Import → Mengenlogik).</p>' +
+      (scenario ? '<div class="note-box">' + I.tf('Basis: Szenario „{0}“. Für Artikel ohne dominanten Distrikt („Mehrere Standorte“ in der Artikel-Standortanalyse) wird jedes verbleibende DC des Szenarios mitgezählt — echte Volumen ohne einen einzelnen Lagerort, daher eine bewusste Näherung nach oben.', U.escapeHtml(scenario.name)) + '</div>' : '') +
+      '<p class="help">' + I.tf('Picking Bins = ⌈SKU-Anzahl ÷ {0} SKUs je Bin⌉ (einstellbar unter Daten &amp; Import → Mengenlogik).', I.fmtNum(LNP.state.settings.skusPerBin, 1)) + LNP.ui.infoBtn('SKU / Picking Bins je DC') + '</p>' +
       '<div class="chart-box"><canvas id="chartSku"></canvas></div>' +
-      '<div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Name">' + I.t('Name') + '</th><th class="num" data-t="SKU je DC">' + I.t('SKU je DC') + '</th><th class="num">Picking Bins</th></tr></thead><tbody>' + (rows || '<tr><td colspan="3" class="muted">–</td></tr>') + '</tbody></table></div>';
+      '<div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Name">' + I.t('Name') + '</th><th class="num" data-t="SKU je DC">' + I.t('SKU je DC') + '</th><th class="num" data-t="Picking Bins">' + I.t('Picking Bins') + '</th></tr></thead><tbody>' + (rows || '<tr><td colspan="3" class="muted">–</td></tr>') + '</tbody></table></div>';
   }
 
   function storagePanel() {
@@ -144,10 +142,10 @@
         '<td class="num">' + I.fmtInt(d.storageDemandPallets) + '</td><td class="num">' + I.fmtInt(d.capacity) + '</td><td>' + utilBadge + '</td></tr>';
     }).join('');
     return scenarioSelectorHtml() +
-      '<p class="help">' + (scenario ? 'Szenario „' + U.escapeHtml(scenario.name) + '“' : 'Basis (Ist-Zustand)') + ', globale Ziel-Reichweite: <b>' + I.fmtNum(settings.coverageMonthsGlobal, 1) + ' ' + I.t('Monate') + '</b> ' +
-      '(anpassbar unter Daten &amp; Import → Mengenlogik; wirkt sich sofort auf diesen Bericht aus).</p>' +
+      '<p class="help">' + (scenario ? I.tf('Szenario „{0}“', U.escapeHtml(scenario.name)) : I.t('Basis (Ist-Zustand)')) + ', ' + I.t('globale Ziel-Reichweite:') + ' <b>' + I.fmtNum(settings.coverageMonthsGlobal, 1) + ' ' + I.t('Monate') + '</b> ' +
+      I.t('(anpassbar unter Daten &amp; Import → Mengenlogik; wirkt sich sofort auf diesen Bericht aus).') + LNP.ui.infoBtn('Ziel-Palettenbestand|Zyklusbestand|Sicherheitsbestand') + '</p>' +
       '<div class="chart-box"><canvas id="chartStorage"></canvas></div>' +
-      '<div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Name">' + I.t('Name') + '</th><th class="num">PAL/Woche</th>' +
+      '<div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Name">' + I.t('Name') + '</th><th class="num" data-t="PAL/Woche">' + I.t('PAL/Woche') + '</th>' +
       '<th class="num" data-t="Paletten-/Lagerbedarf je DC">' + I.t('Paletten-/Lagerbedarf je DC') + '</th><th class="num" data-t="Kapazität (Stellplätze)">' + I.t('Kapazität (Stellplätze)') + '</th><th data-t="Status">' + I.t('Status') + '</th></tr></thead><tbody>' + (rows || '<tr><td colspan="5" class="muted">–</td></tr>') + '</tbody></table></div>';
   }
 
@@ -161,16 +159,18 @@
     var perDcRows = rep.perDc.map(function (d) {
       return '<tr><td>' + U.escapeHtml(d.dcName) + '</td><td class="num">' + (d.avg !== null ? I.fmtNum(d.avg, 2) : '–') + ' ESU</td><td class="num">' + I.fmtInt(d.lines) + '</td></tr>';
     }).join('');
-    return '<div class="field-row"><div class="field" style="max-width:160px"><label>Cluster-Grenze 1</label><input type="number" step="0.1" id="repBound1" value="' + bounds[0] + '"></div>' +
-      '<div class="field" style="max-width:160px"><label>Cluster-Grenze 2</label><input type="number" step="0.1" id="repBound2" value="' + bounds[1] + '"></div></div>' +
-      '<div class="note-box">Proxy: je (Distrikt, Periode, Material)-Zeile aus dem Forecast als Stellvertreter für eine Sendung, da keine Auftrags-/Lieferpositionen vorliegen.</div>' +
-      '<div class="kpi" style="max-width:260px;margin-bottom:14px;"><div class="kpi-label" data-t="Ø Sendungsgröße">' + I.t('Ø Sendungsgröße') + ' Europa</div><div class="kpi-value">' + (rep.europeAvg !== null ? I.fmtNum(rep.europeAvg, 2) + ' ESU' : '–') + '</div></div>' +
+    return '<div class="field-row"><div class="field" style="max-width:160px"><label data-t="Cluster-Grenze 1">' + I.t('Cluster-Grenze 1') + '</label><input type="number" step="0.1" id="repBound1" value="' + bounds[0] + '"></div>' +
+      '<div class="field" style="max-width:160px"><label data-t="Cluster-Grenze 2">' + I.t('Cluster-Grenze 2') + '</label><input type="number" step="0.1" id="repBound2" value="' + bounds[1] + '"></div></div>' +
+      '<div class="note-box">' + I.t('Proxy: je (Distrikt, Periode, Material)-Zeile aus dem Forecast als Stellvertreter für eine Sendung, da keine Auftrags-/Lieferpositionen vorliegen.') + LNP.ui.infoBtn('Ø Sendungsgröße') + '</div>' +
+      '<div class="kpi" style="max-width:260px;margin-bottom:14px;"><div class="kpi-label">' + I.t('Ø Sendungsgröße') + ' ' + I.t('Europa') + '</div><div class="kpi-value">' + (rep.europeAvg !== null ? I.fmtNum(rep.europeAvg, 2) + ' ESU' : '–') + '</div></div>' +
       '<div class="chart-box"><canvas id="chartShipment"></canvas></div>' +
       '<div class="grid grid-2">' +
-      '<div><h3>Cluster</h3><div class="table-wrap"><table class="tbl"><thead><tr><th>Cluster</th><th class="num">Zeilen</th><th class="num">Anteil</th></tr></thead><tbody>' + clusterRows + '</tbody></table></div></div>' +
-      '<div><h3>Je DC</h3><div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Name">' + I.t('Name') + '</th><th class="num">' + I.t('Ø Sendungsgröße') + '</th><th class="num">Zeilen</th></tr></thead><tbody>' + (perDcRows || '<tr><td colspan="3" class="muted">–</td></tr>') + '</tbody></table></div></div>' +
+      '<div><h3 data-t="Cluster">' + I.t('Cluster') + '</h3><div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Cluster">' + I.t('Cluster') + '</th><th class="num" data-t="Zeilen">' + I.t('Zeilen') + '</th><th class="num" data-t="Anteil">' + I.t('Anteil') + '</th></tr></thead><tbody>' + clusterRows + '</tbody></table></div></div>' +
+      '<div><h3 data-t="Je DC">' + I.t('Je DC') + '</h3><div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Name">' + I.t('Name') + '</th><th class="num">' + I.t('Ø Sendungsgröße') + '</th><th class="num" data-t="Zeilen">' + I.t('Zeilen') + '</th></tr></thead><tbody>' + (perDcRows || '<tr><td colspan="3" class="muted">–</td></tr>') + '</tbody></table></div></div>' +
       '</div>';
   }
+
+  var COMPOSITION_LABEL = { tapsOnly: 'Nur Taps', mixed: 'Gemischt', noTaps: 'Ohne Taps' };
 
   function compositionPanel() {
     var settings = LNP.state.settings;
@@ -179,15 +179,15 @@
       return '<tr><td>' + U.escapeHtml(d.dcName) + '</td><td class="num">' + (d.tapsOnlyShare !== null ? I.fmtPct(d.tapsOnlyShare, 1) : '–') + '</td>' +
         '<td class="num">' + (d.mixedShare !== null ? I.fmtPct(d.mixedShare, 1) : '–') + '</td><td class="num">' + (d.noTapsShare !== null ? I.fmtPct(d.noTapsShare, 1) : '–') + '</td></tr>';
     }).join('');
-    return '<div class="field"><label>Taps-Schlüsselwörter (Kategorie enthält)</label><input type="text" id="repTapsKeywords" value="' + U.escapeHtml((settings.tapsKeywords || []).join(', ')) + '"></div>' +
-      '<div class="note-box">Näherung: eine Sendung wird als (Distrikt, Periode)-Bündel aus dem Forecast approximiert, da keine Auftrags-/Lieferpositionen vorliegen. &bdquo;Taps&ldquo; wird über die SKU-Kategorie (Marketing-View / Productline) erkannt, die eines der obigen Schlüsselwörter enthält.</div>' +
+    return '<div class="field"><label data-t="Taps-Schlüsselwörter (Kategorie enthält)">' + I.t('Taps-Schlüsselwörter (Kategorie enthält)') + '</label><input type="text" id="repTapsKeywords" value="' + U.escapeHtml((settings.tapsKeywords || []).join(', ')) + '"></div>' +
+      '<div class="note-box">' + I.t('Näherung: eine Sendung wird als (Distrikt, Periode)-Bündel aus dem Forecast approximiert, da keine Auftrags-/Lieferpositionen vorliegen. &bdquo;Taps&ldquo; wird über die SKU-Kategorie (Marketing-View / Productline) erkannt, die eines der obigen Schlüsselwörter enthält.') + LNP.ui.infoBtn('Sendungszusammensetzung') + '</div>' +
       '<div class="grid grid-3">' +
-      '<div class="kpi"><div class="kpi-label">Nur Taps</div><div class="kpi-value good">' + (rep.tapsOnlyShare !== null ? I.fmtPct(rep.tapsOnlyShare, 1) : '–') + '</div></div>' +
-      '<div class="kpi"><div class="kpi-label">Gemischt</div><div class="kpi-value warn">' + (rep.mixedShare !== null ? I.fmtPct(rep.mixedShare, 1) : '–') + '</div></div>' +
-      '<div class="kpi"><div class="kpi-label">Ohne Taps</div><div class="kpi-value">' + (rep.noTapsShare !== null ? I.fmtPct(rep.noTapsShare, 1) : '–') + '</div></div>' +
+      '<div class="kpi"><div class="kpi-label">' + I.t(COMPOSITION_LABEL.tapsOnly) + '</div><div class="kpi-value good">' + (rep.tapsOnlyShare !== null ? I.fmtPct(rep.tapsOnlyShare, 1) : '–') + '</div></div>' +
+      '<div class="kpi"><div class="kpi-label">' + I.t(COMPOSITION_LABEL.mixed) + '</div><div class="kpi-value warn">' + (rep.mixedShare !== null ? I.fmtPct(rep.mixedShare, 1) : '–') + '</div></div>' +
+      '<div class="kpi"><div class="kpi-label">' + I.t(COMPOSITION_LABEL.noTaps) + '</div><div class="kpi-value">' + (rep.noTapsShare !== null ? I.fmtPct(rep.noTapsShare, 1) : '–') + '</div></div>' +
       '</div>' +
       '<div class="chart-box" style="max-width:340px;margin:16px auto;"><canvas id="chartComposition"></canvas></div>' +
-      '<div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Name">' + I.t('Name') + '</th><th class="num">Nur Taps</th><th class="num">Gemischt</th><th class="num">Ohne Taps</th></tr></thead><tbody>' + (perDcRows || '<tr><td colspan="4" class="muted">–</td></tr>') + '</tbody></table></div>';
+      '<div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Name">' + I.t('Name') + '</th><th class="num">' + I.t(COMPOSITION_LABEL.tapsOnly) + '</th><th class="num">' + I.t(COMPOSITION_LABEL.mixed) + '</th><th class="num">' + I.t(COMPOSITION_LABEL.noTaps) + '</th></tr></thead><tbody>' + (perDcRows || '<tr><td colspan="4" class="muted">–</td></tr>') + '</tbody></table></div>';
   }
 
   function renderCharts(container) {
@@ -211,13 +211,13 @@
     } else if (activeTab === 'storage') {
       var scenarioT = scenarioObjById(selectedScenarioId);
       var net = LNP.sim.computeScenarioNetwork(scenarioT, { category: 'all', settings: LNP.state.settings });
-      LNP.charts.bar('chartStorage', net.perDc.map(function (d) { return d.dcName; }), [{ label: 'Storage PAL', data: net.perDc.map(function (d) { return Math.round(d.storageDemandPallets); }) }]);
+      LNP.charts.bar('chartStorage', net.perDc.map(function (d) { return d.dcName; }), [{ label: I.t('Storage PAL'), data: net.perDc.map(function (d) { return Math.round(d.storageDemandPallets); }) }]);
     } else if (activeTab === 'shipment') {
       var rep = LNP.sim.avgShipmentSize({ category: 'all', settings: LNP.state.settings });
-      LNP.charts.bar('chartShipment', rep.clusters.map(function (c) { return c.label; }), [{ label: 'Zeilen', data: rep.clusters.map(function (c) { return c.count; }) }]);
+      LNP.charts.bar('chartShipment', rep.clusters.map(function (c) { return c.label; }), [{ label: I.t('Zeilen'), data: rep.clusters.map(function (c) { return c.count; }) }]);
     } else if (activeTab === 'composition') {
       var comp = LNP.sim.shipmentComposition({ category: 'all', settings: LNP.state.settings });
-      LNP.charts.doughnut('chartComposition', ['Nur Taps', 'Gemischt', 'Ohne Taps'], [
+      LNP.charts.doughnut('chartComposition', [I.t(COMPOSITION_LABEL.tapsOnly), I.t(COMPOSITION_LABEL.mixed), I.t(COMPOSITION_LABEL.noTaps)], [
         comp.tapsOnlyShare || 0, comp.mixedShare || 0, comp.noTapsShare || 0
       ].map(function (v) { return +(v * 100).toFixed(1); }));
     }

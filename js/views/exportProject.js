@@ -77,7 +77,7 @@
   }
 
   function exportExcel() {
-    if (!window.XLSX) { LNP.ui.toast('Excel-Bibliothek nicht verfügbar.', 'bad'); return; }
+    if (!window.XLSX) { LNP.ui.toast(I.t('Excel-Bibliothek nicht verfügbar.'), 'bad'); return; }
     window.XLSX.writeFile(buildWorkbook(), 'netplan-export-' + new Date().toISOString().slice(0, 10) + '.xlsx');
   }
 
@@ -121,11 +121,11 @@
     var b = LNP.state.settings.branding;
     return '<div class="card"><h2 data-t="Erscheinungsbild">' + I.t('Erscheinungsbild') + '</h2>' +
       '<div class="field-row">' +
-      '<div class="field"><label>App-Name</label><input type="text" id="brAppName" value="' + U.escapeHtml(b.appName || '') + '"></div>' +
-      '<div class="field"><label>Kürzel</label><input type="text" id="brInitials" maxlength="3" value="' + U.escapeHtml(b.initials || '') + '"></div>' +
+      '<div class="field"><label data-t="App-Name">' + I.t('App-Name') + '</label><input type="text" id="brAppName" value="' + U.escapeHtml(b.appName || '') + '"></div>' +
+      '<div class="field"><label data-t="Kürzel">' + I.t('Kürzel') + '</label><input type="text" id="brInitials" maxlength="3" value="' + U.escapeHtml(b.initials || '') + '"></div>' +
       '</div>' +
-      '<div class="field"><label>Untertitel</label><input type="text" id="brSubtitle" value="' + U.escapeHtml(b.appSubtitle || '') + '" placeholder="' + I.t('Logistiknetzwerk-Analyse') + '"></div>' +
-      '<div class="field"><label>Logo (max. 300 kB)</label><input type="file" id="brLogo" accept="image/*"></div>' +
+      '<div class="field"><label data-t="Untertitel">' + I.t('Untertitel') + '</label><input type="text" id="brSubtitle" value="' + U.escapeHtml(b.appSubtitle || '') + '" placeholder="' + I.t('Logistiknetzwerk-Analyse') + '"></div>' +
+      '<div class="field"><label data-t="Logo (max. 300 kB)">' + I.t('Logo (max. 300 kB)') + '</label><input type="file" id="brLogo" accept="image/*"></div>' +
       (b.logo ? '<div class="field"><img src="' + b.logo + '" style="max-height:48px;border-radius:6px;"> <button class="btn btn-sm btn-danger" id="brLogoRemove">' + I.t('Löschen') + '</button></div>' : '') +
       '</div>';
   }
@@ -135,37 +135,37 @@
     function row(id, label, value, step) {
       return '<div class="field"><label>' + U.escapeHtml(label) + '</label><input type="number" step="' + (step || '0.01') + '" id="' + id + '" value="' + value + '"></div>';
     }
-    return '<div class="card"><h2 data-t="Kostenparameter">' + I.t('Kostenparameter') + '</h2>' +
-      '<p class="help">Netzwerk-Standardwerte; einzelne DCs können diese in der DC-Verwaltung überschreiben.</p>' +
+    return '<div class="card"><h2>' + I.t('Kostenparameter') + LNP.ui.infoBtn('€ / Palette|Transit') + '</h2>' +
+      '<p class="help">' + I.t('Netzwerk-Standardwerte; einzelne DCs können diese in der DC-Verwaltung überschreiben.') + '</p>' +
       '<div class="field-row">' + row('cpCostPerKm', I.t('Transportkosten je km'), s.costPerPalletKm) + row('cpCostBase', I.t('Transport-Grundkosten je Palette'), s.costBasePerPallet, '0.1') + '</div>' +
       '<div class="field-row">' + row('cpStorage', I.t('Lagerkosten je Platz/Monat'), s.storageCostPerSlotMonth, '0.1') + row('cpHandling', I.t('Handlingkosten je Palette'), s.handlingCostPerPallet, '0.1') + '</div>' +
-      '<div class="field-row">' + row('cpKmPerDay', 'km pro Tag', s.kmPerDay, '10') + row('cpHandlingDays', 'Handlingtage', s.handlingDays, '0.1') + '</div>' +
+      '<div class="field-row">' + row('cpKmPerDay', I.t('km pro Tag'), s.kmPerDay, '10') + row('cpHandlingDays', I.t('Handlingtage'), s.handlingDays, '0.1') + '</div>' +
       '<div class="field-row">' + row('cpMaxUtil', I.t('Auslastungsgrenze'), s.maxUtilization, '0.01') + '</div>' +
       '</div>';
   }
 
   function formulaSection() {
     var rows = LNP.sim.FORMULA_REFERENCE.map(function (f) {
-      return '<div style="margin-bottom:12px;"><b>' + U.escapeHtml(f.title) + '</b><div class="mono" style="margin:2px 0;">' + U.escapeHtml(f.formula) + '</div>' +
-        (f.note ? '<div class="help">' + U.escapeHtml(f.note) + '</div>' : '') + '</div>';
+      return '<div style="margin-bottom:12px;"><b>' + U.escapeHtml(I.t(f.title)) + '</b><div class="mono" style="margin:2px 0;">' + U.escapeHtml(I.t(f.formula)) + '</div>' +
+        (f.note ? '<div class="help">' + U.escapeHtml(I.t(f.note)) + '</div>' : '') + '</div>';
     }).join('');
     return '<div class="card"><h2 data-t="Formelübersicht">' + I.t('Formelübersicht') + '</h2>' + rows + '</div>';
   }
 
   function projectSection() {
     return '<div class="card"><h2 data-t="Projekt speichern">' + I.t('Projekt speichern') + ' / ' + I.t('Projekt laden') + '</h2>' +
-      '<p class="help">Enthält alle DCs, Datensätze, Regionen, Zuordnungen, Szenarien und Einstellungen als JSON — geeignet zur Weitergabe per Mail/Netzlaufwerk.</p>' +
+      '<p class="help">' + I.t('Enthält alle DCs, Datensätze, Regionen, Zuordnungen, Szenarien und Einstellungen als JSON — geeignet zur Weitergabe per Mail/Netzlaufwerk.') + '</p>' +
       '<div class="pill-group">' +
       '<button class="btn btn-primary" id="projSaveBtn" data-t="Projekt speichern">' + I.t('Projekt speichern') + '</button>' +
       '<button class="btn" id="projLoadBtn" data-t="Projekt laden">' + I.t('Projekt laden') + '</button>' +
       '<input type="file" id="projLoadInput" accept="application/json" hidden>' +
       '</div>' +
-      (LNP.state.getPersistWarning() === 'quota' ? '<div class="note-box warn">Lokaler Speicher voll — Rohdaten werden nicht automatisch gesichert. Bitte Projektdatei manuell speichern.</div>' : '') +
+      (LNP.state.getPersistWarning() === 'quota' ? '<div class="note-box warn">' + I.t('Lokaler Speicher voll — Rohdaten werden nicht automatisch gesichert. Bitte Projektdatei manuell speichern.') + '</div>' : '') +
       '</div>';
   }
 
   function exportSection() {
-    return '<div class="card"><h2 data-t="Export &amp; Projekt">Excel / CSV / PDF</h2>' +
+    return '<div class="card"><h2>Excel / CSV / PDF</h2>' +
       '<div class="pill-group">' +
       '<button class="btn btn-primary" id="expExcelBtn" data-t="Excel-Export">' + I.t('Excel-Export') + '</button>' +
       '<button class="btn" id="expCsvBtn" data-t="CSV-Export">' + I.t('CSV-Export') + '</button>' +
@@ -186,7 +186,7 @@
     if (loadInput) loadInput.addEventListener('change', function () {
       if (!loadInput.files || !loadInput.files[0]) return;
       LNP.state.importProjectFile(loadInput.files[0], function (err) {
-        if (err) LNP.ui.toast('Fehler beim Laden: ' + err.message, 'bad');
+        if (err) LNP.ui.toast(I.t('Fehler beim Laden') + ': ' + err.message, 'bad');
         else { LNP.sim.invalidateCaches(); LNP.ui.toast(I.t('Projekt laden') + ' OK', 'good'); }
       });
       loadInput.value = '';
@@ -200,7 +200,7 @@
     if (logoInput) logoInput.addEventListener('change', function () {
       var file = logoInput.files && logoInput.files[0];
       if (!file) return;
-      if (file.size > 300 * 1024) { LNP.ui.toast('Logo zu groß (max. 300 kB).', 'bad'); return; }
+      if (file.size > 300 * 1024) { LNP.ui.toast(I.t('Logo zu groß (max. 300 kB).'), 'bad'); return; }
       var reader = new FileReader();
       reader.onload = function (e) { saveBranding({ logo: e.target.result }); render(container); };
       reader.readAsDataURL(file);

@@ -20,9 +20,9 @@
 
   function regionCostsHtml(dc) {
     var districts = LNP.sim.allDistricts();
-    if (!districts.length) return '<p class="help">Keine Regionen/Distrikte importiert.</p>';
+    if (!districts.length) return '<p class="help">' + I.t('Keine Regionen/Distrikte importiert.') + '</p>';
     var rc = dc.regionCosts || {};
-    return '<div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Region">' + I.t('Region') + '</th><th style="width:160px">€ / Palette</th></tr></thead><tbody>' +
+    return '<div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Region">' + I.t('Region') + '</th><th style="width:160px">' + I.t('€ / Palette') + '</th></tr></thead><tbody>' +
       districts.map(function (d) {
         return '<tr><td>' + U.escapeHtml(d.name) + '</td><td><input type="number" step="0.01" class="js-region-cost" data-district="' + U.escapeHtml(d.district) + '" value="' + numOrEmpty(rc[d.district]) + '" placeholder="' + I.t('nicht gesetzt') + '"></td></tr>';
       }).join('') + '</tbody></table></div>';
@@ -42,13 +42,13 @@
       '</div>' +
       '<div class="field-row">' +
       '<div class="field"><label data-t="Land">' + I.t('Land') + '</label><input type="text" id="dcCountry" value="' + U.escapeHtml(dc.country || '') + '" placeholder="z.B. DE, FR, IT …" list="countryList"></div>' +
-      '<div class="field"><label>Stadt</label><input type="text" id="dcCity" value="' + U.escapeHtml(dc.city || '') + '"></div>' +
+      '<div class="field"><label data-t="Stadt">' + I.t('Stadt') + '</label><input type="text" id="dcCity" value="' + U.escapeHtml(dc.city || '') + '"></div>' +
       '</div>' +
       '<datalist id="countryList">' + Object.keys(LNP.geo.COUNTRY).map(function (c) { return '<option value="' + c + '">' + LNP.geo.COUNTRY[c].name + '</option>'; }).join('') + '</datalist>' +
       '<div class="field-row">' +
       '<div class="field"><label data-t="Breitengrad">' + I.t('Breitengrad') + '</label><input type="number" step="0.0001" id="dcLat" value="' + numOrEmpty(dc.lat) + '"></div>' +
       '<div class="field"><label data-t="Längengrad">' + I.t('Längengrad') + '</label><input type="number" step="0.0001" id="dcLng" value="' + numOrEmpty(dc.lng) + '"></div>' +
-      '<div class="field" style="flex:0 0 auto;align-self:flex-end;"><button type="button" class="btn btn-sm" id="dcGeocode">Koordinate ermitteln</button></div>' +
+      '<div class="field" style="flex:0 0 auto;align-self:flex-end;"><button type="button" class="btn btn-sm" id="dcGeocode">' + I.t('Koordinate ermitteln') + '</button></div>' +
       '</div>' +
       '<p class="help" id="dcCoordSource">' + I.t('Quelle') + ': ' + I.t(dc.latSource || 'offen') + '</p>' +
       '<hr class="hr">' +
@@ -59,7 +59,7 @@
       '</div>' +
       '<div class="checkbox-row field"><input type="checkbox" id="dcActive"' + (dc.active !== false ? ' checked' : '') + '><label for="dcActive" style="margin:0" data-t="Aktiv">' + I.t('Aktiv') + '</label></div>' +
       '<hr class="hr">' +
-      '<h3>' + I.t('Kostenparameter') + ' <span class="muted" style="font-weight:400;text-transform:none;">(' + I.t('nicht gesetzt') + ' = ' + I.t('Netzwerk-Standardwert') + ')</span></h3>' +
+      '<h3>' + I.t('Kostenparameter') + LNP.ui.infoBtn('€ / Palette') + ' <span class="muted" style="font-weight:400;text-transform:none;">(' + I.t('nicht gesetzt') + ' = ' + I.t('Netzwerk-Standardwert') + ')</span></h3>' +
       '<div class="field-row">' +
       costRow(I.t('Lagerkosten je Platz/Monat'), 'storageCostPerSlotMonth', dc) +
       costRow(I.t('Handlingkosten je Palette'), 'handlingCostPerPallet', dc) +
@@ -86,7 +86,7 @@
             r.querySelector('#dcCoordSource').textContent = I.t('Quelle') + ': ' + I.t(res.source);
             r.querySelector('#dcCoordSource').setAttribute('data-source', res.source);
           } else {
-            LNP.ui.toast('Keine Koordinate gefunden — bitte manuell eintragen.', 'bad');
+            LNP.ui.toast(I.t('Keine Koordinate gefunden — bitte manuell eintragen.'), 'bad');
           }
         });
         r.querySelector('#dcSave').addEventListener('click', function () {
@@ -145,14 +145,14 @@
     }).join('');
 
     container.innerHTML =
-      '<div class="card"><div class="card-head"><h2 data-t="Distributionszentren">' + I.t('Distributionszentren') + '</h2>' +
+      '<div class="card"><div class="card-head"><h2>' + I.t('Distributionszentren') + LNP.ui.infoBtn('Kapazitäts-Score') + '</h2>' +
       '<div class="actions"><button class="btn btn-primary" id="dcNewBtn" data-t="Neues DC">' + I.t('Neues DC') + '</button></div></div>' +
       (dcs.length ?
         '<div class="table-wrap"><table class="tbl"><thead><tr>' +
         '<th data-t="Name">' + I.t('Name') + '</th><th data-t="Code">' + I.t('Code') + '</th><th data-t="Land">' + I.t('Land') + '</th>' +
         '<th class="num" data-t="Kapazität (Stellplätze)">' + I.t('Kapazität (Stellplätze)') + '</th><th class="num" data-t="Auslastung">' + I.t('Auslastung') + '</th><th data-t="Status">' + I.t('Status') + '</th><th data-t="Aktionen">' + I.t('Aktionen') + '</th>' +
         '</tr></thead><tbody>' + rows + '</tbody></table></div>' :
-        '<div class="empty"><p>Noch keine Distributionszentren. Werden beim Import von SKU View oder DC Translation Table automatisch angelegt, oder hier manuell erfassen.</p></div>') +
+        '<div class="empty"><p>' + I.t('Noch keine Distributionszentren. Werden beim Import von SKU View oder DC Translation Table automatisch angelegt, oder hier manuell erfassen.') + '</p></div>') +
       '</div>';
 
     var newBtn = container.querySelector('#dcNewBtn');

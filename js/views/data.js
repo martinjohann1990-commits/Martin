@@ -39,7 +39,7 @@
       '<div class="filecard-meta">' + I.fmtInt(status.accepted) + ' ' + I.t('Zeilen übernommen') +
       (status.rows && status.rows !== status.accepted ? ' (' + I.fmtInt(status.rows) + ' ' + I.t('Zeilen erkannt') + ')' : '') +
       (warnCount ? ' &middot; <span class="badge badge-warn">' + warnCount + ' ' + I.t('Warnungen') + '</span>' : '') +
-      (status.aggregated ? ' &middot; <span class="badge badge-info">verdichtet</span>' : '') +
+      (status.aggregated ? ' &middot; <span class="badge badge-info">' + I.t('verdichtet') + '</span>' : '') +
       '</div></div>' +
       '<div class="row-actions">' +
       '<button class="btn btn-sm js-pick" data-slot="' + slot.key + '" data-t="Neu laden">' + I.t('Neu laden') + '</button>' +
@@ -94,8 +94,8 @@
         '<div>' + (found ? '<span class="badge badge-good">OK</span>' : '<span class="badge badge-bad">' + I.t('nicht gesetzt') + '</span>') + '</div></div>';
     }).join('');
     var body = '<p class="help">' + I.tf('{0} {1}', rows2d.length - 1, I.t('Zeilen erkannt')) + ' &middot; ' +
-      result.monthCols.length + ' Monatsspalten erkannt (' + (result.monthCols[0] ? result.monthCols[0].period.key : '–') + ' … ' + (result.monthCols[result.monthCols.length - 1] ? result.monthCols[result.monthCols.length - 1].period.key : '–') + ')</p>' +
-      '<div class="note-box">Breitformat: eine Spalte je Monat. Paletten = Monatsmenge ÷ artikelspezifischer Palettenladung. Nullwerte werden nicht als Zeile übernommen.</div>' +
+      I.tf('{0} Monatsspalten erkannt ({1} … {2})', result.monthCols.length, (result.monthCols[0] ? result.monthCols[0].period.key : '–'), (result.monthCols[result.monthCols.length - 1] ? result.monthCols[result.monthCols.length - 1].period.key : '–')) + '</p>' +
+      '<div class="note-box">' + I.t('Breitformat: eine Spalte je Monat. Paletten = Monatsmenge ÷ artikelspezifischer Palettenladung. Nullwerte werden nicht als Zeile übernommen.') + '</div>' +
       '<div class="map-row" style="border-bottom:2px solid var(--border);font-weight:700;font-size:11px;color:var(--text-faint);text-transform:uppercase;">' +
       '<div data-t="Feld">' + I.t('Feld') + '</div><div data-t="Spalte in Datei">' + I.t('Spalte in Datei') + '</div><div data-t="Status">' + I.t('Status') + '</div></div>' +
       idLabels +
@@ -131,7 +131,7 @@
       return '<tr>' + row.slice(0, 8).map(function (c) { return '<td>' + U.escapeHtml(c == null ? '' : String(c)) + '</td>'; }).join('') + '</tr>';
     }).join('');
     var body = '<p class="help">' + I.tf('{0} {1}', result.records.length, I.t('Zeilen übernommen')) + '</p>' +
-      '<div class="note-box">Struktur mit dreizeiliger Kopfzeile (Division / Kennzahl / ID) und Spalten-Duplikaten — Spalten werden automatisch erkannt (Overall-Result-Spalte in Spalte ' + (esuCol >= 0 ? esuCol + 1 : '–') + ').</div>' +
+      '<div class="note-box">' + I.tf('Struktur mit dreizeiliger Kopfzeile (Division / Kennzahl / ID) und Spalten-Duplikaten — Spalten werden automatisch erkannt (Overall-Result-Spalte in Spalte {0}).', (esuCol >= 0 ? esuCol + 1 : '–')) + '</div>' +
       (result.warnings.length ? result.warnings.map(function (w) { return '<div class="note-box warn">' + U.escapeHtml(w) + '</div>'; }).join('') : '') +
       '<div class="table-wrap"><table class="tbl">' + preview + '</table></div>';
 
@@ -155,7 +155,7 @@
     var result = LNP.importer.parseDcTranslationPositional(rows2d);
     var preview = rows2d.slice(0, 6).map(function (r) { return '<tr>' + r.map(function (c) { return '<td>' + U.escapeHtml(c == null ? '' : String(c)) + '</td>'; }).join('') + '</tr>'; }).join('');
     var body = '<p class="help">' + I.tf('{0} {1}', result.records.length, I.t('Zeilen übernommen')) + '</p>' +
-      '<div class="note-box">Diese Datei enthält zwei Spalten mit dem Namen &bdquo;V&amp;B/ISI Shipping point&ldquo; (Code, dann Beschreibung) — die Zuordnung erfolgt daher positionsbasiert (Spalte 1 = Code, Spalte 2 = Beschreibung, Spalte mit Kopfzeile &bdquo;DC&ldquo; = Distributionszentrum). Distributionszentren selbst werden nicht aus dieser Tabelle angelegt — dafür ist die Forecast-Datei maßgeblich (diese Tabelle enthält auch Produktionswerke, Retouren u.ä., die keine Lagerstandorte sind).</div>' +
+      '<div class="note-box">' + I.t('Diese Datei enthält zwei Spalten mit dem Namen &bdquo;V&amp;B/ISI Shipping point&ldquo; (Code, dann Beschreibung) — die Zuordnung erfolgt daher positionsbasiert (Spalte 1 = Code, Spalte 2 = Beschreibung, Spalte mit Kopfzeile &bdquo;DC&ldquo; = Distributionszentrum). Distributionszentren selbst werden nicht aus dieser Tabelle angelegt — dafür ist die Forecast-Datei maßgeblich (diese Tabelle enthält auch Produktionswerke, Retouren u.ä., die keine Lagerstandorte sind).') + '</div>' +
       '<div class="table-wrap"><table class="tbl">' + preview + '</table></div>';
     LNP.ui.openModal(U.escapeHtml(I.t(slot.title)), body, {
       maxWidth: '600px',
@@ -223,14 +223,14 @@
   function handleFile(slot, file) {
     if (slot.kind === 'wide' || slot.kind === 'structural' || slot.kind === 'positional') {
       U.readWorkbookFileRaw(file, function (err, rows2d) {
-        if (err) { LNP.ui.toast('Fehler beim Lesen: ' + err.message, 'bad'); return; }
+        if (err) { LNP.ui.toast(I.t('Fehler beim Lesen') + ': ' + err.message, 'bad'); return; }
         if (slot.kind === 'wide') openForecastModal(slot, rows2d);
         else if (slot.kind === 'structural') openStructuralModal(slot, rows2d);
         else openPositionalModal(slot, rows2d);
       }, slot.file);
     } else {
       U.readWorkbookFile(file, function (err, res) {
-        if (err) { LNP.ui.toast('Fehler beim Lesen: ' + err.message, 'bad'); return; }
+        if (err) { LNP.ui.toast(I.t('Fehler beim Lesen') + ': ' + err.message, 'bad'); return; }
         var headers = LNP.importer.headersFromRows(res.rows);
         openMappingModal(slot, headers, res.rows);
       }, slot.file);
@@ -245,18 +245,18 @@
       return '<tr><td>' + U.escapeHtml(c) + '</td><td><input type="number" min="0" step="0.1" class="js-cat-coverage" data-cat="' + U.escapeHtml(c) + '" value="' + v + '" placeholder="' + I.fmtNum(settings.coverageMonthsGlobal, 1) + '"></td></tr>';
     }).join('');
     return '<div class="card">' +
-      '<h2 data-t="Mengenlogik">' + I.t('Mengenlogik') + '</h2>' +
+      '<h2>' + I.t('Mengenlogik') + LNP.ui.infoBtn('Ziel-Palettenbestand|Zyklusbestand|Sicherheitsbestand') + '</h2>' +
       '<div class="field-row">' +
       '<div class="field"><label data-t="Globale Ziel-Reichweite (Monate)">' + I.t('Globale Ziel-Reichweite (Monate)') + '</label>' +
       '<input type="number" min="0" step="0.1" id="setCoverageGlobal" value="' + settings.coverageMonthsGlobal + '">' +
       '<div class="help">&asymp; ' + I.fmtNum(settings.coverageMonthsGlobal * 30.44 / 7, 1) + ' Wochen</div></div>' +
       '<div class="field"><label data-t="Sicherheitsaufschlag">' + I.t('Sicherheitsaufschlag') + '</label>' +
       '<input type="number" min="0" step="0.05" id="setStockFactor" value="' + settings.stockFactor + '">' +
-      '<div class="help">Aufschlag auf den Zyklusbestand (Ø Menge × Reichweite).</div></div>' +
-      '<div class="field"><label>Sicherheits-Faktor z (Std.-Abw.)</label>' +
+      '<div class="help">' + I.t('Aufschlag auf den Zyklusbestand (Ø Menge × Reichweite).') + '</div></div>' +
+      '<div class="field"><label data-t="Sicherheits-Faktor z (Std.-Abw.)">' + I.t('Sicherheits-Faktor z (Std.-Abw.)') + '</label>' +
       '<input type="number" min="0" step="0.1" id="setSafetyZ" value="' + settings.safetyZFactor + '">' +
-      '<div class="help">Für den zusätzlichen Sicherheitsbestand aus der monatlichen Schwankung — z. B. z=1 &asymp; 84&nbsp;%, z=1,65 &asymp; 95&nbsp;% Servicegrad.</div></div>' +
-      '<div class="field"><label>SKUs je Picking Bin</label><input type="number" min="1" step="1" id="setSkusPerBin" value="' + settings.skusPerBin + '"></div>' +
+      '<div class="help">' + I.t('Für den zusätzlichen Sicherheitsbestand aus der monatlichen Schwankung — z. B. z=1 &asymp; 84&nbsp;%, z=1,65 &asymp; 95&nbsp;% Servicegrad.') + '</div></div>' +
+      '<div class="field"><label data-t="SKUs je Picking Bin">' + I.t('SKUs je Picking Bin') + '</label><input type="number" min="1" step="1" id="setSkusPerBin" value="' + settings.skusPerBin + '"></div>' +
       '</div>' +
       (cats.length ? '<h3 data-t="Ziel-Reichweite je Kategorie">' + I.t('Ziel-Reichweite je Kategorie') + '</h3>' +
         '<div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Kategorie">' + I.t('Kategorie') + '</th><th style="width:140px" data-t="Monate">' + I.t('Monate') + '</th></tr></thead><tbody>' + catRows + '</tbody></table></div>' : '') +
@@ -281,8 +281,8 @@
         '<td>' + (c ? '<span class="badge badge-info">' + sourceLabel + '</span>' : '<span class="badge badge-bad">' + sourceLabel + '</span>') + '</td>' +
         '</tr>';
     }).join('');
-    return '<div class="card"><h2>' + I.t('Region') + ' &ndash; ' + I.t('Koordinaten') + '</h2>' +
-      '<p class="help">Distrikt-Zentroid = mengengewichtetes Mittel der tatsächlichen Kundenstandorte (Destinations × Ship-to-Address), sofern verknüpfbar; sonst mengengewichtetes Mittel der Länder, die laut Sales Hierarchie/Sales History zu diesem Distrikt gehören. Bei Bedarf manuell überschreibbar.</p>' +
+    return '<div class="card"><h2>' + I.t('Region') + ' &ndash; ' + I.t('Koordinaten') + LNP.ui.infoBtn('Distrikt-Zentroid (Distanzgrundlage)') + '</h2>' +
+      '<p class="help">' + I.t('Distrikt-Zentroid = mengengewichtetes Mittel der tatsächlichen Kundenstandorte (Destinations × Ship-to-Address), sofern verknüpfbar; sonst mengengewichtetes Mittel der Länder, die laut Sales Hierarchie/Sales History zu diesem Distrikt gehören. Bei Bedarf manuell überschreibbar.') + '</p>' +
       '<div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Region">' + I.t('Region') + '</th><th>' + I.t('Breitengrad') + '</th><th>' + I.t('Längengrad') + '</th><th data-t="Quelle">' + I.t('Quelle') + '</th></tr></thead><tbody>' + rows + '</tbody></table></div></div>';
   }
 
@@ -359,7 +359,7 @@
 
     var resetBtn = container.querySelector('#resetAllBtn');
     if (resetBtn) resetBtn.addEventListener('click', function () {
-      LNP.ui.confirmDialog(I.t('Alle Daten zurücksetzen'), 'Alle importierten Daten, Distributionszentren, Szenarien und Einstellungen werden gelöscht.', function () {
+      LNP.ui.confirmDialog(I.t('Alle Daten zurücksetzen'), I.t('Alle importierten Daten, Distributionszentren, Szenarien und Einstellungen werden gelöscht.'), function () {
         LNP.state.resetAll();
       });
     });

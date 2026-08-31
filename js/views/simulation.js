@@ -38,24 +38,24 @@
       '<option value="split"' + (ui.mode === 'split' ? ' selected' : '') + '>' + I.t('Aufteilung') + '</option>' +
       '<option value="manual"' + (ui.mode === 'manual' ? ' selected' : '') + '>' + I.t('Manuell') + '</option>' +
       '</select></div>' +
-      '<h3>Standorte</h3>' +
-      '<p class="help">Nur ausgewählte Standorte werden als Kandidaten bewertet.</p>' +
+      '<h3 data-t="Standorte">' + I.t('Standorte') + '</h3>' +
+      '<p class="help">' + I.t('Nur ausgewählte Standorte werden als Kandidaten bewertet.') + '</p>' +
       dcChecklist() +
-      '<h3 data-t="Gewichtung">' + I.t('Gewichtung') + '</h3>' +
+      '<h3 data-t="Gewichtung">' + I.t('Gewichtung') + LNP.ui.infoBtn('Kapazitäts-Score|Transport-Score|Service-Score (Reichweite)|Gesamt-Score') + '</h3>' +
       weightRow('capacity', 'Kapazität') + weightRow('transport', 'Transport') + weightRow('service', 'Reichweite') +
       '<div class="field"><label data-t="Auslastungsgrenze">' + I.t('Auslastungsgrenze') + '</label>' +
       '<input type="range" id="simMaxUtil" min="0.5" max="1" step="0.01" value="' + ui.maxUtilization + '">' +
       '<div class="help"><output id="simMaxUtilOut">' + I.fmtPct(ui.maxUtilization, 0) + '</output></div></div>' +
-      '<p class="help">Mengenbasis: Forecast (Perioden/Kategorien nur dort vorhanden). Der geografische Fußabdruck je Standort — und damit Distanz/Transportkosten/Score je Kandidat — stammt aus der echten Sales History (siehe Formelübersicht in Berichte). Eine artikelscharfe Standortempfehlung liefert der Bericht „Artikel-Standortanalyse“.</p>' +
+      '<p class="help">' + I.t('Mengenbasis: Forecast (Perioden/Kategorien nur dort vorhanden). Der geografische Fußabdruck je Standort — und damit Distanz/Transportkosten/Score je Kandidat — stammt aus der echten Sales History (siehe Formelübersicht in Berichte). Eine artikelscharfe Standortempfehlung liefert der Bericht „Artikel-Standortanalyse“.') + '</p>' +
       '<button class="btn btn-primary" id="simRunBtn" data-t="Simulation starten">' + I.t('Simulation starten') + '</button>' +
       '</div>';
   }
   function dcChecklist() {
     var dcs = LNP.sim.candidateDcs();
-    if (!dcs.length) return '<p class="help muted">Keine aktiven Distributionszentren.</p>';
+    if (!dcs.length) return '<p class="help muted">' + I.t('Keine aktiven Distributionszentren.') + '</p>';
     return '<div class="pill-group" style="margin-bottom:10px;">' +
-      '<button type="button" class="pill" id="simDcAll">Alle</button>' +
-      '<button type="button" class="pill" id="simDcNone">Keine</button>' +
+      '<button type="button" class="pill" id="simDcAll">' + I.t('Alle') + '</button>' +
+      '<button type="button" class="pill" id="simDcNone">' + I.t('Keine') + '</button>' +
       '</div>' +
       '<div style="max-height:150px;overflow:auto;border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 10px;">' +
       dcs.map(function (dc) {
@@ -91,22 +91,22 @@
       best.dcName;
     var warnings = active.warnings.concat(single.warnings.filter(function (w) { return active.warnings.indexOf(w) === -1; }));
     return '<div class="reco">' +
-      '<div class="reco-title" data-t="Empfehlung">' + I.t('Empfehlung') + '</div>' +
+      '<div class="reco-title">' + I.t('Empfehlung') + LNP.ui.infoBtn('Ziel-Palettenbestand|Zyklusbestand|Sicherheitsbestand|€ / Palette|Transit|Kapazitäts-Score|Transport-Score|Service-Score (Reichweite)') + '</div>' +
       '<div class="reco-main">' + U.escapeHtml(title) + '</div>' +
       '<div class="reco-reason">' + reasonSentence(best) + '</div>' +
       (warnings.length ? warnings.map(function (w) { return '<div class="reco-warn">' + U.escapeHtml(w) + '</div>'; }).join(' ') : '') +
       '<div class="reco-kpis">' +
       recoKpi(I.t('Ziel-Palettenbestand'), I.fmtInt(U.sum(active.parts, function (p) { return p.slots; }))) +
-      recoKpi('davon Zyklusbestand', I.fmtInt(U.sum(active.parts, function (p) { return p.cycleStock || 0; }))) +
-      recoKpi('davon Sicherheitsbestand', I.fmtInt(U.sum(active.parts, function (p) { return p.safetyStock || 0; }))) +
+      recoKpi(I.t('davon Zyklusbestand'), I.fmtInt(U.sum(active.parts, function (p) { return p.cycleStock || 0; }))) +
+      recoKpi(I.t('davon Sicherheitsbestand'), I.fmtInt(U.sum(active.parts, function (p) { return p.safetyStock || 0; }))) +
       recoKpi(I.t('Forecast-Menge im Zeitraum'), I.fmtInt(active.demand.totalPallets)) +
       recoKpi(I.t('Ziel-Reichweite (Monate)'), I.fmtNum(active.targetDays / 30.44, 1)) +
-      recoKpi('Ø €/Palette', best.transportCostPerPallet !== null ? I.fmtNum(best.transportCostPerPallet, 2) : '–') +
-      recoKpi('Ø Transit (Tage)', best.transitDays !== null ? I.fmtNum(best.transitDays, 1) : '–') +
+      recoKpi(I.t('Ø €/Palette'), best.transportCostPerPallet !== null ? I.fmtNum(best.transportCostPerPallet, 2) : '–') +
+      recoKpi(I.t('Ø Transit (Tage)'), best.transitDays !== null ? I.fmtNum(best.transitDays, 1) : '–') +
       recoKpi(I.t('Kapazität'), best.utilization !== null ? I.fmtPct(best.utilization, 0) : '–') +
-      recoKpi('Score ' + I.t('Kapazität'), I.fmtInt(best.capacityScore)) +
-      recoKpi('Score ' + I.t('Transport'), I.fmtInt(best.transportScore)) +
-      recoKpi('Score ' + I.t('Reichweite'), I.fmtInt(best.serviceScore)) +
+      recoKpi(I.t('Score') + ' ' + I.t('Kapazität'), I.fmtInt(best.capacityScore)) +
+      recoKpi(I.t('Score') + ' ' + I.t('Transport'), I.fmtInt(best.transportScore)) +
+      recoKpi(I.t('Score') + ' ' + I.t('Reichweite'), I.fmtInt(best.serviceScore)) +
       '</div></div>';
   }
   function recoKpi(label, value) { return '<div class="reco-kpi"><b>' + value + '</b><span>' + U.escapeHtml(label) + '</span></div>'; }
@@ -123,7 +123,7 @@
         '<td>' + (r.feasible ? '<span class="badge badge-good">OK</span>' : '<span class="badge badge-bad">' + I.t('Auslastungsgrenze') + '</span>') + '</td>' +
         '</tr>';
     }).join('');
-    return '<div class="card"><h2 data-t="Rangliste">' + I.t('Rangliste') + '</h2>' +
+    return '<div class="card"><h2>' + I.t('Rangliste') + LNP.ui.infoBtn('Gesamt-Score|Kapazitäts-Score|Transport-Score|Service-Score (Reichweite)') + '</h2>' +
       '<div class="table-wrap"><table class="tbl"><thead><tr><th>#</th><th data-t="Name">' + I.t('Name') + '</th>' +
       '<th class="num" data-t="Gesamt">' + I.t('Gesamt') + '</th><th class="num" data-t="Kapazität">' + I.t('Kapazität') + '</th>' +
       '<th class="num" data-t="Transport">' + I.t('Transport') + '</th><th class="num" data-t="Reichweite">' + I.t('Reichweite') + '</th><th data-t="Status">' + I.t('Status') + '</th></tr></thead>' +
@@ -134,7 +134,7 @@
     if (!single.ranking.length) return '';
     var top = single.ranking.slice(0, 8);
     var w = ui.weights, wsum = (w.capacity + w.transport + w.service) || 1;
-    return '<div class="card"><h2 data-t="Score-Zusammensetzung">' + I.t('Score-Zusammensetzung') + '</h2>' +
+    return '<div class="card"><h2>' + I.t('Score-Zusammensetzung') + LNP.ui.infoBtn('Gesamt-Score|Kapazitäts-Score|Transport-Score|Service-Score (Reichweite)') + '</h2>' +
       '<div class="chart-box" style="height:' + (40 + top.length * 30) + 'px"><canvas id="chartScoreComposition"></canvas></div>' +
       '<div class="score-legend">' +
       '<span><span class="dot" style="background:var(--info)"></span>' + I.t('Kapazität') + '</span>' +
@@ -155,7 +155,7 @@
       var shareCell = isManual ? shareInput : I.fmtInt((p ? p.share : 0) * 100) + ' %';
       var slotsCell = p ? '<b>' + I.fmtInt(p.slots) + '</b>' +
         (U.isNum(p.cycleStock) && U.isNum(p.safetyStock) ?
-          '<div class="muted" style="font-size:11px">Zyklus ' + I.fmtInt(p.cycleStock) + ' + Sicherheit ' + I.fmtInt(p.safetyStock) + '</div>' : '') : '–';
+          '<div class="muted" style="font-size:11px">' + I.tf('{0} {1} + {2} {3}', I.t('Zyklus'), I.fmtInt(p.cycleStock), I.t('Sicherheit'), I.fmtInt(p.safetyStock)) + '</div>' : '') : '–';
       return '<tr><td>' + U.escapeHtml(dc.name) + '</td>' +
         '<td class="num">' + shareCell + '</td>' +
         '<td class="num">' + (p ? I.fmtInt(p.pallets) : '–') + '</td>' +
@@ -166,13 +166,14 @@
         '<td>' + (p ? (p.feasible ? '<span class="badge badge-good">OK</span>' : '<span class="badge badge-bad">!</span>') : '–') + '</td></tr>';
     }).join('');
     var redundancyNote = (active.redundancy && active.redundancy.pallets > 0) ?
-      '<div class="note-box">Redundanzvermeidung aktiv: ' + I.fmtInt(active.redundancy.articleCount) + ' Artikel (' + I.fmtInt(active.redundancy.pallets) + ' PAL) wurden gemäß Artikel-Standortanalyse direkt ihrem einen empfohlenen Standort zugewiesen (zentral bei geringer Drehung, regional bei starkem Distrikt-Bezug), statt über mehrere Standorte gestreut zu werden — vermeidet doppelten Sicherheitsbestand für dasselbe Volumen. Details je Artikel: <a href="#" class="js-goto-articles">Berichte → Artikel-Standortanalyse</a>.</div>' : '';
-    return '<div class="card"><div class="card-head"><h2 data-t="Aufteilungstabelle">' + I.t('Aufteilungstabelle') + '</h2>' +
-      '<div class="actions">' + (isManual ? '<button class="btn btn-sm" id="simRecalcManual">Neu berechnen</button>' : '') +
-      '<button class="btn btn-sm" id="simSaveScenarioBtn">Als Szenario speichern</button>' +
+      '<div class="note-box">' + I.tf('Redundanzvermeidung aktiv: {0} Artikel ({1} PAL) wurden gemäß Artikel-Standortanalyse direkt ihrem einen empfohlenen Standort zugewiesen (zentral bei geringer Drehung, regional bei starkem Distrikt-Bezug), statt über mehrere Standorte gestreut zu werden — vermeidet doppelten Sicherheitsbestand für dasselbe Volumen.', I.fmtInt(active.redundancy.articleCount), I.fmtInt(active.redundancy.pallets)) +
+      ' ' + I.t('Details je Artikel:') + ' <a href="#" class="js-goto-articles">' + I.t('Berichte') + ' &rarr; ' + I.t('Artikel-Standortanalyse') + '</a>.</div>' : '';
+    return '<div class="card"><div class="card-head"><h2>' + I.t('Aufteilungstabelle') + LNP.ui.infoBtn('Ziel-Palettenbestand|Zyklusbestand|Sicherheitsbestand|€ / Palette') + '</h2>' +
+      '<div class="actions">' + (isManual ? '<button class="btn btn-sm" id="simRecalcManual">' + I.t('Neu berechnen') + '</button>' : '') +
+      '<button class="btn btn-sm" id="simSaveScenarioBtn">' + I.t('Als Szenario speichern') + '</button>' +
       '<button class="btn btn-sm btn-primary" id="simApplyBtn" data-t="Übernehmen">' + I.t('Übernehmen') + '</button></div></div>' +
-      (isManual ? '<p class="help">Anteile eintragen (relative Gewichte, müssen nicht auf 100 summieren) und neu berechnen.</p>' : '') +
-      '<p class="help">PAL = Forecast-Durchsatz im gewählten Zeitraum (Basis für Transportkosten/Anteil). Slots = Ziel-Palettenbestand je Standort = Zyklusbestand (Ø Menge × Reichweite, unabhängig von der Standortanzahl) + Sicherheitsbestand (aus der echten monatlichen Schwankung am jeweiligen Standort, sinkt bei Konsolidierung). Wie stark der Sicherheitsbestand insgesamt ausfällt bzw. wie stark er bei Konsolidierung sinkt, hängt von der tatsächlichen Schwankungsbreite der Monatsmengen im Forecast ab — ein sehr gleichmäßiger Forecast (Plan statt Ist-Nachfrage) zeigt entsprechend einen kleineren Effekt. Formel/Details: Berichte → Formelübersicht.</p>' +
+      (isManual ? '<p class="help">' + I.t('Anteile eintragen (relative Gewichte, müssen nicht auf 100 summieren) und neu berechnen.') + '</p>' : '') +
+      '<p class="help">' + I.t('PAL = Forecast-Durchsatz im gewählten Zeitraum (Basis für Transportkosten/Anteil). Slots = Ziel-Palettenbestand je Standort = Zyklusbestand (Ø Menge × Reichweite, unabhängig von der Standortanzahl) + Sicherheitsbestand (aus der echten monatlichen Schwankung am jeweiligen Standort, sinkt bei Konsolidierung). Wie stark der Sicherheitsbestand insgesamt ausfällt bzw. wie stark er bei Konsolidierung sinkt, hängt von der tatsächlichen Schwankungsbreite der Monatsmengen im Forecast ab — ein sehr gleichmäßiger Forecast (Plan statt Ist-Nachfrage) zeigt entsprechend einen kleineren Effekt. Formel/Details: Berichte → Formelübersicht.') + '</p>' +
       redundancyNote +
       '<div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Name">' + I.t('Name') + '</th><th class="num">%</th><th class="num">PAL</th>' +
       '<th class="num">Slots</th><th class="num">€/PAL</th><th class="num">' + I.t('Gesamt') + '</th><th class="num">Score</th><th data-t="Status">' + I.t('Status') + '</th></tr></thead>' +
@@ -185,7 +186,7 @@
       return '<tr><td>' + U.escapeHtml(r.regionKey) + '</td><td>' + U.escapeHtml(dc ? dc.name : '–') + '</td>' +
         '<td class="num">' + I.fmtInt(r.pallets) + '</td><td class="num">' + (r.distance !== null && r.distance !== undefined ? I.fmtInt(r.distance) + ' km' : '–') + '</td></tr>';
     }).join('');
-    return '<div class="card"><h2 data-t="Regionale Zuordnung">' + I.t('Regionale Zuordnung') + '</h2>' +
+    return '<div class="card"><h2>' + I.t('Regionale Zuordnung') + LNP.ui.infoBtn('Distanz|Geografischer Fußabdruck je DC|Distrikt-Zentroid (Distanzgrundlage)') + '</h2>' +
       '<div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Region">' + I.t('Region') + '</th><th>DC</th><th class="num">PAL</th><th class="num">' + I.t('Distanz') + '</th></tr></thead>' +
       '<tbody>' + (rows || '<tr><td colspan="4" class="muted">–</td></tr>') + '</tbody></table></div></div>';
   }
@@ -253,8 +254,8 @@
     var modeLabel = ui.mode === 'single' ? I.t('Alleinzuordnung') : ui.mode === 'manual' ? I.t('Manuell') : I.t('Aufteilung');
     var defaultName = 'Simulation: ' + (ui.category === 'all' ? I.t('Alle') : ui.category) + ' (' + modeLabel + ')';
     var body = '<div class="field"><label data-t="Name">' + I.t('Name') + '</label><input type="text" id="simScName" value="' + U.escapeHtml(defaultName) + '"></div>' +
-      '<p class="help">Speichert Modus, Kategorie/Zeitraum-Filter, ausgewählte Standorte und Gewichtung dieser Simulation als Szenario. Das Szenario wird bei jeder Auswertung live mit den aktuellen Daten/Einstellungen neu berechnet.</p>';
-    LNP.ui.openModal('Als Szenario speichern', body, {
+      '<p class="help">' + I.t('Speichert Modus, Kategorie/Zeitraum-Filter, ausgewählte Standorte und Gewichtung dieser Simulation als Szenario. Das Szenario wird bei jeder Auswertung live mit den aktuellen Daten/Einstellungen neu berechnet.') + '</p>';
+    LNP.ui.openModal(I.t('Als Szenario speichern'), body, {
       maxWidth: '480px',
       footerHtml: '<button class="btn" id="simScCancel" data-t="Abbrechen">' + I.t('Abbrechen') + '</button>' +
         '<button class="btn btn-primary" id="simScSave" data-t="Speichern">' + I.t('Speichern') + '</button>',

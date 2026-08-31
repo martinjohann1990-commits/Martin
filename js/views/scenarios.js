@@ -29,10 +29,10 @@
       var built = LNP.sim.buildScenarioTemplate(templateKey);
       base.dcMapping = built.dcMapping; warnings = built.warnings;
       var tmpl = LNP.sim.SCENARIO_TEMPLATES.filter(function (t) { return t.key === templateKey; })[0];
-      base.name = tmpl ? tmpl.name : 'Neues Szenario'; base.type = templateKey;
+      base.name = tmpl ? tmpl.name : I.t('Neues Szenario'); base.type = templateKey;
     } else if (!existing) {
       dcs.forEach(function (dc) { base.dcMapping[dc.id] = dc.id; });
-      base.name = 'Benutzerdefiniertes Szenario';
+      base.name = I.t('Benutzerdefiniertes Szenario');
     }
 
     var rows = dcs.map(function (dc) {
@@ -45,7 +45,7 @@
     var districts = LNP.sim.allDistricts();
     var overrideRows = districts.map(function (d) {
       var current = (base.regionOverrides || {})[d.district] || '';
-      var opts = '<option value=""' + (current === '' ? ' selected' : '') + '>Automatisch (Basistopologie)</option>' +
+      var opts = '<option value=""' + (current === '' ? ' selected' : '') + '>' + I.t('Automatisch (Basistopologie)') + '</option>' +
         dcs.map(function (dc) { return '<option value="' + dc.id + '"' + (dc.id === current ? ' selected' : '') + '>' + U.escapeHtml(dc.name) + '</option>'; }).join('');
       return '<div class="map-row"><div class="map-field-name">' + U.escapeHtml(d.name) + '</div>' +
         '<select class="js-scenario-region-override" data-district="' + U.escapeHtml(d.district) + '">' + opts +
@@ -54,13 +54,13 @@
 
     var body = '<div class="field"><label data-t="Name">' + I.t('Name') + '</label><input type="text" id="scName" value="' + U.escapeHtml(base.name) + '"></div>' +
       (warnings.length ? warnings.map(function (w) { return '<div class="note-box warn">' + U.escapeHtml(w) + '</div>'; }).join('') : '') +
-      '<h3>DC&#8209;Zuordnung</h3><p class="help">Jeder Standort wird auf einen Ziel-Standort abgebildet (identisch = bleibt eigenständig / Standort besteht weiter).</p>' +
+      '<h3>' + I.t('DC&#8209;Zuordnung') + '</h3><p class="help">' + I.t('Jeder Standort wird auf einen Ziel-Standort abgebildet (identisch = bleibt eigenständig / Standort besteht weiter).') + '</p>' +
       '<div class="map-row" style="border-bottom:2px solid var(--border);font-weight:700;font-size:11px;color:var(--text-faint);text-transform:uppercase;">' +
-      '<div>Quelle</div><div>Ziel</div><div></div></div>' + rows +
-      (districts.length ? '<hr class="hr"><h3>Regionale Zuordnung überschreiben</h3>' +
-        '<p class="help">Optional: eine Region fest einem Standort zuweisen, unabhängig von der aus den Versanddaten abgeleiteten Basistopologie (Beispiel: „Sevlievo deckt Osteuropa“).</p>' +
+      '<div>' + I.t('Quelle') + '</div><div>' + I.t('Ziel') + '</div><div></div></div>' + rows +
+      (districts.length ? '<hr class="hr"><h3>' + I.t('Regionale Zuordnung überschreiben') + '</h3>' +
+        '<p class="help">' + I.t('Optional: eine Region fest einem Standort zuweisen, unabhängig von der aus den Versanddaten abgeleiteten Basistopologie (Beispiel: „Sevlievo deckt Osteuropa“).') + '</p>' +
         '<div class="map-row" style="border-bottom:2px solid var(--border);font-weight:700;font-size:11px;color:var(--text-faint);text-transform:uppercase;">' +
-        '<div>Region</div><div>Zuständiges DC</div><div></div></div>' + overrideRows : '');
+        '<div>' + I.t('Region') + '</div><div>' + I.t('Zuständiges DC') + '</div><div></div></div>' + overrideRows : '');
 
     LNP.ui.openModal(existing ? I.t('Bearbeiten') : I.t('Szenario speichern'), body, {
       maxWidth: '580px',
@@ -95,7 +95,7 @@
   function renderCompare(container) {
     var out = container.querySelector('#scenarioCompare');
     if (!out) return;
-    if (!selectedIds.length) { out.innerHTML = '<div class="card empty">Bitte mindestens ein Szenario zum Vergleich auswählen.</div>'; return; }
+    if (!selectedIds.length) { out.innerHTML = '<div class="card empty">' + I.t('Bitte mindestens ein Szenario zum Vergleich auswählen.') + '</div>'; return; }
 
     var results = selectedIds.map(function (id) {
       return { id: id, label: scenarioLabel(id), net: LNP.sim.computeScenarioNetwork(scenarioObjById(id), compareParams()) };
@@ -128,7 +128,7 @@
         if (scenario && scenario.simParams) {
           var candIds = LNP.sim.scenarioCandidateDcIds(scenario) || [];
           var isCandidate = candIds.indexOf(dc.id) !== -1;
-          return '<td>' + (isCandidate ? '<span class="muted">Kandidat (Simulation)</span>' : '–') + '</td>';
+          return '<td>' + (isCandidate ? '<span class="muted">' + I.t('Kandidat (Simulation)') + '</span>' : '–') + '</td>';
         }
         var mapping = (scenario && scenario.dcMapping) || {};
         var targetId = LNP.sim.resolveTarget(mapping, dc.id);
@@ -140,17 +140,17 @@
     }).join('');
 
     out.innerHTML =
-      '<div class="card"><h2 data-t="Kennzahlenvergleich">' + I.t('Kennzahlenvergleich') + '</h2>' +
-      '<div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Name">' + I.t('Name') + '</th><th class="num">DCs</th><th class="num">PAL</th><th class="num">Storage PAL</th><th class="num">Picking Bins</th></tr></thead><tbody>' + overviewRows + '</tbody></table></div>' +
+      '<div class="card"><h2>' + I.t('Kennzahlenvergleich') + LNP.ui.infoBtn('Ziel-Palettenbestand|SKU / Picking Bins je DC') + '</h2>' +
+      '<div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Name">' + I.t('Name') + '</th><th class="num">DCs</th><th class="num">PAL</th><th class="num">' + I.t('Storage PAL') + '</th><th class="num">' + I.t('Picking Bins') + '</th></tr></thead><tbody>' + overviewRows + '</tbody></table></div>' +
       '<div class="grid grid-2" style="margin-top:16px">' +
       '<div class="chart-box"><canvas id="chartScenarioPallets"></canvas></div>' +
       '<div class="chart-box"><canvas id="chartScenarioStorage"></canvas></div>' +
       '</div></div>' +
-      '<div class="card"><h3>Paletten je DC im Vergleich</h3><div class="table-wrap"><table class="tbl"><thead><tr><th>DC</th>' + matrixHeader + '</tr></thead><tbody>' + matrixRows + '</tbody></table></div></div>' +
+      '<div class="card"><h3>' + I.t('Paletten je DC im Vergleich') + '</h3><div class="table-wrap"><table class="tbl"><thead><tr><th>DC</th>' + matrixHeader + '</tr></thead><tbody>' + matrixRows + '</tbody></table></div></div>' +
       '<div class="card"><h2 data-t="Zuordnungsmatrix">' + I.t('Zuordnungsmatrix') + '</h2><div class="table-wrap"><table class="tbl"><thead><tr><th>DC</th>' + matrixHeader + '</tr></thead><tbody>' + mapRows + '</tbody></table></div></div>';
 
     LNP.charts.bar('chartScenarioPallets', results.map(function (r) { return r.label; }), [{ label: 'PAL', data: results.map(function (r) { return Math.round(r.net.totalPallets); }) }]);
-    LNP.charts.bar('chartScenarioStorage', results.map(function (r) { return r.label; }), [{ label: 'Storage PAL', data: results.map(function (r) { return Math.round(U.sum(r.net.perDc, function (d) { return d.storageDemandPallets; })); }) }]);
+    LNP.charts.bar('chartScenarioStorage', results.map(function (r) { return r.label; }), [{ label: I.t('Storage PAL'), data: results.map(function (r) { return Math.round(U.sum(r.net.perDc, function (d) { return d.storageDemandPallets; })); }) }]);
   }
 
   /* Geografische Heatmap: für das gewählte Szenario, welche DCs beteiligt sind (candidateDcIds/
@@ -180,7 +180,7 @@
       if (points.some(function (p) { return !p.dcId; })) {
         items.push('<span><span class="dot" style="background:#8992a3"></span>' + I.t('Nicht zugeordnet') + '</span>');
       }
-      legendEl.innerHTML = items.length ? items.join('') : '<span class="muted">Keine Standorte mit Koordinaten für dieses Szenario.</span>';
+      legendEl.innerHTML = items.length ? items.join('') : '<span class="muted">' + I.t('Keine Standorte mit Koordinaten für dieses Szenario.') + '</span>';
     }
   }
 
@@ -194,7 +194,7 @@
     var heatmapOptions = '<option value="base"' + (heatmapScenarioId === 'base' ? ' selected' : '') + '>' + I.t('Aktueller Stand') + '</option>' +
       savedScenarios.map(function (s) { return '<option value="' + s.id + '"' + (heatmapScenarioId === s.id ? ' selected' : '') + '>' + U.escapeHtml(s.name) + '</option>'; }).join('');
     var listRows = savedScenarios.map(function (s) {
-      var simBadge = s.simParams ? ' <span class="badge badge-info">Simulation</span>' : '';
+      var simBadge = s.simParams ? ' <span class="badge badge-info">' + I.t('Simulation') + '</span>' : '';
       return '<tr><td>' + U.escapeHtml(s.name) + simBadge + '</td><td>' + I.fmtDate(new Date(s.createdAt)) + '</td>' +
         '<td><input type="checkbox" class="js-select-scenario" data-id="' + s.id + '"' + (selectedIds.indexOf(s.id) !== -1 ? ' checked' : '') + '></td>' +
         '<td class="row-actions">' + (s.simParams ? '' : '<button class="btn btn-sm js-edit-scenario" data-id="' + s.id + '" data-t="Bearbeiten">' + I.t('Bearbeiten') + '</button>') +
@@ -203,16 +203,16 @@
 
     container.innerHTML =
       '<div class="card"><div class="card-head"><h2 data-t="Szenarien">' + I.t('Szenarien') + '</h2>' +
-      '<div class="actions"><button class="btn btn-sm" id="scNewCustom">Benutzerdefiniert</button></div></div>' +
+      '<div class="actions"><button class="btn btn-sm" id="scNewCustom">' + I.t('Benutzerdefiniert') + '</button></div></div>' +
       (savedScenarios.length ?
         '<div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Name">' + I.t('Name') + '</th><th data-t="Erstellt">' + I.t('Erstellt') + '</th><th data-t="Vergleichen">' + I.t('Vergleichen') + '</th><th data-t="Aktionen">' + I.t('Aktionen') + '</th></tr></thead><tbody>' + listRows + '</tbody></table></div>' :
-        '<p class="help">Noch keine Szenarien gespeichert. Benutzerdefiniert anlegen oder ein Simulationsergebnis als Szenario speichern.</p>') +
+        '<p class="help">' + I.t('Noch keine Szenarien gespeichert. Benutzerdefiniert anlegen oder ein Simulationsergebnis als Szenario speichern.') + '</p>') +
       '<div class="checkbox-row" style="margin-top:10px"><input type="checkbox" id="scSelectBase"' + (selectedIds.indexOf('base') !== -1 ? ' checked' : '') + '>' +
       '<label style="margin:0" for="scSelectBase" data-t="Aktueller Stand">' + I.t('Aktueller Stand') + '</label></div>' +
       '</div>' +
-      '<div class="card"><div class="card-head"><h2>Geografische Heatmap</h2>' +
+      '<div class="card"><div class="card-head"><h2>' + I.t('Geografische Heatmap') + LNP.ui.infoBtn('Szenario-Heatmap (adressgenau)|Distrikt-Zentroid (Distanzgrundlage)') + '</h2>' +
       '<div class="actions"><select id="scHeatmapScenario">' + heatmapOptions + '</select></div></div>' +
-      '<p class="help">Zeigt die am gewählten Szenario beteiligten DCs und, adressgenau auf Basis der Ship-to-Adressdaten, wo deren Kunden liegen — je Standort in dessen eigener Farbe eingefärbt.</p>' +
+      '<p class="help">' + I.t('Zeigt die am gewählten Szenario beteiligten DCs und, adressgenau auf Basis der Ship-to-Adressdaten, wo deren Kunden liegen — je Standort in dessen eigener Farbe eingefärbt.') + '</p>' +
       '<div class="map-box" id="scenarioHeatmapMap" style="height:460px"></div>' +
       '<div class="score-legend" id="scenarioHeatmapLegend" style="margin-top:10px"></div>' +
       '</div>' +

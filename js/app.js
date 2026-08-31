@@ -66,7 +66,7 @@
     document.getElementById('demoBtn').addEventListener('click', function () {
       var hasData = LNP.state.data.forecast.length > 0;
       if (hasData) {
-        LNP.ui.confirmDialog(I.t('Demodaten laden'), 'Vorhandene Daten, DCs, Szenarien und Einstellungen werden durch die Demodaten ersetzt.', function () { LNP.demo.load(); });
+        LNP.ui.confirmDialog(I.t('Demodaten laden'), I.t('Vorhandene Daten, DCs, Szenarien und Einstellungen werden durch die Demodaten ersetzt.'), function () { LNP.demo.load(); });
       } else {
         LNP.demo.load();
       }
