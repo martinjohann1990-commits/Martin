@@ -27,6 +27,7 @@
   var TABS = [
     { key: 'alloc', label: 'Länder-Distrikt-Zuordnung' },
     { key: 'articles', label: 'Artikel-Standortanalyse' },
+    { key: 'abc', label: 'ABC-Analyse (Forecast)' },
     { key: 'sku', label: 'SKU je DC' },
     { key: 'storage', label: 'Paletten-/Lagerbedarf je DC' },
     { key: 'shipment', label: 'Ø Sendungsgröße' },
@@ -145,6 +146,63 @@
     LNP.ui.toast(I.tf('{0} SKU exportiert', I.fmtInt(analysis.rows.length)), 'good');
   }
 
+  var ABC_BADGE = { A: 'badge-good', B: 'badge-info', C: 'badge-warn' };
+
+  function abcPanel() {
+    var analysis = LNP.sim.forecastAbcAnalysis();
+    var rows = analysis.rows;
+    var LIMIT = 150;
+    var shown = rows.slice(0, LIMIT);
+    var tableRows = shown.map(function (r) {
+      return '<tr><td>' + U.escapeHtml(r.article) + (r.articleDesc ? '<div class="muted" style="font-size:11px">' + U.escapeHtml(r.articleDesc) + '</div>' : '') + '</td>' +
+        '<td>' + U.escapeHtml(r.category || '–') + '</td>' +
+        '<td class="num">' + I.fmtInt(r.qty) + '</td>' +
+        '<td class="num">' + I.fmtInt(r.pallets) + '</td>' +
+        '<td class="num">' + I.fmtPct(r.share, 1) + '</td>' +
+        '<td class="num">' + I.fmtPct(r.cumShare, 1) + '</td>' +
+        '<td><span class="badge ' + ABC_BADGE[r.abcClass] + '">' + r.abcClass + '</span></td></tr>';
+    }).join('');
+
+    var kpis = ['A', 'B', 'C'].map(function (cls) {
+      return '<div class="kpi"><div class="kpi-label">' + I.tf('Klasse {0}', cls) + '</div>' +
+        '<div class="kpi-value">' + I.fmtInt(analysis.counts[cls]) + '</div>' +
+        '<div class="muted" style="font-size:11px">' + I.tf('{0} der Menge', I.fmtPct(analysis.grandTotal ? analysis.volByClass[cls] / analysis.grandTotal : 0, 0)) + '</div></div>';
+    }).join('');
+
+    return '<div class="card-head" style="margin-bottom:10px"><h2 style="margin:0">' + I.t('ABC-Analyse (Forecast)') + LNP.ui.infoBtn('ABC-Analyse (Forecast-Mengen)') + '</h2>' +
+      '<div class="actions"><button class="btn btn-sm" id="repAbcDownload">' + I.t('Alle SKU exportieren (Excel)') + '</button></div></div>' +
+      '<div class="note-box">' + I.t('Klassifiziert jeden Artikel nach seinem Anteil an der gesamten Forecast-Menge (Stück, über alle geladenen DCs/Perioden/Kategorien): A = Top-Artikel bis 80 % kumulierter Menge, B = bis 95 %, C = die restlichen, langsam drehenden Artikel. Andere Datenbasis als die ABC-Klasse in der Artikel-Standortanalyse (dort SKU-View/Sales-History-ESU statt Forecast-Stückzahl).') + '</div>' +
+      '<div class="grid grid-3" style="margin-bottom:14px;">' + kpis + '</div>' +
+      '<div class="chart-box" style="max-width:340px;margin:0 auto 16px;"><canvas id="chartAbc"></canvas></div>' +
+      '<p class="help">' + I.tf('{0} Artikel insgesamt{1}.', I.fmtInt(rows.length), (rows.length > LIMIT ? I.tf(' — die ersten {0} nach Menge angezeigt', LIMIT) : '')) + '</p>' +
+      '<div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Artikel">' + I.t('Artikel') + '</th><th data-t="Kategorie">' + I.t('Kategorie') + '</th><th class="num" data-t="Menge (Stück)">' + I.t('Menge (Stück)') + '</th><th class="num">PAL</th><th class="num" data-t="Anteil">' + I.t('Anteil') + '</th><th class="num" data-t="Kum. Anteil">' + I.t('Kum. Anteil') + '</th><th>ABC</th></tr></thead>' +
+      '<tbody>' + (tableRows || '<tr><td colspan="7" class="muted">–</td></tr>') + '</tbody></table></div>';
+  }
+
+  /* Excel export of the Forecast-based ABC analysis — like downloadArticleAnalysisCsv, recomputes
+     independently so the file always covers every article, unlike the on-screen table (capped at
+     LIMIT rows). Excel rather than CSV per the request that led to this report. */
+  function downloadForecastAbcExcel() {
+    if (!window.XLSX) { LNP.ui.toast(I.t('Excel-Bibliothek nicht verfügbar.'), 'bad'); return; }
+    var analysis = LNP.sim.forecastAbcAnalysis();
+    var header = ['Artikel', 'Bezeichnung', 'Kategorie', 'Menge (Stück)', 'Paletten', 'Anteil %', 'Kum. Anteil %', 'ABC-Klasse', 'Anzahl DCs'];
+    var aoa = [header];
+    analysis.rows.forEach(function (r) {
+      aoa.push([
+        r.article, r.articleDesc || '', r.category || '',
+        Math.round(r.qty * 100) / 100, Math.round(r.pallets * 100) / 100,
+        Math.round(r.share * 10000) / 100, Math.round(r.cumShare * 10000) / 100,
+        r.abcClass, r.dcCount
+      ]);
+    });
+    var ws = window.XLSX.utils.aoa_to_sheet(aoa);
+    ws['!cols'] = header.map(function () { return { wch: 18 }; });
+    var wb = window.XLSX.utils.book_new();
+    window.XLSX.utils.book_append_sheet(wb, ws, 'ABC-Analyse');
+    window.XLSX.writeFile(wb, 'abc-analyse-forecast-' + new Date().toISOString().slice(0, 10) + '.xlsx');
+    LNP.ui.toast(I.tf('{0} SKU exportiert', I.fmtInt(analysis.rows.length)), 'good');
+  }
+
   function skuPanel() {
     var scenario = scenarioObjById(selectedScenarioId);
     var report = LNP.sim.skuCountPerDcReport(scenario);
@@ -227,6 +285,10 @@
       analysis.rows.forEach(function (r) { volByRec[r.recommendation] += r.totalEsu; });
       LNP.charts.doughnut('chartArticleRec', REC_ORDER.map(function (k) { return I.t(REC_LABEL[k]); }),
         REC_ORDER.map(function (k) { return analysis.grandTotal ? +(volByRec[k] / analysis.grandTotal * 100).toFixed(1) : 0; }));
+    } else if (activeTab === 'abc') {
+      var abc = LNP.sim.forecastAbcAnalysis();
+      LNP.charts.doughnut('chartAbc', ['A', 'B', 'C'],
+        ['A', 'B', 'C'].map(function (cls) { return abc.grandTotal ? +(abc.volByClass[cls] / abc.grandTotal * 100).toFixed(1) : 0; }));
     } else if (activeTab === 'sku') {
       var scenarioS = scenarioObjById(selectedScenarioId);
       var skuRep = LNP.sim.skuCountPerDcReport(scenarioS);
@@ -252,6 +314,8 @@
   function bindPanelEvents(container) {
     var articleDownloadBtn = container.querySelector('#repArticleDownload');
     if (articleDownloadBtn) articleDownloadBtn.addEventListener('click', downloadArticleAnalysisCsv);
+    var abcDownloadBtn = container.querySelector('#repAbcDownload');
+    if (abcDownloadBtn) abcDownloadBtn.addEventListener('click', downloadForecastAbcExcel);
     var districtSel = container.querySelector('#repDistrict');
     if (districtSel) districtSel.addEventListener('change', function () { selectedDistrict = districtSel.value; renderPanel(container); });
     var topN = container.querySelector('#repTopN');
@@ -285,6 +349,7 @@
   function panelHtml() {
     if (activeTab === 'alloc') return allocPanel();
     if (activeTab === 'articles') return articlePanel();
+    if (activeTab === 'abc') return abcPanel();
     if (activeTab === 'sku') return skuPanel();
     if (activeTab === 'storage') return storagePanel();
     if (activeTab === 'shipment') return shipmentPanel();

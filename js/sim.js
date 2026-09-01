@@ -1280,6 +1280,43 @@
     return bestDc;
   }
 
+  /* ABC classification per article, based on Forecast quantity (Menge, Stück) — distinct from
+     articleLocationAnalysis's ABC class below, which ranks by SKU View/Sales-History ESU volume.
+     Sums every loaded Forecast row (all DCs/periods/categories — the full "Mengengerüst", not a
+     filtered slice) per article, sorts descending, and classifies by the same cumulative-share
+     convention used elsewhere in the app (A up to 80%, B up to 95%, C the rest). */
+  function forecastAbcAnalysis() {
+    if (_cache.forecastAbcAnalysis) return _cache.forecastAbcAnalysis;
+    var acc = {};
+    S().data.forecast.forEach(function (r) {
+      if (!r.article) return;
+      var a = acc[r.article] = acc[r.article] || { article: r.article, articleDesc: r.articleDesc || null, category: r.category || null, qty: 0, pallets: 0, dcs: {} };
+      a.qty += r.qty || 0;
+      a.pallets += r.pallets || 0;
+      if (r.dc) a.dcs[r.dc] = true;
+      if (!a.articleDesc && r.articleDesc) a.articleDesc = r.articleDesc;
+    });
+    var rows = Object.keys(acc).map(function (k) {
+      var a = acc[k];
+      return { article: a.article, articleDesc: a.articleDesc, category: a.category, qty: a.qty, pallets: a.pallets, dcCount: Object.keys(a.dcs).length };
+    });
+    rows.sort(function (a, b) { return b.qty - a.qty; });
+    var grandTotal = U.sum(rows, function (r) { return r.qty; });
+    var cum = 0;
+    rows.forEach(function (r) {
+      cum += r.qty;
+      r.share = grandTotal > 0 ? r.qty / grandTotal : 0;
+      r.cumShare = grandTotal > 0 ? cum / grandTotal : 0;
+      r.abcClass = r.cumShare <= 0.8 ? 'A' : r.cumShare <= 0.95 ? 'B' : 'C';
+    });
+    var counts = { A: 0, B: 0, C: 0 };
+    var volByClass = { A: 0, B: 0, C: 0 };
+    rows.forEach(function (r) { counts[r.abcClass]++; volByClass[r.abcClass] += r.qty; });
+    var result = { rows: rows, grandTotal: grandTotal, counts: counts, volByClass: volByClass };
+    _cache.forecastAbcAnalysis = result;
+    return result;
+  }
+
   /* Per article: total volume (turnover proxy), which district it concentrates in (if any), and
      a stocking recommendation combining both — a classic ABC/regional-pattern read, not a single
      network-wide "best site" that treats every article the same:
@@ -1442,7 +1479,8 @@
     { title: 'Ø Sendungsgröße', formula: 'Mittelwert von Forecast-Menge (ESU) je (DC, Artikel, Monat)-Zeile', note: 'Proxy für eine Sendung, da keine Auftrags-/Lieferpositionen vorliegen.' },
     { title: 'Sendungszusammensetzung', formula: 'Anteil (DC, Monat)-Bündel, die ausschließlich "Taps"-Kategorien enthalten vs. gemischt' },
     { title: 'Artikel-Standortanalyse', formula: 'Je Artikel: SKU-View-Volumen über Sales-History-Distrikt-Anteile (s. Geografischer Fußabdruck je DC) auf Distrikte verteilt. ABC-Klasse = kumulierte Mengen-Rangfolge über alle Artikel (80/15/5-Grenzen). Empfehlung: "Zentral" wenn C-Klasse (unterste 5 % der kumulierten Menge); sonst "Regional" wenn ein Distrikt ≥ Schwellwert (einstellbar) des Artikelvolumens auf sich vereint, empfohlenes DC = laut Sales History stärkster Versorger dieses Distrikts; sonst "Mehrere Standorte".' },
-    { title: 'Szenario-Heatmap (adressgenau)', formula: 'Jeder Ship-to-Kunde aus Destinations × Ship-to-Address (siehe Distrikt-Zentroid) einzeln, eingefärbt nach dem DC, das seinen Distrikt unter dem gewählten Szenario versorgt.', note: 'Simulationsbasierte Szenarien: Zuordnung direkt aus der Simulation. Andere Szenarien/aktueller Stand: der laut Sales History mengenmäßig dominante Quell-DC je Distrikt, ggf. über eine regionale Override-Zuordnung umgeleitet.' }
+    { title: 'Szenario-Heatmap (adressgenau)', formula: 'Jeder Ship-to-Kunde aus Destinations × Ship-to-Address (siehe Distrikt-Zentroid) einzeln, eingefärbt nach dem DC, das seinen Distrikt unter dem gewählten Szenario versorgt.', note: 'Simulationsbasierte Szenarien: Zuordnung direkt aus der Simulation. Andere Szenarien/aktueller Stand: der laut Sales History mengenmäßig dominante Quell-DC je Distrikt, ggf. über eine regionale Override-Zuordnung umgeleitet.' },
+    { title: 'ABC-Analyse (Forecast-Mengen)', formula: 'Je Artikel: Σ Menge (Stück) über alle geladenen Forecast-Zeilen (alle DCs/Perioden/Kategorien), absteigend sortiert. A = bis 80 % kumulierter Menge, B = bis 95 %, C = restliche 5 %.', note: 'Andere Datenbasis als die ABC-Klasse in der Artikel-Standortanalyse (dort: SKU-View/Sales-History-ESU, nicht Forecast-Stückzahl) — beide Klassifizierungen können für denselben Artikel unterschiedlich ausfallen.' }
   ];
 
   LNP.sim = {
@@ -1463,6 +1501,7 @@
     resolveTarget: resolveTarget, buildScenarioTemplate: buildScenarioTemplate, SCENARIO_TEMPLATES: SCENARIO_TEMPLATES,
     countryAllocationForDistrict: countryAllocationForDistrict, skuCountPerDcReport: skuCountPerDcReport,
     articleLocationAnalysis: articleLocationAnalysis, bestDcForDistrict: bestDcForDistrict,
+    forecastAbcAnalysis: forecastAbcAnalysis,
     avgShipmentSize: avgShipmentSize, shipmentComposition: shipmentComposition,
     invalidateCaches: invalidateCaches, FORMULA_REFERENCE: FORMULA_REFERENCE
   };
