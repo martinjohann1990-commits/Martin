@@ -148,6 +148,13 @@
 
   var ABC_BADGE = { A: 'badge-good', B: 'badge-info', C: 'badge-warn' };
 
+  /* "Wittlich (62 %), Bassano (24 %)" — used both on screen and in the Excel export so the two
+     always show the exact same recommendation. */
+  function formatRecommendedDcs(r) {
+    if (!r.recommendedDcs.length) return '–';
+    return r.recommendedDcs.map(function (d) { return U.escapeHtml(d.dcName) + ' (' + I.fmtPct(d.share, 0) + ')'; }).join(', ');
+  }
+
   function abcPanel() {
     var analysis = LNP.sim.forecastAbcAnalysis();
     var rows = analysis.rows;
@@ -156,6 +163,7 @@
     var tableRows = shown.map(function (r) {
       return '<tr><td>' + U.escapeHtml(r.article) + (r.articleDesc ? '<div class="muted" style="font-size:11px">' + U.escapeHtml(r.articleDesc) + '</div>' : '') + '</td>' +
         '<td>' + U.escapeHtml(r.category || '–') + '</td>' +
+        '<td>' + formatRecommendedDcs(r) + '</td>' +
         '<td class="num">' + I.fmtInt(r.qty) + '</td>' +
         '<td class="num">' + I.fmtInt(r.pallets) + '</td>' +
         '<td class="num">' + I.fmtPct(r.share, 1) + '</td>' +
@@ -169,14 +177,15 @@
         '<div class="muted" style="font-size:11px">' + I.tf('{0} der Menge', I.fmtPct(analysis.grandTotal ? analysis.volByClass[cls] / analysis.grandTotal : 0, 0)) + '</div></div>';
     }).join('');
 
-    return '<div class="card-head" style="margin-bottom:10px"><h2 style="margin:0">' + I.t('ABC-Analyse (Forecast)') + LNP.ui.infoBtn('ABC-Analyse (Forecast-Mengen)') + '</h2>' +
+    return '<div class="card-head" style="margin-bottom:10px"><h2 style="margin:0">' + I.t('ABC-Analyse (Forecast)') + LNP.ui.infoBtn('ABC-Analyse (Forecast-Mengen)|Empfohlene DC(s) je Artikel (Forecast-basiert)') + '</h2>' +
       '<div class="actions"><button class="btn btn-sm" id="repAbcDownload">' + I.t('Alle SKU exportieren (Excel)') + '</button></div></div>' +
       '<div class="note-box">' + I.t('Klassifiziert jeden Artikel nach seinem Anteil an der gesamten Forecast-Menge (Stück, über alle geladenen DCs/Perioden/Kategorien): A = Top-Artikel bis 80 % kumulierter Menge, B = bis 95 %, C = die restlichen, langsam drehenden Artikel. Andere Datenbasis als die ABC-Klasse in der Artikel-Standortanalyse (dort SKU-View/Sales-History-ESU statt Forecast-Stückzahl).') + '</div>' +
+      '<div class="note-box">' + I.t('Empfohlene DC(s) je Artikel: direkt aus der eigenen DC-Zuordnung des Forecasts abgeleitet (keine Distrikt-Näherung nötig). Angezeigt wird die kleinste Anzahl Standorte — von der Menge her absteigend sortiert —, deren Summe mindestens 80 % der Artikel-Gesamtmenge erreicht: ein Standort, wenn er bereits dominiert; mehrere, wenn sich die Menge real auf mehrere Standorte verteilt.') + '</div>' +
       '<div class="grid grid-3" style="margin-bottom:14px;">' + kpis + '</div>' +
       '<div class="chart-box" style="max-width:340px;margin:0 auto 16px;"><canvas id="chartAbc"></canvas></div>' +
       '<p class="help">' + I.tf('{0} Artikel insgesamt{1}.', I.fmtInt(rows.length), (rows.length > LIMIT ? I.tf(' — die ersten {0} nach Menge angezeigt', LIMIT) : '')) + '</p>' +
-      '<div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Artikel">' + I.t('Artikel') + '</th><th data-t="Kategorie">' + I.t('Kategorie') + '</th><th class="num" data-t="Menge (Stück)">' + I.t('Menge (Stück)') + '</th><th class="num">PAL</th><th class="num" data-t="Anteil">' + I.t('Anteil') + '</th><th class="num" data-t="Kum. Anteil">' + I.t('Kum. Anteil') + '</th><th>ABC</th></tr></thead>' +
-      '<tbody>' + (tableRows || '<tr><td colspan="7" class="muted">–</td></tr>') + '</tbody></table></div>';
+      '<div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Artikel">' + I.t('Artikel') + '</th><th data-t="Kategorie">' + I.t('Kategorie') + '</th><th data-t="Empfohlene DC(s)">' + I.t('Empfohlene DC(s)') + '</th><th class="num" data-t="Menge (Stück)">' + I.t('Menge (Stück)') + '</th><th class="num">PAL</th><th class="num" data-t="Anteil">' + I.t('Anteil') + '</th><th class="num" data-t="Kum. Anteil">' + I.t('Kum. Anteil') + '</th><th>ABC</th></tr></thead>' +
+      '<tbody>' + (tableRows || '<tr><td colspan="8" class="muted">–</td></tr>') + '</tbody></table></div>';
   }
 
   /* Excel export of the Forecast-based ABC analysis — like downloadArticleAnalysisCsv, recomputes
@@ -185,11 +194,12 @@
   function downloadForecastAbcExcel() {
     if (!window.XLSX) { LNP.ui.toast(I.t('Excel-Bibliothek nicht verfügbar.'), 'bad'); return; }
     var analysis = LNP.sim.forecastAbcAnalysis();
-    var header = ['Artikel', 'Bezeichnung', 'Kategorie', 'Menge (Stück)', 'Paletten', 'Anteil %', 'Kum. Anteil %', 'ABC-Klasse', 'Anzahl DCs'];
+    var header = ['Artikel', 'Bezeichnung', 'Kategorie', 'Empfohlene DC(s)', 'Menge (Stück)', 'Paletten', 'Anteil %', 'Kum. Anteil %', 'ABC-Klasse', 'Anzahl DCs (gesamt)'];
     var aoa = [header];
     analysis.rows.forEach(function (r) {
       aoa.push([
         r.article, r.articleDesc || '', r.category || '',
+        r.recommendedDcs.map(function (d) { return d.dcName + ' (' + Math.round(d.share * 100) + '%)'; }).join(', '),
         Math.round(r.qty * 100) / 100, Math.round(r.pallets * 100) / 100,
         Math.round(r.share * 10000) / 100, Math.round(r.cumShare * 10000) / 100,
         r.abcClass, r.dcCount
