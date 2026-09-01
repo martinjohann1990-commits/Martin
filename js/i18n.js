@@ -23,7 +23,7 @@
     'Ja': 'Yes', 'Nein': 'No', 'Zurücksetzen': 'Reset', 'Übernehmen': 'Apply', 'Exportieren': 'Export',
     'Importieren': 'Import', 'Hochladen': 'Upload', 'Datei wählen': 'Choose file',
     'Name': 'Name', 'Code': 'Code', 'Land': 'Country', 'Region': 'Region', 'Kategorie': 'Category',
-    'Aktionen': 'Actions', 'Status': 'Status', 'Details': 'Details', 'Gesamt': 'Total',
+    'Aktionen': 'Actions', 'Status': 'Status', 'Details': 'Details', 'Gesamt': 'Total', 'Summe': 'Total',
     'Quelle': 'Source', 'unbekannt': 'unknown', 'automatisch': 'automatic', 'manuell': 'manual',
     'aus Datei': 'from file', 'nicht gesetzt': 'not set',
 

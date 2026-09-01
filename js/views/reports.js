@@ -193,6 +193,22 @@
     var dcSummaryRows = analysis.dcSummary.map(function (d) {
       return '<tr><td>' + U.escapeHtml(d.dcName) + '</td><td class="num">' + I.fmtInt(d.targetPallets) + '</td><td class="num">' + I.fmtPct(d.share, 1) + '</td></tr>';
     }).join('');
+    var dcSummaryTotalRow = analysis.dcSummary.length
+      ? '<tr class="row-total"><td>' + I.t('Summe') + '</td><td class="num">' + I.fmtInt(analysis.dcSummaryTotal) + '</td><td class="num">' + I.fmtPct(1, 1) + '</td></tr>'
+      : '';
+
+    var totalPallets = U.sum(rows, function (r) { return r.pallets; });
+    var totalTargetQty = U.sum(rows, function (r) { return r.targetQty; });
+    var totalTargetPallets = U.sum(rows, function (r) { return r.targetPallets; });
+    var mainTotalRow = rows.length
+      ? '<tr class="row-total"><td colspan="3">' + I.t('Summe') + '</td>' +
+        '<td class="num">' + I.fmtInt(analysis.grandTotal) + '</td>' +
+        '<td class="num">' + I.fmtInt(totalPallets) + '</td>' +
+        '<td class="num">' + I.fmtInt(totalTargetQty) + '</td>' +
+        '<td class="num">' + I.fmtInt(totalTargetPallets) + '</td>' +
+        '<td class="num">' + I.fmtPct(1, 1) + '</td>' +
+        '<td class="num">–</td><td>–</td></tr>'
+      : '';
 
     return '<div class="card-head" style="margin-bottom:10px"><h2 style="margin:0">' + I.t('ABC-Analyse (Forecast)') + LNP.ui.infoBtn('ABC-Analyse (Forecast-Mengen)|Empfohlene DC(s) je Artikel (Forecast-basiert)|Menge/Paletten zur Ziel-Reichweite (ABC-Analyse Forecast)|DC-Gesamtübersicht (ABC-Analyse Forecast)') + '</h2>' +
       '<div class="actions"><button class="btn btn-sm" id="repAbcDownload">' + I.t('Alle SKU exportieren (Excel)') + '</button></div></div>' +
@@ -207,17 +223,17 @@
       '</div>' +
       '<div class="grid grid-3" style="margin-bottom:14px;">' + kpis + '</div>' +
       '<div class="chart-box" style="max-width:340px;margin:0 auto 16px;"><canvas id="chartAbc"></canvas></div>' +
-      '<p class="help">' + I.tf('{0} Artikel insgesamt{1}.', I.fmtInt(rows.length), (rows.length > LIMIT ? I.tf(' — die ersten {0} nach Menge angezeigt', LIMIT) : '')) + '</p>' +
-      '<div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Artikel">' + I.t('Artikel') + '</th><th data-t="Kategorie">' + I.t('Kategorie') + '</th><th data-t="Empfohlene DC(s)">' + I.t('Empfohlene DC(s)') + '</th>' +
-      '<th class="num" data-t="Menge (Stück)">' + I.t('Menge (Stück)') + '</th><th class="num">PAL</th>' +
-      '<th class="num" data-t="Menge (Ziel-Reichweite)">' + I.t('Menge (Ziel-Reichweite)') + '</th><th class="num" data-t="PAL (Ziel-Reichweite)">' + I.t('PAL (Ziel-Reichweite)') + '</th>' +
-      '<th class="num" data-t="Anteil">' + I.t('Anteil') + '</th><th class="num" data-t="Kum. Anteil">' + I.t('Kum. Anteil') + '</th><th>ABC</th></tr></thead>' +
-      '<tbody>' + (tableRows || '<tr><td colspan="10" class="muted">–</td></tr>') + '</tbody></table></div>' +
       '<h3 style="margin-top:24px">' + I.t('DC-Gesamtübersicht (Ziel-Reichweite)') + '</h3>' +
       '<p class="help">' + I.t('Ziel-Paletten je DC, wenn jeder Artikel gemäß seiner empfohlenen DC-Zuordnung oben (inkl. C-Artikel-Zentralisierung, falls gewählt) bevorratet wird.') + '</p>' +
       '<div class="chart-box"><canvas id="chartAbcDcSummary"></canvas></div>' +
       '<div class="table-wrap"><table class="tbl"><thead><tr><th>DC</th><th class="num" data-t="Ziel-Paletten (Reichweite)">' + I.t('Ziel-Paletten (Reichweite)') + '</th><th class="num" data-t="Anteil">' + I.t('Anteil') + '</th></tr></thead>' +
-      '<tbody>' + (dcSummaryRows || '<tr><td colspan="3" class="muted">–</td></tr>') + '</tbody></table></div>';
+      '<tbody>' + (dcSummaryRows || '<tr><td colspan="3" class="muted">–</td></tr>') + dcSummaryTotalRow + '</tbody></table></div>' +
+      '<p class="help" style="margin-top:24px">' + I.tf('{0} Artikel insgesamt{1}.', I.fmtInt(rows.length), (rows.length > LIMIT ? I.tf(' — die ersten {0} nach Menge angezeigt', LIMIT) : '')) + '</p>' +
+      '<div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Artikel">' + I.t('Artikel') + '</th><th data-t="Kategorie">' + I.t('Kategorie') + '</th><th data-t="Empfohlene DC(s)">' + I.t('Empfohlene DC(s)') + '</th>' +
+      '<th class="num" data-t="Menge (Stück)">' + I.t('Menge (Stück)') + '</th><th class="num">PAL</th>' +
+      '<th class="num" data-t="Menge (Ziel-Reichweite)">' + I.t('Menge (Ziel-Reichweite)') + '</th><th class="num" data-t="PAL (Ziel-Reichweite)">' + I.t('PAL (Ziel-Reichweite)') + '</th>' +
+      '<th class="num" data-t="Anteil">' + I.t('Anteil') + '</th><th class="num" data-t="Kum. Anteil">' + I.t('Kum. Anteil') + '</th><th>ABC</th></tr></thead>' +
+      '<tbody>' + (tableRows || '<tr><td colspan="10" class="muted">–</td></tr>') + mainTotalRow + '</tbody></table></div>';
   }
 
   /* Excel export of the Forecast-based ABC analysis — like downloadArticleAnalysisCsv, recomputes

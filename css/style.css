@@ -157,6 +157,7 @@ input[type=range]{ width:100%; }
 .tbl tbody tr:hover{ background:var(--surface-2); }
 .tbl input[type=number], .tbl input[type=text]{ padding:4px 6px; font-size:12.5px; }
 .tbl .row-actions{ display:flex; gap:6px; }
+.tbl .row-total td{ font-weight:700; background:var(--surface-2); border-top:2px solid var(--border); }
 .badge{ display:inline-flex; align-items:center; padding:2px 8px; border-radius:999px; font-size:11px; font-weight:700; }
 .badge-good{ background:var(--good-bg); color:var(--good); }
 .badge-warn{ background:var(--warn-bg); color:var(--warn); }
