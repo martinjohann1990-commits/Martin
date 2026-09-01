@@ -1291,11 +1291,32 @@
      of DCs, taken in descending order of that article's forecast quantity, whose combined share
      already reaches 80% of the article's total — one DC when a single site already dominates,
      several when the volume is genuinely split (same 80% cumulative-share rule used for the ABC
-     class itself, applied per article instead of across all articles). */
-  function forecastAbcAnalysis() {
-    if (_cache.forecastAbcAnalysis) return _cache.forecastAbcAnalysis;
+     class itself, applied per article instead of across all articles). params.centralDcIdForC
+     overrides this to a single chosen hub for every C-class article — the same "slow movers
+     belong at one site" rationale already documented for Artikel-Standortanalyse, but here as an
+     explicit user choice instead of an automatic network-hub pick.
+
+     targetQty/targetPallets are each article's OWN cycle-stock-equivalent target at
+     params.coverageMonths (default: the global Ziel-Reichweite setting) — Bedarf/Tag x 30.44 x
+     Reichweite x Sicherheitsaufschlag, the same formula as Zyklusbestand elsewhere, just at
+     article instead of DC granularity (no article-level safety stock: that needs a monthly
+     variance series, impractical per article). dcSummary distributes each article's
+     targetPallets across its own recommendedDcs (renormalized to sum to 1 across just that
+     article's recommended set, so every pallet lands somewhere) into a per-DC rollup. */
+  function forecastAbcAnalysis(params) {
+    params = params || {};
+    var settings = S().settings;
+    var coverageMonths = U.isNum(params.coverageMonths) ? params.coverageMonths : resolveCoverageMonths('all', settings);
+    var centralDcIdForC = params.centralDcIdForC || null;
+    var cacheKey = 'forecastAbcAnalysis:' + coverageMonths + ':' + (centralDcIdForC || '');
+    if (_cache[cacheKey]) return _cache[cacheKey];
+
+    var allRows = filterForecast({});
+    var totalDays = distinctPeriodDays(allRows);
+    var stockFactor = settings.stockFactor || 1;
+
     var acc = {};
-    S().data.forecast.forEach(function (r) {
+    allRows.forEach(function (r) {
       if (!r.article) return;
       var a = acc[r.article] = acc[r.article] || { article: r.article, articleDesc: r.articleDesc || null, category: r.category || null, qty: 0, pallets: 0, byDc: {} };
       a.qty += r.qty || 0;
@@ -1316,8 +1337,11 @@
         dcCum += dcList[i].qty;
         if (dcTotal > 0 && dcCum / dcTotal >= 0.8) break;
       }
+      var targetQty = totalDays > 0 ? (a.qty / totalDays) * DAYS_PER_MONTH * coverageMonths * stockFactor : 0;
+      var targetPallets = totalDays > 0 ? (a.pallets / totalDays) * DAYS_PER_MONTH * coverageMonths * stockFactor : 0;
       return {
         article: a.article, articleDesc: a.articleDesc, category: a.category, qty: a.qty, pallets: a.pallets,
+        targetQty: targetQty, targetPallets: targetPallets,
         dcCount: dcList.length, recommendedDcs: recommendedDcs
       };
     });
@@ -1330,11 +1354,36 @@
       r.cumShare = grandTotal > 0 ? cum / grandTotal : 0;
       r.abcClass = r.cumShare <= 0.8 ? 'A' : r.cumShare <= 0.95 ? 'B' : 'C';
     });
+
+    var centralDc = centralDcIdForC ? dcById(centralDcIdForC) : null;
+    if (centralDc) {
+      rows.forEach(function (r) { if (r.abcClass === 'C') r.recommendedDcs = [{ dcName: centralDc.name, share: 1 }]; });
+    }
+
     var counts = { A: 0, B: 0, C: 0 };
     var volByClass = { A: 0, B: 0, C: 0 };
     rows.forEach(function (r) { counts[r.abcClass]++; volByClass[r.abcClass] += r.qty; });
-    var result = { rows: rows, grandTotal: grandTotal, counts: counts, volByClass: volByClass };
-    _cache.forecastAbcAnalysis = result;
+
+    var dcSummaryMap = {};
+    rows.forEach(function (r) {
+      if (!r.recommendedDcs.length) return;
+      var recTotal = U.sum(r.recommendedDcs, function (d) { return d.share; });
+      r.recommendedDcs.forEach(function (d) {
+        var normShare = recTotal > 0 ? d.share / recTotal : 0;
+        dcSummaryMap[d.dcName] = (dcSummaryMap[d.dcName] || 0) + r.targetPallets * normShare;
+      });
+    });
+    var dcSummaryTotal = U.sum(Object.keys(dcSummaryMap), function (k) { return dcSummaryMap[k]; });
+    var dcSummary = Object.keys(dcSummaryMap).map(function (dcName) {
+      return { dcName: dcName, targetPallets: dcSummaryMap[dcName], share: dcSummaryTotal > 0 ? dcSummaryMap[dcName] / dcSummaryTotal : 0 };
+    }).sort(function (a, b) { return b.targetPallets - a.targetPallets; });
+
+    var result = {
+      rows: rows, grandTotal: grandTotal, counts: counts, volByClass: volByClass,
+      coverageMonths: coverageMonths, totalDays: totalDays,
+      dcSummary: dcSummary, dcSummaryTotal: dcSummaryTotal, centralDcIdForC: centralDcIdForC
+    };
+    _cache[cacheKey] = result;
     return result;
   }
 
@@ -1502,7 +1551,9 @@
     { title: 'Artikel-Standortanalyse', formula: 'Je Artikel: SKU-View-Volumen über Sales-History-Distrikt-Anteile (s. Geografischer Fußabdruck je DC) auf Distrikte verteilt. ABC-Klasse = kumulierte Mengen-Rangfolge über alle Artikel (80/15/5-Grenzen). Empfehlung: "Zentral" wenn C-Klasse (unterste 5 % der kumulierten Menge); sonst "Regional" wenn ein Distrikt ≥ Schwellwert (einstellbar) des Artikelvolumens auf sich vereint, empfohlenes DC = laut Sales History stärkster Versorger dieses Distrikts; sonst "Mehrere Standorte".' },
     { title: 'Szenario-Heatmap (adressgenau)', formula: 'Jeder Ship-to-Kunde aus Destinations × Ship-to-Address (siehe Distrikt-Zentroid) einzeln, eingefärbt nach dem DC, das seinen Distrikt unter dem gewählten Szenario versorgt.', note: 'Simulationsbasierte Szenarien: Zuordnung direkt aus der Simulation. Andere Szenarien/aktueller Stand: der laut Sales History mengenmäßig dominante Quell-DC je Distrikt, ggf. über eine regionale Override-Zuordnung umgeleitet.' },
     { title: 'ABC-Analyse (Forecast-Mengen)', formula: 'Je Artikel: Σ Menge (Stück) über alle geladenen Forecast-Zeilen (alle DCs/Perioden/Kategorien), absteigend sortiert. A = bis 80 % kumulierter Menge, B = bis 95 %, C = restliche 5 %.', note: 'Andere Datenbasis als die ABC-Klasse in der Artikel-Standortanalyse (dort: SKU-View/Sales-History-ESU, nicht Forecast-Stückzahl) — beide Klassifizierungen können für denselben Artikel unterschiedlich ausfallen.' },
-    { title: 'Empfohlene DC(s) je Artikel (Forecast-basiert)', formula: 'Je Artikel die Forecast-Menge je DC absteigend sortiert; die kleinste Anzahl DCs von oben, deren Summe ≥ 80 % der Artikel-Gesamtmenge erreicht, wird empfohlen.', note: 'Direkt aus der eigenen DC-Zuordnung des Forecasts (keine Distrikt-Näherung nötig, da der Forecast bereits je DC vorliegt). Ein DC, wenn ein Standort bereits dominiert; mehrere, wenn sich die Menge real auf mehrere Standorte verteilt.' }
+    { title: 'Empfohlene DC(s) je Artikel (Forecast-basiert)', formula: 'Je Artikel die Forecast-Menge je DC absteigend sortiert; die kleinste Anzahl DCs von oben, deren Summe ≥ 80 % der Artikel-Gesamtmenge erreicht, wird empfohlen.', note: 'Direkt aus der eigenen DC-Zuordnung des Forecasts (keine Distrikt-Näherung nötig, da der Forecast bereits je DC vorliegt). Ein DC, wenn ein Standort bereits dominiert; mehrere, wenn sich die Menge real auf mehrere Standorte verteilt. Optional überschreibbar: alle C-Artikel lassen sich manuell einem einzigen, frei gewählten DC zuweisen (Konsolidierung der langsam drehenden Artikel an einem Standort).' },
+    { title: 'Menge/Paletten zur Ziel-Reichweite (ABC-Analyse Forecast)', formula: 'Ziel-Menge = Bedarf/Tag(Artikel) × 30,44 × Reichweite(Monate) × Sicherheitsaufschlag; Ziel-Paletten analog mit Paletten statt Menge.', note: 'Dieselbe Formel wie Zyklusbestand, hier je Artikel statt je DC — ohne artikelbezogenen Sicherheitsbestand (dafür wäre eine monatliche Schwankungsreihe je Artikel nötig). Die Reichweite ist in diesem Bericht frei einstellbar (Standard: globale Ziel-Reichweite aus Daten & Import) und unabhängig von der globalen Einstellung.' },
+    { title: 'DC-Gesamtübersicht (ABC-Analyse Forecast)', formula: 'Je DC: Σ Ziel-Paletten aller Artikel, verteilt auf deren empfohlene(s) DC(s) (Anteile auf 100 % je Artikel renormiert).', note: 'Zeigt, welchen Ziel-Palettenbestand jeder Standort bräuchte, wenn jeder Artikel exakt gemäß seiner empfohlenen DC-Zuordnung (inkl. einer eventuellen manuellen C-Artikel-Zentralisierung) bevorratet würde.' }
   ];
 
   LNP.sim = {

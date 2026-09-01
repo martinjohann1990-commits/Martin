@@ -9,6 +9,7 @@
   var selectedDistrict = null;
   var articleFilter = { minShare: 0.6, query: '', recommendation: 'all' };
   var selectedScenarioId = 'base';
+  var abcState = { coverageMonths: null, centralDcId: '' };
 
   function scenarioObjById(id) {
     if (!id || id === 'base') return null;
@@ -155,17 +156,29 @@
     return r.recommendedDcs.map(function (d) { return U.escapeHtml(d.dcName) + ' (' + I.fmtPct(d.share, 0) + ')'; }).join(', ');
   }
 
+  /* abcState.coverageMonths stays null until the user touches the field, so the input opens
+     pre-filled with the current global Ziel-Reichweite instead of a hardcoded default — but once
+     set, it's a local override independent of that global setting (changing it here must not
+     silently change Daten & Import's own value, and vice versa). */
+  function abcAnalysisParams() {
+    var coverageMonths = U.isNum(abcState.coverageMonths) ? abcState.coverageMonths : LNP.state.settings.coverageMonthsGlobal;
+    return { coverageMonths: coverageMonths, centralDcIdForC: abcState.centralDcId || null };
+  }
+
   function abcPanel() {
-    var analysis = LNP.sim.forecastAbcAnalysis();
+    var analysis = LNP.sim.forecastAbcAnalysis(abcAnalysisParams());
     var rows = analysis.rows;
     var LIMIT = 150;
     var shown = rows.slice(0, LIMIT);
+    var dcs = LNP.sim.candidateDcs();
     var tableRows = shown.map(function (r) {
       return '<tr><td>' + U.escapeHtml(r.article) + (r.articleDesc ? '<div class="muted" style="font-size:11px">' + U.escapeHtml(r.articleDesc) + '</div>' : '') + '</td>' +
         '<td>' + U.escapeHtml(r.category || '–') + '</td>' +
         '<td>' + formatRecommendedDcs(r) + '</td>' +
         '<td class="num">' + I.fmtInt(r.qty) + '</td>' +
         '<td class="num">' + I.fmtInt(r.pallets) + '</td>' +
+        '<td class="num">' + I.fmtInt(r.targetQty) + '</td>' +
+        '<td class="num">' + I.fmtInt(r.targetPallets) + '</td>' +
         '<td class="num">' + I.fmtPct(r.share, 1) + '</td>' +
         '<td class="num">' + I.fmtPct(r.cumShare, 1) + '</td>' +
         '<td><span class="badge ' + ABC_BADGE[r.abcClass] + '">' + r.abcClass + '</span></td></tr>';
@@ -177,38 +190,84 @@
         '<div class="muted" style="font-size:11px">' + I.tf('{0} der Menge', I.fmtPct(analysis.grandTotal ? analysis.volByClass[cls] / analysis.grandTotal : 0, 0)) + '</div></div>';
     }).join('');
 
-    return '<div class="card-head" style="margin-bottom:10px"><h2 style="margin:0">' + I.t('ABC-Analyse (Forecast)') + LNP.ui.infoBtn('ABC-Analyse (Forecast-Mengen)|Empfohlene DC(s) je Artikel (Forecast-basiert)') + '</h2>' +
+    var dcSummaryRows = analysis.dcSummary.map(function (d) {
+      return '<tr><td>' + U.escapeHtml(d.dcName) + '</td><td class="num">' + I.fmtInt(d.targetPallets) + '</td><td class="num">' + I.fmtPct(d.share, 1) + '</td></tr>';
+    }).join('');
+
+    return '<div class="card-head" style="margin-bottom:10px"><h2 style="margin:0">' + I.t('ABC-Analyse (Forecast)') + LNP.ui.infoBtn('ABC-Analyse (Forecast-Mengen)|Empfohlene DC(s) je Artikel (Forecast-basiert)|Menge/Paletten zur Ziel-Reichweite (ABC-Analyse Forecast)|DC-Gesamtübersicht (ABC-Analyse Forecast)') + '</h2>' +
       '<div class="actions"><button class="btn btn-sm" id="repAbcDownload">' + I.t('Alle SKU exportieren (Excel)') + '</button></div></div>' +
       '<div class="note-box">' + I.t('Klassifiziert jeden Artikel nach seinem Anteil an der gesamten Forecast-Menge (Stück, über alle geladenen DCs/Perioden/Kategorien): A = Top-Artikel bis 80 % kumulierter Menge, B = bis 95 %, C = die restlichen, langsam drehenden Artikel. Andere Datenbasis als die ABC-Klasse in der Artikel-Standortanalyse (dort SKU-View/Sales-History-ESU statt Forecast-Stückzahl).') + '</div>' +
-      '<div class="note-box">' + I.t('Empfohlene DC(s) je Artikel: direkt aus der eigenen DC-Zuordnung des Forecasts abgeleitet (keine Distrikt-Näherung nötig). Angezeigt wird die kleinste Anzahl Standorte — von der Menge her absteigend sortiert —, deren Summe mindestens 80 % der Artikel-Gesamtmenge erreicht: ein Standort, wenn er bereits dominiert; mehrere, wenn sich die Menge real auf mehrere Standorte verteilt.') + '</div>' +
+      '<div class="note-box">' + I.t('Empfohlene DC(s) je Artikel: direkt aus der eigenen DC-Zuordnung des Forecasts abgeleitet (keine Distrikt-Näherung nötig). Angezeigt wird die kleinste Anzahl Standorte — von der Menge her absteigend sortiert —, deren Summe mindestens 80 % der Artikel-Gesamtmenge erreicht: ein Standort, wenn er bereits dominiert; mehrere, wenn sich die Menge real auf mehrere Standorte verteilt. C-Artikel lassen sich unten optional manuell einem einzigen DC zuweisen.') + '</div>' +
+      '<div class="field-row">' +
+      '<div class="field" style="max-width:220px"><label data-t="Ziel-Reichweite (Monate)">' + I.t('Ziel-Reichweite (Monate)') + '</label><input type="number" min="0" step="0.1" id="abcCoverageMonths" value="' + analysis.coverageMonths + '"></div>' +
+      '<div class="field" style="max-width:280px"><label data-t="C-Artikel zentral zuweisen">' + I.t('C-Artikel zentral zuweisen') + '</label><select id="abcCentralDc">' +
+      '<option value=""' + (!abcState.centralDcId ? ' selected' : '') + '>' + I.t('Keine Zentralisierung') + '</option>' +
+      dcs.map(function (dc) { return '<option value="' + dc.id + '"' + (abcState.centralDcId === dc.id ? ' selected' : '') + '>' + U.escapeHtml(dc.name) + '</option>'; }).join('') +
+      '</select></div>' +
+      '</div>' +
       '<div class="grid grid-3" style="margin-bottom:14px;">' + kpis + '</div>' +
       '<div class="chart-box" style="max-width:340px;margin:0 auto 16px;"><canvas id="chartAbc"></canvas></div>' +
       '<p class="help">' + I.tf('{0} Artikel insgesamt{1}.', I.fmtInt(rows.length), (rows.length > LIMIT ? I.tf(' — die ersten {0} nach Menge angezeigt', LIMIT) : '')) + '</p>' +
-      '<div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Artikel">' + I.t('Artikel') + '</th><th data-t="Kategorie">' + I.t('Kategorie') + '</th><th data-t="Empfohlene DC(s)">' + I.t('Empfohlene DC(s)') + '</th><th class="num" data-t="Menge (Stück)">' + I.t('Menge (Stück)') + '</th><th class="num">PAL</th><th class="num" data-t="Anteil">' + I.t('Anteil') + '</th><th class="num" data-t="Kum. Anteil">' + I.t('Kum. Anteil') + '</th><th>ABC</th></tr></thead>' +
-      '<tbody>' + (tableRows || '<tr><td colspan="8" class="muted">–</td></tr>') + '</tbody></table></div>';
+      '<div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Artikel">' + I.t('Artikel') + '</th><th data-t="Kategorie">' + I.t('Kategorie') + '</th><th data-t="Empfohlene DC(s)">' + I.t('Empfohlene DC(s)') + '</th>' +
+      '<th class="num" data-t="Menge (Stück)">' + I.t('Menge (Stück)') + '</th><th class="num">PAL</th>' +
+      '<th class="num" data-t="Menge (Ziel-Reichweite)">' + I.t('Menge (Ziel-Reichweite)') + '</th><th class="num" data-t="PAL (Ziel-Reichweite)">' + I.t('PAL (Ziel-Reichweite)') + '</th>' +
+      '<th class="num" data-t="Anteil">' + I.t('Anteil') + '</th><th class="num" data-t="Kum. Anteil">' + I.t('Kum. Anteil') + '</th><th>ABC</th></tr></thead>' +
+      '<tbody>' + (tableRows || '<tr><td colspan="10" class="muted">–</td></tr>') + '</tbody></table></div>' +
+      '<h3 style="margin-top:24px">' + I.t('DC-Gesamtübersicht (Ziel-Reichweite)') + '</h3>' +
+      '<p class="help">' + I.t('Ziel-Paletten je DC, wenn jeder Artikel gemäß seiner empfohlenen DC-Zuordnung oben (inkl. C-Artikel-Zentralisierung, falls gewählt) bevorratet wird.') + '</p>' +
+      '<div class="chart-box"><canvas id="chartAbcDcSummary"></canvas></div>' +
+      '<div class="table-wrap"><table class="tbl"><thead><tr><th>DC</th><th class="num" data-t="Ziel-Paletten (Reichweite)">' + I.t('Ziel-Paletten (Reichweite)') + '</th><th class="num" data-t="Anteil">' + I.t('Anteil') + '</th></tr></thead>' +
+      '<tbody>' + (dcSummaryRows || '<tr><td colspan="3" class="muted">–</td></tr>') + '</tbody></table></div>';
   }
 
   /* Excel export of the Forecast-based ABC analysis — like downloadArticleAnalysisCsv, recomputes
      independently so the file always covers every article, unlike the on-screen table (capped at
-     LIMIT rows). Excel rather than CSV per the request that led to this report. */
+     LIMIT rows). Excel rather than CSV per the request that led to this report. Two sheets: the
+     parameters used (so the file is self-documenting once downloaded) and the DC summary are
+     written alongside the per-article sheet, all from the exact same analysis object so nothing
+     in the export can disagree with what's on screen. */
   function downloadForecastAbcExcel() {
     if (!window.XLSX) { LNP.ui.toast(I.t('Excel-Bibliothek nicht verfügbar.'), 'bad'); return; }
-    var analysis = LNP.sim.forecastAbcAnalysis();
-    var header = ['Artikel', 'Bezeichnung', 'Kategorie', 'Empfohlene DC(s)', 'Menge (Stück)', 'Paletten', 'Anteil %', 'Kum. Anteil %', 'ABC-Klasse', 'Anzahl DCs (gesamt)'];
+    var analysis = LNP.sim.forecastAbcAnalysis(abcAnalysisParams());
+    var centralDc = abcState.centralDcId ? LNP.sim.dcById(abcState.centralDcId) : null;
+
+    var paramRows = [
+      [I.t('Parameter'), I.t('Wert')],
+      [I.t('Ziel-Reichweite (Monate)'), analysis.coverageMonths],
+      [I.t('C-Artikel zentral zugewiesen an'), centralDc ? centralDc.name : I.t('Keine Zentralisierung')],
+      [I.t('Erstellt'), new Date().toISOString().slice(0, 10)]
+    ];
+    var wsParams = window.XLSX.utils.aoa_to_sheet(paramRows);
+    wsParams['!cols'] = [{ wch: 28 }, { wch: 24 }];
+
+    var header = ['Artikel', 'Bezeichnung', 'Kategorie', 'Empfohlene DC(s)', 'Menge (Stück)', 'Paletten',
+      'Menge (Ziel-Reichweite)', 'PAL (Ziel-Reichweite)', 'Anteil %', 'Kum. Anteil %', 'ABC-Klasse', 'Anzahl DCs (gesamt)'];
     var aoa = [header];
     analysis.rows.forEach(function (r) {
       aoa.push([
         r.article, r.articleDesc || '', r.category || '',
         r.recommendedDcs.map(function (d) { return d.dcName + ' (' + Math.round(d.share * 100) + '%)'; }).join(', '),
         Math.round(r.qty * 100) / 100, Math.round(r.pallets * 100) / 100,
+        Math.round(r.targetQty * 100) / 100, Math.round(r.targetPallets * 100) / 100,
         Math.round(r.share * 10000) / 100, Math.round(r.cumShare * 10000) / 100,
         r.abcClass, r.dcCount
       ]);
     });
     var ws = window.XLSX.utils.aoa_to_sheet(aoa);
     ws['!cols'] = header.map(function () { return { wch: 18 }; });
+
+    var dcHeader = ['DC', 'Ziel-Paletten (Reichweite)', 'Anteil %'];
+    var dcAoa = [dcHeader];
+    analysis.dcSummary.forEach(function (d) {
+      dcAoa.push([d.dcName, Math.round(d.targetPallets * 100) / 100, Math.round(d.share * 10000) / 100]);
+    });
+    var wsDc = window.XLSX.utils.aoa_to_sheet(dcAoa);
+    wsDc['!cols'] = dcHeader.map(function () { return { wch: 22 }; });
+
     var wb = window.XLSX.utils.book_new();
+    window.XLSX.utils.book_append_sheet(wb, wsParams, 'Parameter');
     window.XLSX.utils.book_append_sheet(wb, ws, 'ABC-Analyse');
+    window.XLSX.utils.book_append_sheet(wb, wsDc, 'DC-Gesamtübersicht');
     window.XLSX.writeFile(wb, 'abc-analyse-forecast-' + new Date().toISOString().slice(0, 10) + '.xlsx');
     LNP.ui.toast(I.tf('{0} SKU exportiert', I.fmtInt(analysis.rows.length)), 'good');
   }
@@ -296,9 +355,11 @@
       LNP.charts.doughnut('chartArticleRec', REC_ORDER.map(function (k) { return I.t(REC_LABEL[k]); }),
         REC_ORDER.map(function (k) { return analysis.grandTotal ? +(volByRec[k] / analysis.grandTotal * 100).toFixed(1) : 0; }));
     } else if (activeTab === 'abc') {
-      var abc = LNP.sim.forecastAbcAnalysis();
+      var abc = LNP.sim.forecastAbcAnalysis(abcAnalysisParams());
       LNP.charts.doughnut('chartAbc', ['A', 'B', 'C'],
         ['A', 'B', 'C'].map(function (cls) { return abc.grandTotal ? +(abc.volByClass[cls] / abc.grandTotal * 100).toFixed(1) : 0; }));
+      LNP.charts.bar('chartAbcDcSummary', abc.dcSummary.map(function (d) { return d.dcName; }),
+        [{ label: I.t('Ziel-Paletten (Reichweite)'), data: abc.dcSummary.map(function (d) { return Math.round(d.targetPallets); }) }]);
     } else if (activeTab === 'sku') {
       var scenarioS = scenarioObjById(selectedScenarioId);
       var skuRep = LNP.sim.skuCountPerDcReport(scenarioS);
@@ -326,6 +387,16 @@
     if (articleDownloadBtn) articleDownloadBtn.addEventListener('click', downloadArticleAnalysisCsv);
     var abcDownloadBtn = container.querySelector('#repAbcDownload');
     if (abcDownloadBtn) abcDownloadBtn.addEventListener('click', downloadForecastAbcExcel);
+    var abcCoverage = container.querySelector('#abcCoverageMonths');
+    if (abcCoverage) abcCoverage.addEventListener('change', function () {
+      abcState.coverageMonths = U.isNum(parseFloat(abcCoverage.value)) ? Math.max(0, parseFloat(abcCoverage.value)) : 0;
+      renderPanel(container);
+    });
+    var abcCentralDc = container.querySelector('#abcCentralDc');
+    if (abcCentralDc) abcCentralDc.addEventListener('change', function () {
+      abcState.centralDcId = abcCentralDc.value;
+      renderPanel(container);
+    });
     var districtSel = container.querySelector('#repDistrict');
     if (districtSel) districtSel.addEventListener('change', function () { selectedDistrict = districtSel.value; renderPanel(container); });
     var topN = container.querySelector('#repTopN');
@@ -368,6 +439,14 @@
 
   function renderPanel(container) {
     var panelEl = container.querySelector('#reportPanel');
+    /* Chart.js attaches a ResizeObserver/MutationObserver to each canvas; destroying the chart
+       AFTER its canvas has already been ripped out via innerHTML (as the old code did, relying
+       on bar()/doughnut()'s own destroy(canvasId) call on the next render) leaves that observer
+       pointed at a detached node, which throws "Cannot read properties of null (reading
+       'ownerDocument')" the next time it fires — reliably reproducible once a panel has more
+       than one live chart (first hit by the ABC-Analyse tab's two charts). Destroying every
+       chart still mounted in this panel BEFORE wiping its HTML avoids that entirely. */
+    panelEl.querySelectorAll('canvas[id]').forEach(function (c) { LNP.charts.destroy(c.id); });
     panelEl.innerHTML = panelHtml();
     LNP.i18n.applyStatic(panelEl);
     bindPanelEvents(container);
