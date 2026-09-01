@@ -24,6 +24,7 @@
     'Importieren': 'Import', 'Hochladen': 'Upload', 'Datei wählen': 'Choose file',
     'Name': 'Name', 'Code': 'Code', 'Land': 'Country', 'Region': 'Region', 'Kategorie': 'Category',
     'Aktionen': 'Actions', 'Status': 'Status', 'Details': 'Details', 'Gesamt': 'Total', 'Summe': 'Total',
+    'Anzahl SKU': 'SKU count',
     'Quelle': 'Source', 'unbekannt': 'unknown', 'automatisch': 'automatic', 'manuell': 'manual',
     'aus Datei': 'from file', 'nicht gesetzt': 'not set',
 

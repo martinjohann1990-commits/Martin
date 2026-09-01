@@ -191,10 +191,10 @@
     }).join('');
 
     var dcSummaryRows = analysis.dcSummary.map(function (d) {
-      return '<tr><td>' + U.escapeHtml(d.dcName) + '</td><td class="num">' + I.fmtInt(d.targetPallets) + '</td><td class="num">' + I.fmtPct(d.share, 1) + '</td></tr>';
+      return '<tr><td>' + U.escapeHtml(d.dcName) + '</td><td class="num">' + I.fmtInt(d.articleCount) + '</td><td class="num">' + I.fmtInt(d.targetPallets) + '</td><td class="num">' + I.fmtPct(d.share, 1) + '</td></tr>';
     }).join('');
     var dcSummaryTotalRow = analysis.dcSummary.length
-      ? '<tr class="row-total"><td>' + I.t('Summe') + '</td><td class="num">' + I.fmtInt(analysis.dcSummaryTotal) + '</td><td class="num">' + I.fmtPct(1, 1) + '</td></tr>'
+      ? '<tr class="row-total"><td>' + I.t('Summe') + '</td><td class="num">' + I.fmtInt(rows.length) + '</td><td class="num">' + I.fmtInt(analysis.dcSummaryTotal) + '</td><td class="num">' + I.fmtPct(1, 1) + '</td></tr>'
       : '';
 
     var totalPallets = U.sum(rows, function (r) { return r.pallets; });
@@ -226,8 +226,8 @@
       '<h3 style="margin-top:24px">' + I.t('DC-Gesamtübersicht (Ziel-Reichweite)') + '</h3>' +
       '<p class="help">' + I.t('Ziel-Paletten je DC, wenn jeder Artikel gemäß seiner empfohlenen DC-Zuordnung oben (inkl. C-Artikel-Zentralisierung, falls gewählt) bevorratet wird.') + '</p>' +
       '<div class="chart-box"><canvas id="chartAbcDcSummary"></canvas></div>' +
-      '<div class="table-wrap"><table class="tbl"><thead><tr><th>DC</th><th class="num" data-t="Ziel-Paletten (Reichweite)">' + I.t('Ziel-Paletten (Reichweite)') + '</th><th class="num" data-t="Anteil">' + I.t('Anteil') + '</th></tr></thead>' +
-      '<tbody>' + (dcSummaryRows || '<tr><td colspan="3" class="muted">–</td></tr>') + dcSummaryTotalRow + '</tbody></table></div>' +
+      '<div class="table-wrap"><table class="tbl"><thead><tr><th>DC</th><th class="num" data-t="Anzahl SKU">' + I.t('Anzahl SKU') + '</th><th class="num" data-t="Ziel-Paletten (Reichweite)">' + I.t('Ziel-Paletten (Reichweite)') + '</th><th class="num" data-t="Anteil">' + I.t('Anteil') + '</th></tr></thead>' +
+      '<tbody>' + (dcSummaryRows || '<tr><td colspan="4" class="muted">–</td></tr>') + dcSummaryTotalRow + '</tbody></table></div>' +
       '<p class="help" style="margin-top:24px">' + I.tf('{0} Artikel insgesamt{1}.', I.fmtInt(rows.length), (rows.length > LIMIT ? I.tf(' — die ersten {0} nach Menge angezeigt', LIMIT) : '')) + '</p>' +
       '<div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Artikel">' + I.t('Artikel') + '</th><th data-t="Kategorie">' + I.t('Kategorie') + '</th><th data-t="Empfohlene DC(s)">' + I.t('Empfohlene DC(s)') + '</th>' +
       '<th class="num" data-t="Menge (Stück)">' + I.t('Menge (Stück)') + '</th><th class="num">PAL</th>' +
@@ -272,10 +272,10 @@
     var ws = window.XLSX.utils.aoa_to_sheet(aoa);
     ws['!cols'] = header.map(function () { return { wch: 18 }; });
 
-    var dcHeader = ['DC', 'Ziel-Paletten (Reichweite)', 'Anteil %'];
+    var dcHeader = ['DC', 'Anzahl SKU', 'Ziel-Paletten (Reichweite)', 'Anteil %'];
     var dcAoa = [dcHeader];
     analysis.dcSummary.forEach(function (d) {
-      dcAoa.push([d.dcName, Math.round(d.targetPallets * 100) / 100, Math.round(d.share * 10000) / 100]);
+      dcAoa.push([d.dcName, d.articleCount, Math.round(d.targetPallets * 100) / 100, Math.round(d.share * 10000) / 100]);
     });
     var wsDc = window.XLSX.utils.aoa_to_sheet(dcAoa);
     wsDc['!cols'] = dcHeader.map(function () { return { wch: 22 }; });

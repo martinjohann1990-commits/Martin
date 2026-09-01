@@ -1365,17 +1365,19 @@
     rows.forEach(function (r) { counts[r.abcClass]++; volByClass[r.abcClass] += r.qty; });
 
     var dcSummaryMap = {};
+    var dcArticleCountMap = {};
     rows.forEach(function (r) {
       if (!r.recommendedDcs.length) return;
       var recTotal = U.sum(r.recommendedDcs, function (d) { return d.share; });
       r.recommendedDcs.forEach(function (d) {
         var normShare = recTotal > 0 ? d.share / recTotal : 0;
         dcSummaryMap[d.dcName] = (dcSummaryMap[d.dcName] || 0) + r.targetPallets * normShare;
+        dcArticleCountMap[d.dcName] = (dcArticleCountMap[d.dcName] || 0) + 1;
       });
     });
     var dcSummaryTotal = U.sum(Object.keys(dcSummaryMap), function (k) { return dcSummaryMap[k]; });
     var dcSummary = Object.keys(dcSummaryMap).map(function (dcName) {
-      return { dcName: dcName, targetPallets: dcSummaryMap[dcName], share: dcSummaryTotal > 0 ? dcSummaryMap[dcName] / dcSummaryTotal : 0 };
+      return { dcName: dcName, targetPallets: dcSummaryMap[dcName], articleCount: dcArticleCountMap[dcName] || 0, share: dcSummaryTotal > 0 ? dcSummaryMap[dcName] / dcSummaryTotal : 0 };
     }).sort(function (a, b) { return b.targetPallets - a.targetPallets; });
 
     var result = {
@@ -1553,7 +1555,7 @@
     { title: 'ABC-Analyse (Forecast-Mengen)', formula: 'Je Artikel: Σ Menge (Stück) über alle geladenen Forecast-Zeilen (alle DCs/Perioden/Kategorien), absteigend sortiert. A = bis 80 % kumulierter Menge, B = bis 95 %, C = restliche 5 %.', note: 'Andere Datenbasis als die ABC-Klasse in der Artikel-Standortanalyse (dort: SKU-View/Sales-History-ESU, nicht Forecast-Stückzahl) — beide Klassifizierungen können für denselben Artikel unterschiedlich ausfallen.' },
     { title: 'Empfohlene DC(s) je Artikel (Forecast-basiert)', formula: 'Je Artikel die Forecast-Menge je DC absteigend sortiert; die kleinste Anzahl DCs von oben, deren Summe ≥ 80 % der Artikel-Gesamtmenge erreicht, wird empfohlen.', note: 'Direkt aus der eigenen DC-Zuordnung des Forecasts (keine Distrikt-Näherung nötig, da der Forecast bereits je DC vorliegt). Ein DC, wenn ein Standort bereits dominiert; mehrere, wenn sich die Menge real auf mehrere Standorte verteilt. Optional überschreibbar: alle C-Artikel lassen sich manuell einem einzigen, frei gewählten DC zuweisen (Konsolidierung der langsam drehenden Artikel an einem Standort).' },
     { title: 'Menge/Paletten zur Ziel-Reichweite (ABC-Analyse Forecast)', formula: 'Ziel-Menge = Bedarf/Tag(Artikel) × 30,44 × Reichweite(Monate) × Sicherheitsaufschlag; Ziel-Paletten analog mit Paletten statt Menge.', note: 'Dieselbe Formel wie Zyklusbestand, hier je Artikel statt je DC — ohne artikelbezogenen Sicherheitsbestand (dafür wäre eine monatliche Schwankungsreihe je Artikel nötig). Die Reichweite ist in diesem Bericht frei einstellbar (Standard: globale Ziel-Reichweite aus Daten & Import) und unabhängig von der globalen Einstellung.' },
-    { title: 'DC-Gesamtübersicht (ABC-Analyse Forecast)', formula: 'Je DC: Σ Ziel-Paletten aller Artikel, verteilt auf deren empfohlene(s) DC(s) (Anteile auf 100 % je Artikel renormiert).', note: 'Zeigt, welchen Ziel-Palettenbestand jeder Standort bräuchte, wenn jeder Artikel exakt gemäß seiner empfohlenen DC-Zuordnung (inkl. einer eventuellen manuellen C-Artikel-Zentralisierung) bevorratet würde.' }
+    { title: 'DC-Gesamtübersicht (ABC-Analyse Forecast)', formula: 'Je DC: Σ Ziel-Paletten aller Artikel, verteilt auf deren empfohlene(s) DC(s) (Anteile auf 100 % je Artikel renormiert). Anzahl SKU je DC: Anzahl Artikel, die den DC in ihrer Liste empfohlener DCs führen (ein auf mehrere DCs gesplitteter Artikel zählt bei jedem seiner empfohlenen DCs mit).', note: 'Zeigt, welchen Ziel-Palettenbestand und welche Artikelanzahl jeder Standort bräuchte, wenn jeder Artikel exakt gemäß seiner empfohlenen DC-Zuordnung (inkl. einer eventuellen manuellen C-Artikel-Zentralisierung) bevorratet würde.' }
   ];
 
   LNP.sim = {
