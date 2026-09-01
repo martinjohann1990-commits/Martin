@@ -22,6 +22,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Cache-bust local script/style tags
+        run: |
+          sed -i -E \
+            -e "s#(src=\"js/[^\"]+\.js)\"#\1?v=${GITHUB_SHA}\"#g" \
+            -e "s#(href=\"css/style\.css)\"#\1?v=${GITHUB_SHA}\"#g" \
+            index.html
       - uses: actions/configure-pages@v5
         with:
           enablement: true
