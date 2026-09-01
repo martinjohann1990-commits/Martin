@@ -100,7 +100,8 @@
         '<div class="muted" style="font-size:11px">' + I.tf('{0} der Menge', I.fmtPct(analysis.grandTotal ? volByRec[key] / analysis.grandTotal : 0, 0)) + '</div></div>';
     }).join('');
 
-    return '<h2 style="margin-top:0">' + I.t('Artikel-Standortanalyse') + LNP.ui.infoBtn('Artikel-Standortanalyse') + '</h2>' +
+    return '<div class="card-head" style="margin-bottom:10px"><h2 style="margin:0">' + I.t('Artikel-Standortanalyse') + LNP.ui.infoBtn('Artikel-Standortanalyse') + '</h2>' +
+      '<div class="actions"><button class="btn btn-sm" id="repArticleDownload">' + I.t('Alle SKU exportieren (CSV)') + '</button></div></div>' +
       scenarioSelectorHtml() +
       (scenario ? '<div class="note-box">' + I.tf('Empfehlungen gelten für die {0} im Szenario „{1}“ verbleibenden Standorte — bereits konsolidierte DCs stehen nicht mehr als Empfehlung zur Verfügung.', I.fmtInt(candidateDcIds ? candidateDcIds.length : 0), U.escapeHtml(scenario.name)) + '</div>' : '') +
       '<div class="note-box">' + I.tf('Je Artikel wird das SKU-View-Volumen (Shipping Point → DC → Distrikt, mit demselben Verteilschlüssel aus der Sales History wie überall sonst) in seine Distrikt-Anteile zerlegt. <b>{0}</b> = geringe Drehung (C-Artikel, unterste 5&nbsp;% der kumulierten Menge) — Streuung auf mehrere Standorte würde den Sicherheitsbestand vervielfachen, ohne den Servicegrad spürbar zu verbessern. <b>{1}</b> = ein einzelner Distrikt vereint mindestens den unten eingestellten Anteil des Artikelvolumens auf sich. <b>{2}</b> = echtes Volumen, aber netzweit verteilt ohne dominanten Distrikt. Empfohlenes DC je Distrikt = der Standort, der diesen Distrikt laut Sales History bereits am stärksten beliefert.', I.t(REC_LABEL.zentral), I.t(REC_LABEL.regional), I.t(REC_LABEL.mehrere)) + '</div>' +
@@ -117,6 +118,31 @@
       '<p class="help">' + I.tf('{0} von {1} Artikeln entsprechen dem Filter{2}.', I.fmtInt(filtered.length), I.fmtInt(rows.length), (filtered.length > LIMIT ? I.tf(' — die ersten {0} nach Volumen angezeigt', LIMIT) : '')) + '</p>' +
       '<div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Artikel">' + I.t('Artikel') + '</th><th data-t="Empfehlung">' + I.t('Empfehlung') + '</th><th data-t="Empfohlenes DC">' + I.t('Empfohlenes DC') + '</th><th data-t="Region">' + I.t('Region') + '</th><th class="num" data-t="Anteil">' + I.t('Anteil') + '</th><th>ABC</th><th class="num">ESU</th><th data-t="Begründung">' + I.t('Begründung') + '</th></tr></thead>' +
       '<tbody>' + (tableRows || '<tr><td colspan="8" class="muted">–</td></tr>') + '</tbody></table></div>';
+  }
+
+  /* CSV export of the article location analysis — recomputes it independently from the on-screen
+     table so the file always covers every SKU (analysis.rows), unlike the table which is capped
+     at LIMIT rows and narrowed by the recommendation/search filters for readability on screen. */
+  function downloadArticleAnalysisCsv() {
+    var scenario = scenarioObjById(selectedScenarioId);
+    var candidateDcIds = LNP.sim.scenarioCandidateDcIds(scenario);
+    var analysis = LNP.sim.articleLocationAnalysis({ minShareForRegional: articleFilter.minShare, candidateDcIds: candidateDcIds });
+    function fmtDe(n) { return U.isNum(n) ? (Math.round(n * 100) / 100).toString().replace('.', ',') : ''; }
+    function csvField(v) {
+      var s = v === null || v === undefined ? '' : String(v);
+      return /[;"\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+    }
+    var header = ['Artikel', 'Bezeichnung', 'Empfehlung', 'Empfohlenes DC', 'Top-Distrikt', 'Anteil %', 'ABC-Klasse', 'ESU', 'Begründung'];
+    var lines = [header.map(csvField).join(';')];
+    analysis.rows.forEach(function (r) {
+      lines.push([
+        r.article, r.articleName || '', I.t(REC_LABEL[r.recommendation]), r.recommendedDc ? r.recommendedDc.name : '',
+        r.topDistrict || '', r.topDistrict ? fmtDe(r.topShare * 100) : '', r.abcClass, fmtDe(r.totalEsu), r.reason
+      ].map(csvField).join(';'));
+    });
+    var blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+    U.downloadBlob(blob, 'artikel-standortanalyse-' + new Date().toISOString().slice(0, 10) + '.csv');
+    LNP.ui.toast(I.tf('{0} SKU exportiert', I.fmtInt(analysis.rows.length)), 'good');
   }
 
   function skuPanel() {
@@ -224,6 +250,8 @@
   }
 
   function bindPanelEvents(container) {
+    var articleDownloadBtn = container.querySelector('#repArticleDownload');
+    if (articleDownloadBtn) articleDownloadBtn.addEventListener('click', downloadArticleAnalysisCsv);
     var districtSel = container.querySelector('#repDistrict');
     if (districtSel) districtSel.addEventListener('change', function () { selectedDistrict = districtSel.value; renderPanel(container); });
     var topN = container.querySelector('#repTopN');

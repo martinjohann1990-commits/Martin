@@ -247,6 +247,8 @@
     '{0} der Menge': '{0} of volume',
     '{0} von {1} Artikeln entsprechen dem Filter{2}.': '{0} of {1} articles match the filter{2}.',
     'Ship-to-Adressen ({0} Kunden)': 'Ship-to addresses ({0} customers)',
+    'Alle SKU exportieren (CSV)': 'Export all SKUs (CSV)',
+    '{0} SKU exportiert': '{0} SKUs exported',
     'Zyklusbestand = Bedarf/Tag × 30,44 × Reichweite(Monate) × Sicherheitsaufschlag': 'Cycle stock = demand/day × 30.44 × coverage(months) × safety surcharge',
     'Ist = reale historische ESU-Menge je Distrikt aus der Sales History (Zeitraum It. Quelldatei, i.d.R. 12 Monate). Forecast = abgeleiteter Distrikt-Fußabdruck über den gesamten geladenen Forecast-Horizont (Menge je DC, verteilt nach dessen historischem Distrikt-Mix). <b>Achtung:</b> Forecast-Mengen liegen in Stück, Sales History in ESU (Equivalent Sales Unit) vor — beide Skalen sind nicht 1:1 vergleichbar, zusätzlich deckt der Forecast meist einen längeren Zeitraum ab. Die absolute Kennzahl „Forecast/Ist“ ist daher nur ein grober Anhaltspunkt; aussagekräftiger ist die <i>relative</i> Verteilung über die Distrikte in beiden Spalten.': 'Actual = real historical ESU volume per district from Sales History (period per the source file, usually 12 months). Forecast = derived district footprint across the entire loaded forecast horizon (quantity per DC, distributed by its historical district mix). <b>Note:</b> forecast quantities are in units, Sales History in ESU (Equivalent Sales Unit) — the two scales aren\'t directly comparable 1:1, and the forecast usually covers a longer period besides. The absolute “Forecast/actual” figure is therefore only a rough indicator; the <i>relative</i> distribution across districts in both columns is more meaningful.',
   };
