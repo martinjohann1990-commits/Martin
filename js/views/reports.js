@@ -9,7 +9,7 @@
   var selectedDistrict = null;
   var articleFilter = { minShare: 0.6, query: '', recommendation: 'all' };
   var selectedScenarioId = 'base';
-  var abcState = { coverageMonths: null, centralDcId: '' };
+  var abcState = { coverageMonths: null, centralDcId: '', excludedDcIds: {}, manualReassignments: [], reassignDraft: { from: '', to: '', pct: 100 } };
 
   function scenarioObjById(id) {
     if (!id || id === 'base') return null;
@@ -160,9 +160,43 @@
      pre-filled with the current global Ziel-Reichweite instead of a hardcoded default — but once
      set, it's a local override independent of that global setting (changing it here must not
      silently change Daten & Import's own value, and vice versa). */
+  function abcSelectedDcs() {
+    return LNP.sim.candidateDcs().filter(function (dc) { return !abcState.excludedDcIds[dc.id]; });
+  }
+  /* Keeps abcState internally consistent whenever the DC selection shrinks: a central-DC
+     choice or a manual-reassignment rule that now points at a deselected DC would otherwise
+     silently reference a DC no longer offered in either dropdown. */
+  function abcPruneStateToSelection() {
+    var selectedIds = {};
+    abcSelectedDcs().forEach(function (dc) { selectedIds[dc.id] = true; });
+    if (abcState.centralDcId && !selectedIds[abcState.centralDcId]) abcState.centralDcId = '';
+    abcState.manualReassignments = abcState.manualReassignments.filter(function (r) { return selectedIds[r.fromDcId] && selectedIds[r.toDcId]; });
+  }
+
   function abcAnalysisParams() {
     var coverageMonths = U.isNum(abcState.coverageMonths) ? abcState.coverageMonths : LNP.state.settings.coverageMonthsGlobal;
-    return { coverageMonths: coverageMonths, centralDcIdForC: abcState.centralDcId || null };
+    return {
+      coverageMonths: coverageMonths, centralDcIdForC: abcState.centralDcId || null,
+      candidateDcIds: abcSelectedDcs().map(function (dc) { return dc.id; }),
+      manualReassignments: abcState.manualReassignments
+    };
+  }
+
+  function abcDcChecklist() {
+    var allDcs = LNP.sim.candidateDcs();
+    if (!allDcs.length) return '<p class="help muted">' + I.t('Keine aktiven Distributionszentren.') + '</p>';
+    return '<div class="pill-group" style="margin-bottom:10px;">' +
+      '<button type="button" class="pill" id="abcDcAll">' + I.t('Alle') + '</button>' +
+      '<button type="button" class="pill" id="abcDcNone">' + I.t('Keine') + '</button>' +
+      '</div>' +
+      '<div style="max-height:150px;overflow:auto;border:1px solid var(--border);border-radius:var(--radius-sm);padding:6px 10px;">' +
+      allDcs.map(function (dc) {
+        var checked = !abcState.excludedDcIds[dc.id];
+        return '<label class="checkbox-row" style="margin:4px 0;"><input type="checkbox" class="js-abc-dc-candidate" data-id="' + dc.id + '"' + (checked ? ' checked' : '') + '> ' + U.escapeHtml(dc.name) + '</label>';
+      }).join('') + '</div>';
+  }
+  function abcDcOptions(dcList, selectedId) {
+    return dcList.map(function (dc) { return '<option value="' + dc.id + '"' + (selectedId === dc.id ? ' selected' : '') + '>' + U.escapeHtml(dc.name) + '</option>'; }).join('');
   }
 
   function abcPanel() {
@@ -170,7 +204,7 @@
     var rows = analysis.rows;
     var LIMIT = 150;
     var shown = rows.slice(0, LIMIT);
-    var dcs = LNP.sim.candidateDcs();
+    var dcs = abcSelectedDcs();
     var tableRows = shown.map(function (r) {
       return '<tr><td>' + U.escapeHtml(r.article) + (r.articleDesc ? '<div class="muted" style="font-size:11px">' + U.escapeHtml(r.articleDesc) + '</div>' : '') + '</td>' +
         '<td>' + U.escapeHtml(r.category || '–') + '</td>' +
@@ -198,6 +232,17 @@
       ? '<tr class="row-total"><td>' + I.t('Summe') + '</td><td class="num">' + I.fmtInt(dcArticleCountSum) + '</td><td class="num">' + I.fmtInt(analysis.dcSummaryTotal) + '</td><td class="num">' + I.fmtPct(1, 1) + '</td></tr>'
       : '';
 
+    var reassignRows = abcState.manualReassignments.map(function (r, idx) {
+      var fromDc = LNP.sim.dcById(r.fromDcId), toDc = LNP.sim.dcById(r.toDcId);
+      return '<tr><td>' + U.escapeHtml(fromDc ? fromDc.name : r.fromDcId) + '</td><td>' + U.escapeHtml(toDc ? toDc.name : r.toDcId) + '</td>' +
+        '<td class="num">' + I.fmtPct(r.sharePct / 100, 0) + '</td>' +
+        '<td><button type="button" class="btn btn-sm js-abc-reassign-remove" data-idx="' + idx + '">' + I.t('Löschen') + '</button></td></tr>';
+    }).join('');
+    var reassignFromId = (abcState.reassignDraft.from && dcs.some(function (d) { return d.id === abcState.reassignDraft.from; })) ? abcState.reassignDraft.from : (dcs[0] ? dcs[0].id : '');
+    var reassignToId = (abcState.reassignDraft.to && dcs.some(function (d) { return d.id === abcState.reassignDraft.to; }) && abcState.reassignDraft.to !== reassignFromId)
+      ? abcState.reassignDraft.to
+      : ((dcs[1] && dcs[1].id !== reassignFromId) ? dcs[1].id : (dcs[0] && dcs[0].id !== reassignFromId ? dcs[0].id : ''));
+
     var totalPallets = U.sum(rows, function (r) { return r.pallets; });
     var totalTargetQty = U.sum(rows, function (r) { return r.targetQty; });
     var totalTargetPallets = U.sum(rows, function (r) { return r.targetPallets; });
@@ -211,15 +256,19 @@
         '<td class="num">–</td><td>–</td></tr>'
       : '';
 
-    return '<div class="card-head" style="margin-bottom:10px"><h2 style="margin:0">' + I.t('ABC-Analyse (Forecast)') + LNP.ui.infoBtn('ABC-Analyse (Forecast-Mengen)|Empfohlene DC(s) je Artikel (Forecast-basiert)|Menge/Paletten zur Ziel-Reichweite (ABC-Analyse Forecast)|DC-Gesamtübersicht (ABC-Analyse Forecast)') + '</h2>' +
+    return '<div class="card-head" style="margin-bottom:10px"><h2 style="margin:0">' + I.t('ABC-Analyse (Forecast)') + LNP.ui.infoBtn('ABC-Analyse (Forecast-Mengen)|Empfohlene DC(s) je Artikel (Forecast-basiert)|Menge/Paletten zur Ziel-Reichweite (ABC-Analyse Forecast)|DC-Gesamtübersicht (ABC-Analyse Forecast)|DC-Auswahl (ABC-Analyse Forecast)|Manuelle Umverteilung zwischen DCs (ABC-Analyse Forecast)') + '</h2>' +
       '<div class="actions"><button class="btn btn-sm" id="repAbcDownload">' + I.t('Alle SKU exportieren (Excel)') + '</button></div></div>' +
       '<div class="note-box">' + I.t('Klassifiziert jeden Artikel nach seinem Anteil an der gesamten Forecast-Menge (Stück, über alle geladenen DCs/Perioden/Kategorien): A = Top-Artikel bis 80 % kumulierter Menge, B = bis 95 %, C = die restlichen, langsam drehenden Artikel. Andere Datenbasis als die ABC-Klasse in der Artikel-Standortanalyse (dort SKU-View/Sales-History-ESU statt Forecast-Stückzahl).') + '</div>' +
       '<div class="note-box">' + I.t('Empfohlene DC(s) je Artikel: direkt aus der eigenen DC-Zuordnung des Forecasts abgeleitet (keine Distrikt-Näherung nötig). Angezeigt wird die kleinste Anzahl Standorte — von der Menge her absteigend sortiert —, deren Summe mindestens 80 % der Artikel-Gesamtmenge erreicht: ein Standort, wenn er bereits dominiert; mehrere, wenn sich die Menge real auf mehrere Standorte verteilt. C-Artikel lassen sich unten optional manuell einem einzigen DC zuweisen.') + '</div>' +
+      '<h3 style="margin-top:20px">' + I.t('DC-Auswahl') + LNP.ui.infoBtn('DC-Auswahl (ABC-Analyse Forecast)') + '</h3>' +
+      '<p class="help">' + I.t('Nur ausgewählte Standorte werden als Kandidaten bewertet.') + '</p>' +
+      abcDcChecklist() +
+      (dcs.length === 0 ? '<div class="note-box" style="border-color:var(--bad)">' + I.t('Bitte mindestens einen Standort auswählen — aktuell wird keine Empfehlung berechnet.') + '</div>' : '') +
       '<div class="field-row">' +
       '<div class="field" style="max-width:220px"><label data-t="Ziel-Reichweite (Monate)">' + I.t('Ziel-Reichweite (Monate)') + '</label><input type="number" min="0" step="0.1" id="abcCoverageMonths" value="' + analysis.coverageMonths + '"></div>' +
-      '<div class="field" style="max-width:280px"><label data-t="C-Artikel zentral zuweisen">' + I.t('C-Artikel zentral zuweisen') + '</label><select id="abcCentralDc">' +
+      '<div class="field" style="max-width:280px"><label data-t="C-Artikel zentral zuweisen">' + I.t('C-Artikel zentral zuweisen') + '</label><select id="abcCentralDc"' + (dcs.length === 0 ? ' disabled' : '') + '>' +
       '<option value=""' + (!abcState.centralDcId ? ' selected' : '') + '>' + I.t('Keine Zentralisierung') + '</option>' +
-      dcs.map(function (dc) { return '<option value="' + dc.id + '"' + (abcState.centralDcId === dc.id ? ' selected' : '') + '>' + U.escapeHtml(dc.name) + '</option>'; }).join('') +
+      abcDcOptions(dcs, abcState.centralDcId) +
       '</select></div>' +
       '</div>' +
       '<div class="grid grid-3" style="margin-bottom:14px;">' + kpis + '</div>' +
@@ -230,6 +279,15 @@
       '<div class="chart-box"><canvas id="chartAbcDcSummary"></canvas></div>' +
       '<div class="table-wrap"><table class="tbl"><thead><tr><th>DC</th><th class="num" data-t="Anzahl SKU">' + I.t('Anzahl SKU') + '</th><th class="num" data-t="Ziel-Paletten (Reichweite)">' + I.t('Ziel-Paletten (Reichweite)') + '</th><th class="num" data-t="Anteil">' + I.t('Anteil') + '</th></tr></thead>' +
       '<tbody>' + (dcSummaryRows || '<tr><td colspan="4" class="muted">–</td></tr>') + dcSummaryTotalRow + '</tbody></table></div>' +
+      '<h3 style="margin-top:24px">' + I.t('Manuelle Umverteilung zwischen DCs') + LNP.ui.infoBtn('Manuelle Umverteilung zwischen DCs (ABC-Analyse Forecast)') + '</h3>' +
+      '<p class="help">' + I.t('Verschiebt einen wählbaren Anteil der bei einem DC empfohlenen Menge auf einen anderen DC — wirkt auf die Artikeltabelle unten und die DC-Gesamtübersicht oben.') + '</p>' +
+      '<div class="field-row">' +
+      '<div class="field" style="max-width:200px"><label data-t="Von DC">' + I.t('Von DC') + '</label><select id="abcReassignFrom"' + (dcs.length < 2 ? ' disabled' : '') + '>' + abcDcOptions(dcs, reassignFromId) + '</select></div>' +
+      '<div class="field" style="max-width:200px"><label data-t="Nach DC">' + I.t('Nach DC') + '</label><select id="abcReassignTo"' + (dcs.length < 2 ? ' disabled' : '') + '>' + abcDcOptions(dcs, reassignToId) + '</select></div>' +
+      '<div class="field" style="max-width:120px"><label data-t="Anteil (%)">' + I.t('Anteil (%)') + '</label><input type="number" min="0" max="100" step="1" id="abcReassignPct" value="' + abcState.reassignDraft.pct + '"' + (dcs.length < 2 ? ' disabled' : '') + '></div>' +
+      '<div class="field" style="flex:0 0 auto;align-self:flex-end;"><button type="button" class="btn btn-sm" id="abcReassignAdd"' + (dcs.length < 2 ? ' disabled' : '') + '>' + I.t('Anlegen') + '</button></div>' +
+      '</div>' +
+      (reassignRows ? '<div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Von DC">' + I.t('Von DC') + '</th><th data-t="Nach DC">' + I.t('Nach DC') + '</th><th class="num" data-t="Anteil">' + I.t('Anteil') + '</th><th></th></tr></thead><tbody>' + reassignRows + '</tbody></table></div>' : '') +
       '<p class="help" style="margin-top:24px">' + I.tf('{0} Artikel insgesamt{1}.', I.fmtInt(rows.length), (rows.length > LIMIT ? I.tf(' — die ersten {0} nach Menge angezeigt', LIMIT) : '')) + '</p>' +
       '<div class="table-wrap"><table class="tbl"><thead><tr><th data-t="Artikel">' + I.t('Artikel') + '</th><th data-t="Kategorie">' + I.t('Kategorie') + '</th><th data-t="Empfohlene DC(s)">' + I.t('Empfohlene DC(s)') + '</th>' +
       '<th class="num" data-t="Menge (Stück)">' + I.t('Menge (Stück)') + '</th><th class="num">PAL</th>' +
@@ -252,7 +310,14 @@
     var paramRows = [
       [I.t('Parameter'), I.t('Wert')],
       [I.t('Ziel-Reichweite (Monate)'), analysis.coverageMonths],
+      [I.t('DC-Auswahl'), analysis.selectedDcs.map(function (dc) { return dc.name; }).join(', ') || I.t('Keine')],
       [I.t('C-Artikel zentral zugewiesen an'), centralDc ? centralDc.name : I.t('Keine Zentralisierung')],
+      [I.t('Manuelle Umverteilung'), analysis.manualReassignments.length
+        ? analysis.manualReassignments.map(function (r) {
+            var fromDc = LNP.sim.dcById(r.fromDcId), toDc = LNP.sim.dcById(r.toDcId);
+            return (fromDc ? fromDc.name : r.fromDcId) + ' → ' + (toDc ? toDc.name : r.toDcId) + ' (' + r.sharePct + '%)';
+          }).join('; ')
+        : I.t('Keine')],
       [I.t('Erstellt'), new Date().toISOString().slice(0, 10)]
     ];
     var wsParams = window.XLSX.utils.aoa_to_sheet(paramRows);
@@ -414,6 +479,43 @@
     if (abcCentralDc) abcCentralDc.addEventListener('change', function () {
       abcState.centralDcId = abcCentralDc.value;
       renderPanel(container);
+    });
+    container.querySelectorAll('.js-abc-dc-candidate').forEach(function (chk) {
+      chk.addEventListener('change', function () {
+        var id = chk.getAttribute('data-id');
+        if (chk.checked) delete abcState.excludedDcIds[id]; else abcState.excludedDcIds[id] = true;
+        abcPruneStateToSelection();
+        renderPanel(container);
+      });
+    });
+    var abcDcAllBtn = container.querySelector('#abcDcAll');
+    if (abcDcAllBtn) abcDcAllBtn.addEventListener('click', function () {
+      abcState.excludedDcIds = {};
+      renderPanel(container);
+    });
+    var abcDcNoneBtn = container.querySelector('#abcDcNone');
+    if (abcDcNoneBtn) abcDcNoneBtn.addEventListener('click', function () {
+      abcState.excludedDcIds = {};
+      LNP.sim.candidateDcs().forEach(function (dc) { abcState.excludedDcIds[dc.id] = true; });
+      abcPruneStateToSelection();
+      renderPanel(container);
+    });
+    var abcReassignAdd = container.querySelector('#abcReassignAdd');
+    if (abcReassignAdd) abcReassignAdd.addEventListener('click', function () {
+      var fromSel = container.querySelector('#abcReassignFrom'), toSel = container.querySelector('#abcReassignTo'), pctInp = container.querySelector('#abcReassignPct');
+      var fromId = fromSel ? fromSel.value : '', toId = toSel ? toSel.value : '';
+      var pct = pctInp ? Math.max(0, Math.min(100, parseFloat(pctInp.value))) : 100;
+      if (!fromId || !toId || fromId === toId || !U.isNum(pct)) return;
+      abcState.manualReassignments.push({ fromDcId: fromId, toDcId: toId, sharePct: pct });
+      abcState.reassignDraft = { from: fromId, to: toId, pct: pct };
+      renderPanel(container);
+    });
+    container.querySelectorAll('.js-abc-reassign-remove').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var idx = parseInt(btn.getAttribute('data-idx'), 10);
+        abcState.manualReassignments.splice(idx, 1);
+        renderPanel(container);
+      });
     });
     var districtSel = container.querySelector('#repDistrict');
     if (districtSel) districtSel.addEventListener('change', function () { selectedDistrict = districtSel.value; renderPanel(container); });

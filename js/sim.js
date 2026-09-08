@@ -1308,8 +1308,16 @@
     var settings = S().settings;
     var coverageMonths = U.isNum(params.coverageMonths) ? params.coverageMonths : resolveCoverageMonths('all', settings);
     var centralDcIdForC = params.centralDcIdForC || null;
-    var cacheKey = 'forecastAbcAnalysis:' + coverageMonths + ':' + (centralDcIdForC || '');
+    var candidateDcIds = params.candidateDcIds || null;
+    var manualReassignments = (params.manualReassignments || []).filter(function (r) { return r && r.fromDcId && r.toDcId && r.fromDcId !== r.toDcId; });
+    var candidatePart = candidateDcIds ? candidateDcIds.slice().sort().join(',') : 'ALL';
+    var reassignPart = manualReassignments.map(function (r) { return r.fromDcId + '>' + r.toDcId + ':' + r.sharePct; }).join(',');
+    var cacheKey = 'forecastAbcAnalysis:' + coverageMonths + ':' + (centralDcIdForC || '') + ':' + candidatePart + ':' + reassignPart;
     if (_cache[cacheKey]) return _cache[cacheKey];
+
+    var selectedDcs = resolveCandidates({ candidateDcIds: candidateDcIds });
+    var selectedNames = {};
+    selectedDcs.forEach(function (dc) { selectedNames[dc.name] = true; });
 
     var allRows = filterForecast({});
     var totalDays = distinctPeriodDays(allRows);
@@ -1324,19 +1332,41 @@
       if (r.dc) a.byDc[r.dc] = (a.byDc[r.dc] || 0) + (r.qty || 0);
       if (!a.articleDesc && r.articleDesc) a.articleDesc = r.articleDesc;
     });
+
+    /* Fallback target for articles with zero volume among the selected DCs (their entire
+       real volume ships from DCs excluded from this scenario): the selected DC with the
+       largest total forecast volume across the whole network — a simple, explainable stand-in
+       since the app has no real inter-site distance/cost data to base a "nearest DC" pick on. */
+    var selectedTotals = {};
+    selectedDcs.forEach(function (dc) { selectedTotals[dc.name] = 0; });
+    Object.keys(acc).forEach(function (k) {
+      var byDc = acc[k].byDc;
+      Object.keys(byDc).forEach(function (dcName) { if (selectedNames[dcName]) selectedTotals[dcName] = (selectedTotals[dcName] || 0) + byDc[dcName]; });
+    });
+    var fallbackDcName = null;
+    var fallbackMax = -1;
+    Object.keys(selectedTotals).forEach(function (dcName) { if (selectedTotals[dcName] > fallbackMax) { fallbackMax = selectedTotals[dcName]; fallbackDcName = dcName; } });
+
     var rows = Object.keys(acc).map(function (k) {
       var a = acc[k];
       var dcList = Object.keys(a.byDc).map(function (dcName) { return { dcName: dcName, qty: a.byDc[dcName] }; });
       dcList.sort(function (x, y) { return y.qty - x.qty; });
-      var dcTotal = U.sum(dcList, function (d) { return d.qty; });
+
+      var filteredList = dcList.filter(function (d) { return selectedNames[d.dcName]; });
+      var filteredTotal = U.sum(filteredList, function (d) { return d.qty; });
       var recommendedDcs = [];
-      var dcCum = 0;
-      for (var i = 0; i < dcList.length; i++) {
-        var share = dcTotal > 0 ? dcList[i].qty / dcTotal : 0;
-        recommendedDcs.push({ dcName: dcList[i].dcName, share: share });
-        dcCum += dcList[i].qty;
-        if (dcTotal > 0 && dcCum / dcTotal >= 0.8) break;
+      if (filteredTotal > 0) {
+        var dcCum = 0;
+        for (var i = 0; i < filteredList.length; i++) {
+          var share = filteredList[i].qty / filteredTotal;
+          recommendedDcs.push({ dcName: filteredList[i].dcName, share: share });
+          dcCum += filteredList[i].qty;
+          if (dcCum / filteredTotal >= 0.8) break;
+        }
+      } else if (fallbackDcName) {
+        recommendedDcs.push({ dcName: fallbackDcName, share: 1 });
       }
+
       var targetQty = totalDays > 0 ? (a.qty / totalDays) * DAYS_PER_MONTH * coverageMonths * stockFactor : 0;
       var targetPallets = totalDays > 0 ? (a.pallets / totalDays) * DAYS_PER_MONTH * coverageMonths * stockFactor : 0;
       return {
@@ -1359,6 +1389,27 @@
     if (centralDc) {
       rows.forEach(function (r) { if (r.abcClass === 'C') r.recommendedDcs = [{ dcName: centralDc.name, share: 1 }]; });
     }
+
+    /* Manual DC-to-DC reassignment: move a share of each article's amount currently
+       recommended at fromDc over to toDc, applied in rule order on top of whatever the
+       automatic proposal (incl. C-centralization) produced. */
+    manualReassignments.forEach(function (rule) {
+      var fromDc = dcById(rule.fromDcId), toDc = dcById(rule.toDcId);
+      if (!fromDc || !toDc) return;
+      var sharePct = U.isNum(rule.sharePct) ? Math.max(0, Math.min(100, rule.sharePct)) : 100;
+      rows.forEach(function (r) {
+        var fromEntry = null;
+        for (var i = 0; i < r.recommendedDcs.length; i++) { if (r.recommendedDcs[i].dcName === fromDc.name) { fromEntry = r.recommendedDcs[i]; break; } }
+        if (!fromEntry) return;
+        var moved = fromEntry.share * (sharePct / 100);
+        if (moved <= 1e-9) return;
+        fromEntry.share -= moved;
+        var toEntry = null;
+        for (var j = 0; j < r.recommendedDcs.length; j++) { if (r.recommendedDcs[j].dcName === toDc.name) { toEntry = r.recommendedDcs[j]; break; } }
+        if (toEntry) toEntry.share += moved; else r.recommendedDcs.push({ dcName: toDc.name, share: moved });
+        r.recommendedDcs = r.recommendedDcs.filter(function (d) { return d.share > 1e-9; });
+      });
+    });
 
     var counts = { A: 0, B: 0, C: 0 };
     var volByClass = { A: 0, B: 0, C: 0 };
@@ -1383,7 +1434,8 @@
     var result = {
       rows: rows, grandTotal: grandTotal, counts: counts, volByClass: volByClass,
       coverageMonths: coverageMonths, totalDays: totalDays,
-      dcSummary: dcSummary, dcSummaryTotal: dcSummaryTotal, centralDcIdForC: centralDcIdForC
+      dcSummary: dcSummary, dcSummaryTotal: dcSummaryTotal, centralDcIdForC: centralDcIdForC,
+      selectedDcs: selectedDcs, fallbackDcName: fallbackDcName, manualReassignments: manualReassignments
     };
     _cache[cacheKey] = result;
     return result;
@@ -1553,9 +1605,11 @@
     { title: 'Artikel-Standortanalyse', formula: 'Je Artikel: SKU-View-Volumen über Sales-History-Distrikt-Anteile (s. Geografischer Fußabdruck je DC) auf Distrikte verteilt. ABC-Klasse = kumulierte Mengen-Rangfolge über alle Artikel (80/15/5-Grenzen). Empfehlung: "Zentral" wenn C-Klasse (unterste 5 % der kumulierten Menge); sonst "Regional" wenn ein Distrikt ≥ Schwellwert (einstellbar) des Artikelvolumens auf sich vereint, empfohlenes DC = laut Sales History stärkster Versorger dieses Distrikts; sonst "Mehrere Standorte".' },
     { title: 'Szenario-Heatmap (adressgenau)', formula: 'Jeder Ship-to-Kunde aus Destinations × Ship-to-Address (siehe Distrikt-Zentroid) einzeln, eingefärbt nach dem DC, das seinen Distrikt unter dem gewählten Szenario versorgt.', note: 'Simulationsbasierte Szenarien: Zuordnung direkt aus der Simulation. Andere Szenarien/aktueller Stand: der laut Sales History mengenmäßig dominante Quell-DC je Distrikt, ggf. über eine regionale Override-Zuordnung umgeleitet.' },
     { title: 'ABC-Analyse (Forecast-Mengen)', formula: 'Je Artikel: Σ Menge (Stück) über alle geladenen Forecast-Zeilen (alle DCs/Perioden/Kategorien), absteigend sortiert. A = bis 80 % kumulierter Menge, B = bis 95 %, C = restliche 5 %.', note: 'Andere Datenbasis als die ABC-Klasse in der Artikel-Standortanalyse (dort: SKU-View/Sales-History-ESU, nicht Forecast-Stückzahl) — beide Klassifizierungen können für denselben Artikel unterschiedlich ausfallen.' },
-    { title: 'Empfohlene DC(s) je Artikel (Forecast-basiert)', formula: 'Je Artikel die Forecast-Menge je DC absteigend sortiert; die kleinste Anzahl DCs von oben, deren Summe ≥ 80 % der Artikel-Gesamtmenge erreicht, wird empfohlen.', note: 'Direkt aus der eigenen DC-Zuordnung des Forecasts (keine Distrikt-Näherung nötig, da der Forecast bereits je DC vorliegt). Ein DC, wenn ein Standort bereits dominiert; mehrere, wenn sich die Menge real auf mehrere Standorte verteilt. Optional überschreibbar: alle C-Artikel lassen sich manuell einem einzigen, frei gewählten DC zuweisen (Konsolidierung der langsam drehenden Artikel an einem Standort).' },
+    { title: 'Empfohlene DC(s) je Artikel (Forecast-basiert)', formula: 'Je Artikel die Forecast-Menge je ausgewähltem DC absteigend sortiert; die kleinste Anzahl DCs von oben, deren Summe ≥ 80 % der (auf die Auswahl beschränkten) Artikel-Menge erreicht, wird empfohlen.', note: 'Direkt aus der eigenen DC-Zuordnung des Forecasts (keine Distrikt-Näherung nötig, da der Forecast bereits je DC vorliegt), beschränkt auf die unten gewählten DCs. Ein DC, wenn ein Standort bereits dominiert; mehrere, wenn sich die Menge real auf mehrere Standorte verteilt. Hat ein Artikel gar kein Volumen an den ausgewählten DCs (sein reales Volumen kommt vollständig von abgewählten Standorten), wird er vollständig dem mengenmäßig größten ausgewählten DC zugewiesen (einfache, nachvollziehbare Ersatzregel, da keine echten Distanz-/Kostendaten vorliegen). Optional überschreibbar: alle C-Artikel lassen sich manuell einem einzigen, frei gewählten (ausgewählten) DC zuweisen; zusätzlich lässt sich anteilig Menge von einem DC manuell zu einem anderen verschieben (Regeln werden der Reihe nach angewendet).' },
     { title: 'Menge/Paletten zur Ziel-Reichweite (ABC-Analyse Forecast)', formula: 'Ziel-Menge = Bedarf/Tag(Artikel) × 30,44 × Reichweite(Monate) × Sicherheitsaufschlag; Ziel-Paletten analog mit Paletten statt Menge.', note: 'Dieselbe Formel wie Zyklusbestand, hier je Artikel statt je DC — ohne artikelbezogenen Sicherheitsbestand (dafür wäre eine monatliche Schwankungsreihe je Artikel nötig). Die Reichweite ist in diesem Bericht frei einstellbar (Standard: globale Ziel-Reichweite aus Daten & Import) und unabhängig von der globalen Einstellung.' },
-    { title: 'DC-Gesamtübersicht (ABC-Analyse Forecast)', formula: 'Je DC: Σ Ziel-Paletten aller Artikel, verteilt auf deren empfohlene(s) DC(s) (Anteile auf 100 % je Artikel renormiert). Anzahl SKU je DC: Anzahl Artikel, die den DC in ihrer Liste empfohlener DCs führen (ein auf mehrere DCs gesplitteter Artikel zählt bei jedem seiner empfohlenen DCs mit).', note: 'Zeigt, welchen Ziel-Palettenbestand und welche Artikelanzahl jeder Standort bräuchte, wenn jeder Artikel exakt gemäß seiner empfohlenen DC-Zuordnung (inkl. einer eventuellen manuellen C-Artikel-Zentralisierung) bevorratet würde.' }
+    { title: 'DC-Gesamtübersicht (ABC-Analyse Forecast)', formula: 'Je DC: Σ Ziel-Paletten aller Artikel, verteilt auf deren empfohlene(s) DC(s) (Anteile auf 100 % je Artikel renormiert). Anzahl SKU je DC: Anzahl Artikel, die den DC in ihrer Liste empfohlener DCs führen (ein auf mehrere DCs gesplitteter Artikel zählt bei jedem seiner empfohlenen DCs mit).', note: 'Zeigt, welchen Ziel-Palettenbestand und welche Artikelanzahl jeder Standort bräuchte, wenn jeder Artikel exakt gemäß seiner empfohlenen DC-Zuordnung (inkl. C-Artikel-Zentralisierung und manueller Umverteilung, falls gewählt) bevorratet würde.' },
+    { title: 'DC-Auswahl (ABC-Analyse Forecast)', formula: 'Beschränkt die Kandidaten-DCs für die Empfehlung/Neuverteilung auf die angehakten Standorte; abgewählte DCs erhalten keine empfohlene Menge mehr.', note: 'Nützlich für Was-wäre-wenn-Szenarien, z. B. "wie verteilt sich die Menge, wenn Standort X geschlossen wird?". Die ABC-Klassifizierung selbst (Klasse A/B/C je Artikel) bleibt unverändert, da sie auf der Gesamt-Forecast-Menge über alle DCs beruht.' },
+    { title: 'Manuelle Umverteilung zwischen DCs (ABC-Analyse Forecast)', formula: 'Für jede Regel „Von-DC → Nach-DC, Anteil %“: bei jedem Artikel wird der angegebene Anteil seiner am Von-DC empfohlenen Menge auf den Nach-DC übertragen.', note: 'Wirkt als letzter Schritt auf das Ergebnis der automatischen Empfehlung (inkl. C-Zentralisierung). Mehrere Regeln werden in der angelegten Reihenfolge angewendet.' }
   ];
 
   LNP.sim = {
