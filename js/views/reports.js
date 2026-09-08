@@ -193,8 +193,9 @@
     var dcSummaryRows = analysis.dcSummary.map(function (d) {
       return '<tr><td>' + U.escapeHtml(d.dcName) + '</td><td class="num">' + I.fmtInt(d.articleCount) + '</td><td class="num">' + I.fmtInt(d.targetPallets) + '</td><td class="num">' + I.fmtPct(d.share, 1) + '</td></tr>';
     }).join('');
+    var dcArticleCountSum = U.sum(analysis.dcSummary, function (d) { return d.articleCount; });
     var dcSummaryTotalRow = analysis.dcSummary.length
-      ? '<tr class="row-total"><td>' + I.t('Summe') + '</td><td class="num">' + I.fmtInt(rows.length) + '</td><td class="num">' + I.fmtInt(analysis.dcSummaryTotal) + '</td><td class="num">' + I.fmtPct(1, 1) + '</td></tr>'
+      ? '<tr class="row-total"><td>' + I.t('Summe') + '</td><td class="num">' + I.fmtInt(dcArticleCountSum) + '</td><td class="num">' + I.fmtInt(analysis.dcSummaryTotal) + '</td><td class="num">' + I.fmtPct(1, 1) + '</td></tr>'
       : '';
 
     var totalPallets = U.sum(rows, function (r) { return r.pallets; });
@@ -225,6 +226,7 @@
       '<div class="chart-box" style="max-width:340px;margin:0 auto 16px;"><canvas id="chartAbc"></canvas></div>' +
       '<h3 style="margin-top:24px">' + I.t('DC-Gesamtübersicht (Ziel-Reichweite)') + '</h3>' +
       '<p class="help">' + I.t('Ziel-Paletten je DC, wenn jeder Artikel gemäß seiner empfohlenen DC-Zuordnung oben (inkl. C-Artikel-Zentralisierung, falls gewählt) bevorratet wird.') + '</p>' +
+      '<p class="help">' + I.tf('Ein auf mehrere DCs gesplitteter Artikel zählt bei jedem seiner empfohlenen Standorte mit — die Summe der Spalte „Anzahl SKU" ({0}) liegt daher über der Grundgesamtheit von {1} Artikeln.', I.fmtInt(dcArticleCountSum), I.fmtInt(rows.length)) + '</p>' +
       '<div class="chart-box"><canvas id="chartAbcDcSummary"></canvas></div>' +
       '<div class="table-wrap"><table class="tbl"><thead><tr><th>DC</th><th class="num" data-t="Anzahl SKU">' + I.t('Anzahl SKU') + '</th><th class="num" data-t="Ziel-Paletten (Reichweite)">' + I.t('Ziel-Paletten (Reichweite)') + '</th><th class="num" data-t="Anteil">' + I.t('Anteil') + '</th></tr></thead>' +
       '<tbody>' + (dcSummaryRows || '<tr><td colspan="4" class="muted">–</td></tr>') + dcSummaryTotalRow + '</tbody></table></div>' +

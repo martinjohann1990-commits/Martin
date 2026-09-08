@@ -25,6 +25,7 @@
     'Name': 'Name', 'Code': 'Code', 'Land': 'Country', 'Region': 'Region', 'Kategorie': 'Category',
     'Aktionen': 'Actions', 'Status': 'Status', 'Details': 'Details', 'Gesamt': 'Total', 'Summe': 'Total',
     'Anzahl SKU': 'SKU count',
+    'Ein auf mehrere DCs gesplitteter Artikel zählt bei jedem seiner empfohlenen Standorte mit — die Summe der Spalte „Anzahl SKU" ({0}) liegt daher über der Grundgesamtheit von {1} Artikeln.': 'An article split across several DCs counts toward each of its recommended sites — the "SKU count" column total ({0}) is therefore higher than the total of {1} articles.',
     'Quelle': 'Source', 'unbekannt': 'unknown', 'automatisch': 'automatic', 'manuell': 'manual',
     'aus Datei': 'from file', 'nicht gesetzt': 'not set',
 
