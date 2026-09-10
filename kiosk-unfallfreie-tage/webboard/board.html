@@ -1,0 +1,471 @@
+<title>Unfallfreie Tage – DC Losheim</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;700;800&family=Archivo:ital,wght@0,500;0,600;0,700;1,600&display=swap">
+<style>
+  :root {
+    --bg: #0d130f;
+    --bg-inset: #131b15;
+    --frame: #253226;
+    --green: #48d17e;
+    --green-bright: #8cf0ae;
+    --amber: #e8b23d;
+    --text: #eaf3ec;
+    --muted: #7f9483;
+    --muted-dim: #5c6d5f;
+    --danger: #e05a4e;
+    --focus: #8cf0ae;
+  }
+
+  * { box-sizing: border-box; }
+
+  html, body {
+    margin: 0;
+    height: 100%;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: "Archivo", "Segoe UI", system-ui, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+    overflow-x: hidden;
+  }
+
+  .board {
+    position: relative;
+    width: 100%;
+    max-width: 1100px;
+  }
+
+  .frame {
+    position: relative;
+    background: var(--bg-inset);
+    border: 1px solid var(--frame);
+    border-radius: 28px;
+    padding: clamp(28px, 5vw, 64px) clamp(20px, 6vw, 72px);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: clamp(10px, 2vw, 18px);
+    box-shadow: 0 40px 90px -40px rgba(0, 0, 0, 0.6);
+  }
+
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-family: "Archivo", sans-serif;
+    font-weight: 700;
+    font-size: clamp(12px, 1.6vw, 16px);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .eyebrow svg { flex: none; }
+
+  .counter {
+    font-family: "Big Shoulders Display", "Arial Narrow", sans-serif;
+    font-weight: 800;
+    font-size: clamp(96px, 22vw, 300px);
+    line-height: 0.85;
+    color: var(--green);
+    text-shadow: 0 0 60px rgba(72, 209, 126, 0.35);
+    font-variant-numeric: tabular-nums;
+    margin: 0;
+  }
+
+  .unit {
+    font-family: "Big Shoulders Display", sans-serif;
+    font-weight: 700;
+    font-size: clamp(22px, 3.4vw, 40px);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text);
+    margin-top: -6px;
+  }
+
+  .stats {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: clamp(20px, 5vw, 56px);
+    margin-top: clamp(12px, 3vw, 28px);
+    padding-top: clamp(12px, 3vw, 24px);
+    border-top: 1px solid var(--frame);
+    width: 100%;
+  }
+
+  .stat {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    min-width: 140px;
+  }
+
+  .stat-label {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted-dim);
+  }
+
+  .stat-value {
+    font-size: clamp(16px, 2vw, 20px);
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    color: var(--text);
+  }
+
+  .live-indicator {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-top: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--muted-dim);
+  }
+
+  .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 0 0 rgba(72, 209, 126, 0.6);
+    animation: pulse 2.4s ease-out infinite;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dot { animation: none; }
+  }
+
+  @keyframes pulse {
+    0% { box-shadow: 0 0 0 0 rgba(72, 209, 126, 0.55); }
+    70% { box-shadow: 0 0 0 9px rgba(72, 209, 126, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(72, 209, 126, 0); }
+  }
+
+  .admin-btn {
+    position: absolute;
+    right: 14px;
+    bottom: 14px;
+    width: 38px;
+    height: 38px;
+    border-radius: 50%;
+    border: 1px solid var(--frame);
+    background: var(--bg-inset);
+    color: var(--muted-dim);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    opacity: 0.45;
+    transition: opacity 0.15s ease, color 0.15s ease;
+  }
+
+  .admin-btn:hover,
+  .admin-btn:focus-visible {
+    opacity: 1;
+    color: var(--amber);
+  }
+
+  .admin-btn:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(4, 8, 5, 0.72);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    z-index: 10;
+  }
+
+  .modal-backdrop[hidden] { display: none; }
+
+  .modal {
+    width: 100%;
+    max-width: 420px;
+    background: var(--bg-inset);
+    border: 1px solid var(--frame);
+    border-radius: 18px;
+    padding: 26px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .modal h2 {
+    margin: 0;
+    font-family: "Big Shoulders Display", sans-serif;
+    font-weight: 700;
+    font-size: 24px;
+    letter-spacing: 0.02em;
+    color: var(--text);
+  }
+
+  .modal p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--muted);
+  }
+
+  .modal label {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted-dim);
+  }
+
+  .modal input[type="date"] {
+    background: var(--bg);
+    border: 1px solid var(--frame);
+    border-radius: 8px;
+    color: var(--text);
+    font-family: inherit;
+    font-size: 15px;
+    padding: 10px 12px;
+    color-scheme: dark;
+  }
+
+  .modal input[type="date"]:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 1px;
+  }
+
+  .modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 6px;
+  }
+
+  .btn {
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 700;
+    border-radius: 8px;
+    padding: 9px 16px;
+    cursor: pointer;
+    border: 1px solid transparent;
+  }
+
+  .btn:focus-visible {
+    outline: 2px solid var(--focus);
+    outline-offset: 2px;
+  }
+
+  .btn-ghost {
+    background: transparent;
+    border-color: var(--frame);
+    color: var(--muted);
+  }
+
+  .btn-ghost:hover { color: var(--text); }
+
+  .btn-danger {
+    background: var(--danger);
+    color: #201211;
+  }
+
+  .btn-danger:hover { background: #ea6f63; }
+
+  .btn-danger:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+
+  .modal-status {
+    min-height: 16px;
+    font-size: 13px;
+    color: var(--amber) !important;
+  }
+</style>
+
+<div class="board">
+  <div class="frame">
+    <div class="eyebrow">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M8 1.2 14 3.4v4.1c0 4-2.6 6.9-6 7.3-3.4-.4-6-3.3-6-7.3V3.4L8 1.2Z" stroke="#48d17e" stroke-width="1.3" stroke-linejoin="round"/>
+        <path d="M5.4 8.1 7.3 10l3.3-3.9" stroke="#48d17e" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      DC Losheim · Arbeitssicherheit
+    </div>
+
+    <p class="counter" id="counter">–</p>
+    <p class="unit">Unfallfreie Tage</p>
+
+    <div class="stats">
+      <div class="stat">
+        <span class="stat-label">Letzter Unfall</span>
+        <span class="stat-value" id="lastIncident">–</span>
+      </div>
+      <div class="stat">
+        <span class="stat-label">Stand</span>
+        <span class="stat-value" id="today">–</span>
+      </div>
+    </div>
+
+    <div class="live-indicator"><span class="dot" aria-hidden="true"></span>Aktualisiert automatisch</div>
+  </div>
+
+  <button class="admin-btn" id="adminBtn" type="button" aria-haspopup="dialog" aria-label="Zähler zurücksetzen">
+    <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+      <path d="M10 6.5a3.5 3.5 0 1 0 0 7 3.5 3.5 0 0 0 0-7Z" stroke="currentColor" stroke-width="1.4"/>
+      <path d="M16.6 11.4a6.6 6.6 0 0 0 .07-1.4l1.6-1.24-1.5-2.6-1.9.6a6.6 6.6 0 0 0-1.2-.7l-.3-1.96H8.63l-.3 1.96c-.43.18-.84.42-1.2.7l-1.9-.6-1.5 2.6L5.33 10a6.6 6.6 0 0 0 0 1.4L3.73 12.6l1.5 2.6 1.9-.6c.36.28.77.52 1.2.7l.3 1.96h2.74l.3-1.96c.43-.18.84-.42 1.2-.7l1.9.6 1.5-2.6-1.6-1.24Z" stroke="currentColor" stroke-width="1.15" stroke-linejoin="round"/>
+    </svg>
+  </button>
+</div>
+
+<div class="modal-backdrop" id="modalBackdrop" hidden>
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <h2 id="modalTitle">Zähler zurücksetzen</h2>
+    <p>Nach einem Unfall hier das Unfalldatum eintragen. Der Zähler startet ab diesem Datum neu – auf allen Kiosk-Monitoren gleichzeitig.</p>
+    <label for="incidentDate">Datum des Unfalls</label>
+    <input type="date" id="incidentDate">
+    <p class="modal-status" id="modalStatus" role="status"></p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" id="cancelBtn" type="button">Abbrechen</button>
+      <button class="btn btn-danger" id="confirmBtn" type="button">Zurücksetzen</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(() => {
+  "use strict";
+
+  const FALLBACK_INCIDENT_DATE = "2025-11-11"; // used only if the db capability is unavailable
+
+  const counterEl = document.getElementById("counter");
+  const lastIncidentEl = document.getElementById("lastIncident");
+  const todayEl = document.getElementById("today");
+  const adminBtn = document.getElementById("adminBtn");
+  const modalBackdrop = document.getElementById("modalBackdrop");
+  const incidentDateInput = document.getElementById("incidentDate");
+  const cancelBtn = document.getElementById("cancelBtn");
+  const confirmBtn = document.getElementById("confirmBtn");
+  const modalStatus = document.getElementById("modalStatus");
+
+  const dateFmt = new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
+
+  function parseIsoDate(iso) {
+    const [y, m, d] = iso.split("-").map(Number);
+    return new Date(y, m - 1, d);
+  }
+
+  function daysBetween(from, to) {
+    const a = new Date(from.getFullYear(), from.getMonth(), from.getDate());
+    const b = new Date(to.getFullYear(), to.getMonth(), to.getDate());
+    return Math.round((b - a) / 86400000);
+  }
+
+  let currentIncidentIso = FALLBACK_INCIDENT_DATE;
+  let midnightTimer = null;
+
+  function render() {
+    const incidentDate = parseIsoDate(currentIncidentIso);
+    const today = new Date();
+    const count = Math.max(0, daysBetween(incidentDate, today));
+
+    counterEl.textContent = String(count);
+    lastIncidentEl.textContent = dateFmt.format(incidentDate);
+    todayEl.textContent = dateFmt.format(today);
+  }
+
+  function scheduleMidnightRefresh() {
+    if (midnightTimer) clearTimeout(midnightTimer);
+    const now = new Date();
+    const nextMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 5);
+    const ms = nextMidnight - now;
+    midnightTimer = setTimeout(() => {
+      render();
+      scheduleMidnightRefresh();
+    }, ms);
+  }
+
+  render();
+  scheduleMidnightRefresh();
+
+  // ---- Live sync across every open kiosk monitor via the db capability ----
+  let dbDoc = null;
+
+  (async () => {
+    const db = await window.claude?.use?.("db");
+    if (!db) return; // no db grant in this view: page still works from the fallback date
+
+    dbDoc = db.doc("config/counter");
+
+    dbDoc.onSnapshot(
+      (snap) => {
+        const data = snap.data();
+        if (data && typeof data.lastIncidentDate === "string") {
+          currentIncidentIso = data.lastIncidentDate;
+          render();
+        }
+      },
+      () => { /* subscription dropped: keep showing the last known value */ }
+    );
+  })();
+
+  // ---- Admin reset control ----
+  function openModal() {
+    incidentDateInput.value = new Date().toISOString().slice(0, 10);
+    modalStatus.textContent = "";
+    modalBackdrop.hidden = false;
+    incidentDateInput.focus();
+  }
+
+  function closeModal() {
+    modalBackdrop.hidden = true;
+  }
+
+  adminBtn.addEventListener("click", openModal);
+  cancelBtn.addEventListener("click", closeModal);
+
+  modalBackdrop.addEventListener("click", (e) => {
+    if (e.target === modalBackdrop) closeModal();
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && !modalBackdrop.hidden) closeModal();
+  });
+
+  confirmBtn.addEventListener("click", async () => {
+    const iso = incidentDateInput.value;
+    if (!iso) {
+      modalStatus.textContent = "Bitte ein Datum eingeben.";
+      return;
+    }
+    if (!dbDoc) {
+      modalStatus.textContent = "Zurücksetzen ist auf dieser Ansicht nicht verfügbar.";
+      return;
+    }
+
+    confirmBtn.disabled = true;
+    modalStatus.textContent = "Wird gespeichert …";
+    try {
+      await dbDoc.set({ lastIncidentDate: iso, updatedAt: new Date().toISOString() });
+      closeModal();
+    } catch (err) {
+      modalStatus.textContent = "Fehler beim Speichern. Bitte erneut versuchen.";
+    } finally {
+      confirmBtn.disabled = false;
+    }
+  });
+})();
+</script>
