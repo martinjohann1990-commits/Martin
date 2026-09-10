@@ -1,0 +1,4 @@
+{
+  "startDate": "2025-11-11",
+  "note": "startDate = Tag nach dem letzten Unfall (Tag 0). Der Zaehler zeigt die Anzahl vergangener Tage seit diesem Datum. Bei einem neuen Unfall dieses Datum auf den Tag danach aktualisieren."
+}
