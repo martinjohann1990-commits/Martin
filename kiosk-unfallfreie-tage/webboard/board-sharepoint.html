@@ -463,7 +463,11 @@
       render();
     } catch (err) {
       // Keep showing the last known value; flag that live data could not be reached.
-      lastFetchDiagnostic = { url: resolvedUrl, detail: err.message || String(err) };
+      const noValidBase = !/^https?:\/\//i.test(document.baseURI || "");
+      const hint = noValidBase
+        ? "Diese Seite läuft vermutlich in einer eingebetteten Vorschau ohne eigene Adresse (z. B. SharePoints Datei-Vorschau beim Anklicken in der Bibliothek). Datei nicht anklicken, sondern per „Link kopieren“/„Copy link“ die direkte URL holen und diese im Browser öffnen."
+        : null;
+      lastFetchDiagnostic = { url: resolvedUrl, detail: err.message || String(err), hint };
       liveIndicator.classList.add("stale");
       liveIndicator.lastChild.textContent = "config.json nicht erreichbar – letzter bekannter Stand";
       liveIndicator.title = `Geprüfte URL: ${resolvedUrl}\nFehler: ${lastFetchDiagnostic.detail}`;
@@ -488,7 +492,9 @@
     updateSnippet();
 
     if (lastFetchDiagnostic) {
-      diagnosticText.textContent = `URL: ${lastFetchDiagnostic.url}\nFehler: ${lastFetchDiagnostic.detail}`;
+      let text = `URL: ${lastFetchDiagnostic.url}\nFehler: ${lastFetchDiagnostic.detail}`;
+      if (lastFetchDiagnostic.hint) text += `\n\n${lastFetchDiagnostic.hint}`;
+      diagnosticText.textContent = text;
       diagnosticBox.hidden = false;
     } else {
       diagnosticBox.hidden = true;
