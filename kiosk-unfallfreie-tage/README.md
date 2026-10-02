@@ -7,7 +7,7 @@ gebraucht wird oder nicht:
 |---|---|---|---|
 | PowerPoint | `Unfallfreie_Tage_DC_Losheim.pptx` | ja, per Skript-Neuberechnung | ja, täglich |
 | Web (Claude-Link) | `webboard/board.html` (bereits veröffentlicht) | ja, live im Browser | nein |
-| Web (SharePoint) | `webboard/board-sharepoint.html` + `webboard/config.json` | ja, live im Browser | nein |
+| Web (SharePoint) | `webboard/board-sharepoint.html` | ja, live im Browser | nein (Reset = Datei manuell ersetzen) |
 
 Empfehlung, wenn kein Zwang zu PowerPoint besteht: eine der Web-Varianten,
 weil dort niemand mehr täglich ein Skript ausführen muss – die Seite rechnet
@@ -103,38 +103,56 @@ https://claude.ai/code/artifact/87907790-2cad-4274-9440-5fcc0a24deb8
 
 ### Variante B – Eigenes Hosting, z. B. Corporate SharePoint
 
-`webboard/board-sharepoint.html` + `webboard/config.json` sind eine
-eigenständige Version ohne jede Abhängigkeit von claude.ai – die beiden
-Dateien laufen auf jedem Webserver, auch auf SharePoint.
+`webboard/board-sharepoint.html` ist eine einzelne, eigenständige Datei ohne
+jede Abhängigkeit von claude.ai – läuft auf jedem Webserver, auch auf
+SharePoint.
 
-**Wichtige Voraussetzung bei SharePoint:** Standardmäßig ist „Browser File
-Handling" auf **Strict** gestellt – dann bietet SharePoint `.html`-Dateien
-nur zum Download an, statt sie im Browser auszuführen. Ein SharePoint-Admin
-muss das für die Bibliothek/Site, in der diese Dateien liegen, auf
-**Permissive** setzen (SharePoint Admin Center → Richtlinien → Zugriffssteuerung
-→ „Browserzugriff" bzw. per PowerShell `Set-SPOSite`/`Set-PnPSite
--BrowserFileHandling Permissive`), damit die Seite direkt läuft.
+**Wichtig – zwei verschiedene SharePoint-Einschränkungen, nicht nur eine:**
+
+1. **„Browser File Handling"** steht standardmäßig auf **Strict** – dann
+   bietet SharePoint `.html`-Dateien nur zum Download an, statt sie
+   auszuführen. Ein Admin muss das für die Bibliothek/Site auf **Permissive**
+   stellen (SharePoint Admin Center → Richtlinien → Zugriffssteuerung →
+   „Browserzugriff" bzw. per PowerShell `Set-SPOSite`/`Set-PnPSite
+   -BrowserFileHandling Permissive`).
+2. **„Custom Script"** ist auf vielen modernen SharePoint-/OneDrive-Sites
+   ebenfalls deaktiviert (separate, strengere Einstellung). In der Praxis
+   gezeigt: Selbst mit Permissive rendert SharePoint die Datei dann in einem
+   abgeschotteten Vorschau-Rahmen **ohne eigene Web-Adresse**, in dem jede
+   Netzwerk-Anfrage (`fetch`, `XMLHttpRequest`) aus der Seite heraus
+   blockiert wird – unabhängig davon, ob man die Datei anklickt oder einen
+   „direkten" Link verwendet. Ein Admin kann das über PowerShell prüfen/ändern:
+   `Set-SPOSite -Identity <Site-URL> -DenyAddAndCustomizePages $false`
+   (erfordert SharePoint-Admin-Rechte; viele Organisationen lassen das aus
+   Sicherheitsgründen nicht zu).
+
+**Deshalb verzichtet `board-sharepoint.html` bewusst auf jede Netzwerk-Anfrage.**
+Das Unfalldatum steckt als Konstante direkt im Code
+(`FALLBACK_INCIDENT_DATE`). Die automatische Tageszählung läuft rein lokal im
+Browser und funktioniert dadurch garantiert, auch unter Custom-Script-Sperre –
+nur der Reset nach einem Unfall braucht einen manuellen Schritt (siehe unten),
+weil die Seite nichts zurück nach SharePoint schreiben oder nachladen kann.
 
 **Einrichtung:**
 
-1. `board-sharepoint.html` und `config.json` **zusammen im selben Ordner**
-   einer SharePoint-Dokumentbibliothek ablegen (Browser File Handling wie
-   oben beschrieben auf Permissive stellen).
-2. Kiosk-Monitor: Browser im Kiosk-/Vollbildmodus auf die SharePoint-URL der
-   `board-sharepoint.html` zeigen lassen.
-3. Die Seite liest `config.json` beim Laden und danach alle 5 Minuten neu
-   (`POLL_MS` im Script) – ein Reset wird also spätestens nach 5 Minuten auf
-   allen Monitoren sichtbar, ganz ohne Neustart.
+1. `board-sharepoint.html` in eine SharePoint-Dokumentbibliothek hochladen
+   (Browser File Handling wie oben beschrieben auf Permissive stellen).
+2. Kiosk-Monitor: Browser im Kiosk-/Vollbildmodus auf die **direkte** Datei-URL
+   zeigen lassen – nicht auf die Bibliotheksansicht. Die Datei anklicken öffnet
+   SharePoints Vorschau (mit Such-/Menüleiste drumherum) statt der Seite
+   selbst; stattdessen per Rechtsklick „Link kopieren"/„Copy link" die direkte
+   URL holen und diese im Kiosk-Browser öffnen.
 
 **Nach einem Unfall (Variante B):**
 
 1. Auf einem beliebigen Gerät die Seite öffnen, unten rechts auf das
    Zahnrad klicken.
-2. Unfalldatum eingeben, „Inhalt kopieren" klicken.
-3. In SharePoint die Datei `config.json` im selben Ordner mit dem kopierten
-   Inhalt überschreiben (hochladen → vorhandene Datei ersetzen).
-   Die Seite kann `config.json` aus Sicherheitsgründen nicht selbst
-   beschreiben – dieser manuelle Upload-Schritt bleibt nötig.
+2. Unfalldatum eingeben, die erzeugte Code-Zeile kopieren
+   (`const FALLBACK_INCIDENT_DATE = "JJJJ-MM-TT";`).
+3. `board-sharepoint.html` herunterladen, in einem Texteditor öffnen, diese
+   eine Zeile ersetzen, speichern.
+4. Die geänderte Datei in SharePoint hochladen (vorhandene Datei ersetzen).
+5. Jeder Kiosk-Monitor übernimmt die Änderung beim nächsten Neuladen der Seite.
 
 **Hinweis zu Schriftarten:** Die Seite lädt „Big Shoulders Display"/„Archivo"
 von Google Fonts nach. Ist das Firmennetz der Kiosk-Rechner ohne Internetzugang

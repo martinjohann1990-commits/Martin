@@ -15,7 +15,6 @@
     --text: #eaf3ec;
     --muted: #7f9483;
     --muted-dim: #5c6d5f;
-    --danger: #e05a4e;
     --focus: #8cf0ae;
   }
 
@@ -138,8 +137,6 @@
     color: var(--muted-dim);
   }
 
-  .live-indicator.stale { color: var(--amber); }
-
   .dot {
     width: 7px;
     height: 7px;
@@ -148,8 +145,6 @@
     box-shadow: 0 0 0 0 rgba(72, 209, 126, 0.6);
     animation: pulse 2.4s ease-out infinite;
   }
-
-  .stale .dot { background: var(--amber); animation: none; }
 
   @media (prefers-reduced-motion: reduce) {
     .dot { animation: none; }
@@ -231,6 +226,14 @@
     color: var(--muted);
   }
 
+  .modal ol {
+    margin: 0;
+    padding-left: 20px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--muted);
+  }
+
   .modal label {
     font-size: 12px;
     font-weight: 600;
@@ -266,8 +269,6 @@
     white-space: pre-wrap;
     word-break: break-word;
   }
-
-  .snippet.diagnostic { color: var(--amber); }
 
   .modal-actions {
     display: flex;
@@ -339,7 +340,7 @@
       </div>
     </div>
 
-    <div class="live-indicator" id="liveIndicator"><span class="dot" aria-hidden="true"></span>Aktualisiert automatisch</div>
+    <div class="live-indicator"><span class="dot" aria-hidden="true"></span>Zählt automatisch weiter</div>
   </div>
 
   <button class="admin-btn" id="adminBtn" type="button" aria-haspopup="dialog" aria-label="Zähler zurücksetzen">
@@ -354,24 +355,26 @@
   <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
     <h2 id="modalTitle">Zähler zurücksetzen</h2>
     <p>
-      Diese Seite kann <code>config.json</code> auf SharePoint nicht selbst
-      beschreiben. Datum unten eingeben, Inhalt kopieren und damit die Datei
-      <code>config.json</code> neben dieser Seite in SharePoint überschreiben
-      (hochladen &amp; vorhandene Datei ersetzen). Alle Kiosk-Monitore
-      übernehmen die Änderung beim nächsten automatischen Abruf
-      (spätestens nach <span id="pollMinutesLabel">5</span>&nbsp;Minuten).
+      Diese SharePoint-Site lässt keine Live-Datenabfragen aus der Seite heraus
+      zu, daher funktioniert ein automatischer Reset hier nicht. Stattdessen:
     </p>
+    <ol>
+      <li>Unten das Unfalldatum wählen und den Code darunter kopieren.</li>
+      <li><code>board-sharepoint.html</code> herunterladen, in einem Texteditor
+        öffnen und die Zeile mit <code>FALLBACK_INCIDENT_DATE</code> durch den
+        kopierten Code ersetzen.</li>
+      <li>Die geänderte Datei in SharePoint hochladen und die vorhandene
+        ersetzen.</li>
+      <li>Jeder Kiosk-Monitor übernimmt die Änderung beim nächsten
+        Neuladen der Seite.</li>
+    </ol>
     <label for="incidentDate">Datum des Unfalls</label>
     <input type="date" id="incidentDate">
     <p class="snippet" id="snippet"></p>
-    <div id="diagnosticBox" hidden>
-      <label>Diagnose: config.json nicht erreichbar</label>
-      <p class="snippet diagnostic" id="diagnosticText"></p>
-    </div>
     <p class="modal-status" id="modalStatus" role="status"></p>
     <div class="modal-actions">
       <button class="btn btn-ghost" id="cancelBtn" type="button">Schließen</button>
-      <button class="btn btn-primary" id="copyBtn" type="button">Inhalt kopieren</button>
+      <button class="btn btn-primary" id="copyBtn" type="button">Zeile kopieren</button>
     </div>
   </div>
 </div>
@@ -380,14 +383,15 @@
 (() => {
   "use strict";
 
-  const CONFIG_URL = "config.json";       // must sit next to this file in the same SharePoint folder
-  const POLL_MS = 5 * 60 * 1000;          // re-check config.json every 5 minutes for a reset
-  const FALLBACK_INCIDENT_DATE = "2025-11-11"; // used only if config.json can't be loaded
+  // Single source of truth for the counter. After an accident, change this
+  // one line (use the gear icon below to generate the exact replacement),
+  // then re-upload this file to SharePoint. No network request is made —
+  // this works even on SharePoint sites with custom script disabled.
+  const FALLBACK_INCIDENT_DATE = "2025-11-11";
 
   const counterEl = document.getElementById("counter");
   const lastIncidentEl = document.getElementById("lastIncident");
   const todayEl = document.getElementById("today");
-  const liveIndicator = document.getElementById("liveIndicator");
   const adminBtn = document.getElementById("adminBtn");
   const modalBackdrop = document.getElementById("modalBackdrop");
   const incidentDateInput = document.getElementById("incidentDate");
@@ -395,9 +399,6 @@
   const copyBtn = document.getElementById("copyBtn");
   const modalStatus = document.getElementById("modalStatus");
   const snippetEl = document.getElementById("snippet");
-  const diagnosticBox = document.getElementById("diagnosticBox");
-  const diagnosticText = document.getElementById("diagnosticText");
-  document.getElementById("pollMinutesLabel").textContent = String(POLL_MS / 60000);
 
   const dateFmt = new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
 
@@ -412,11 +413,10 @@
     return Math.round((b - a) / 86400000);
   }
 
-  let currentIncidentIso = FALLBACK_INCIDENT_DATE;
   let midnightTimer = null;
 
   function render() {
-    const incidentDate = parseIsoDate(currentIncidentIso);
+    const incidentDate = parseIsoDate(FALLBACK_INCIDENT_DATE);
     const today = new Date();
     const count = Math.max(0, daysBetween(incidentDate, today));
 
@@ -435,71 +435,19 @@
     }, nextMidnight - now);
   }
 
-  // ---- Load / poll config.json (same folder in SharePoint) ----
-  let lastFetchDiagnostic = null; // shown in the admin modal when a fetch fails
-
-  async function loadConfig() {
-    let resolvedUrl = CONFIG_URL;
-    try {
-      resolvedUrl = new URL(CONFIG_URL, document.baseURI).href;
-    } catch (e) {
-      // document.baseURI can be unusable inside a sandboxed preview frame
-      // (e.g. SharePoint's inline file preview) — fall back to the plain
-      // relative path for display; the fetch below still uses CONFIG_URL
-      // directly and does not depend on this.
-    }
-
-    try {
-      const res = await fetch(`${CONFIG_URL}?t=${Date.now()}`, { cache: "no-store" });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      if (!data || typeof data.lastIncidentDate !== "string") {
-        throw new Error("Antwort enthält kein gültiges Feld 'lastIncidentDate'");
-      }
-      currentIncidentIso = data.lastIncidentDate;
-      lastFetchDiagnostic = null;
-      liveIndicator.classList.remove("stale");
-      liveIndicator.lastChild.textContent = "Aktualisiert automatisch";
-      render();
-    } catch (err) {
-      // Keep showing the last known value; flag that live data could not be reached.
-      const noValidBase = !/^https?:\/\//i.test(document.baseURI || "");
-      const hint = noValidBase
-        ? "Diese Seite läuft vermutlich in einer eingebetteten Vorschau ohne eigene Adresse (z. B. SharePoints Datei-Vorschau beim Anklicken in der Bibliothek). Datei nicht anklicken, sondern per „Link kopieren“/„Copy link“ die direkte URL holen und diese im Browser öffnen."
-        : null;
-      lastFetchDiagnostic = { url: resolvedUrl, detail: err.message || String(err), hint };
-      liveIndicator.classList.add("stale");
-      liveIndicator.lastChild.textContent = "config.json nicht erreichbar – letzter bekannter Stand";
-      liveIndicator.title = `Geprüfte URL: ${resolvedUrl}\nFehler: ${lastFetchDiagnostic.detail}`;
-    }
-  }
-
   render();
   scheduleMidnightRefresh();
-  loadConfig();
-  setInterval(loadConfig, POLL_MS);
 
-  // ---- Admin helper: builds the config.json content to re-upload ----
+  // ---- Admin helper: builds the replacement source line ----
   function updateSnippet() {
-    const iso = incidentDateInput.value || currentIncidentIso;
-    const json = JSON.stringify({ lastIncidentDate: iso, updatedAt: new Date().toISOString() }, null, 2);
-    snippetEl.textContent = json;
+    const iso = incidentDateInput.value || FALLBACK_INCIDENT_DATE;
+    snippetEl.textContent = `const FALLBACK_INCIDENT_DATE = "${iso}";`;
   }
 
   function openModal() {
     incidentDateInput.value = new Date().toISOString().slice(0, 10);
     modalStatus.textContent = "";
     updateSnippet();
-
-    if (lastFetchDiagnostic) {
-      let text = `URL: ${lastFetchDiagnostic.url}\nFehler: ${lastFetchDiagnostic.detail}`;
-      if (lastFetchDiagnostic.hint) text += `\n\n${lastFetchDiagnostic.hint}`;
-      diagnosticText.textContent = text;
-      diagnosticBox.hidden = false;
-    } else {
-      diagnosticBox.hidden = true;
-    }
-
     modalBackdrop.hidden = false;
     incidentDateInput.focus();
   }
@@ -523,7 +471,7 @@
   copyBtn.addEventListener("click", async () => {
     try {
       await navigator.clipboard.writeText(snippetEl.textContent);
-      modalStatus.textContent = "Kopiert – jetzt in config.json auf SharePoint einfügen.";
+      modalStatus.textContent = "Kopiert – jetzt in der heruntergeladenen Datei einfügen.";
     } catch (err) {
       modalStatus.textContent = "Kopieren nicht möglich – Text manuell markieren und kopieren.";
     }
