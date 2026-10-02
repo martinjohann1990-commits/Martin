@@ -267,6 +267,8 @@
     word-break: break-word;
   }
 
+  .snippet.diagnostic { color: var(--amber); }
+
   .modal-actions {
     display: flex;
     justify-content: flex-end;
@@ -362,6 +364,10 @@
     <label for="incidentDate">Datum des Unfalls</label>
     <input type="date" id="incidentDate">
     <p class="snippet" id="snippet"></p>
+    <div id="diagnosticBox" hidden>
+      <label>Diagnose: config.json nicht erreichbar</label>
+      <p class="snippet diagnostic" id="diagnosticText"></p>
+    </div>
     <p class="modal-status" id="modalStatus" role="status"></p>
     <div class="modal-actions">
       <button class="btn btn-ghost" id="cancelBtn" type="button">Schließen</button>
@@ -389,6 +395,8 @@
   const copyBtn = document.getElementById("copyBtn");
   const modalStatus = document.getElementById("modalStatus");
   const snippetEl = document.getElementById("snippet");
+  const diagnosticBox = document.getElementById("diagnosticBox");
+  const diagnosticText = document.getElementById("diagnosticText");
   document.getElementById("pollMinutesLabel").textContent = String(POLL_MS / 60000);
 
   const dateFmt = new Intl.DateTimeFormat("de-DE", { day: "2-digit", month: "2-digit", year: "numeric" });
@@ -428,21 +436,28 @@
   }
 
   // ---- Load / poll config.json (same folder in SharePoint) ----
+  let lastFetchDiagnostic = null; // shown in the admin modal when a fetch fails
+
   async function loadConfig() {
+    const resolvedUrl = new URL(CONFIG_URL, document.baseURI).href;
     try {
       const res = await fetch(`${CONFIG_URL}?t=${Date.now()}`, { cache: "no-store" });
-      if (!res.ok) throw new Error(String(res.status));
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
       const data = await res.json();
-      if (data && typeof data.lastIncidentDate === "string") {
-        currentIncidentIso = data.lastIncidentDate;
-        liveIndicator.classList.remove("stale");
-        liveIndicator.lastChild.textContent = "Aktualisiert automatisch";
+      if (!data || typeof data.lastIncidentDate !== "string") {
+        throw new Error("Antwort enthält kein gültiges Feld 'lastIncidentDate'");
       }
+      currentIncidentIso = data.lastIncidentDate;
+      lastFetchDiagnostic = null;
+      liveIndicator.classList.remove("stale");
+      liveIndicator.lastChild.textContent = "Aktualisiert automatisch";
       render();
     } catch (err) {
       // Keep showing the last known value; flag that live data could not be reached.
+      lastFetchDiagnostic = { url: resolvedUrl, detail: err.message || String(err) };
       liveIndicator.classList.add("stale");
       liveIndicator.lastChild.textContent = "config.json nicht erreichbar – letzter bekannter Stand";
+      liveIndicator.title = `Geprüfte URL: ${resolvedUrl}\nFehler: ${lastFetchDiagnostic.detail}`;
     }
   }
 
@@ -462,6 +477,14 @@
     incidentDateInput.value = new Date().toISOString().slice(0, 10);
     modalStatus.textContent = "";
     updateSnippet();
+
+    if (lastFetchDiagnostic) {
+      diagnosticText.textContent = `URL: ${lastFetchDiagnostic.url}\nFehler: ${lastFetchDiagnostic.detail}`;
+      diagnosticBox.hidden = false;
+    } else {
+      diagnosticBox.hidden = true;
+    }
+
     modalBackdrop.hidden = false;
     incidentDateInput.focus();
   }
