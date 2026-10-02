@@ -439,7 +439,16 @@
   let lastFetchDiagnostic = null; // shown in the admin modal when a fetch fails
 
   async function loadConfig() {
-    const resolvedUrl = new URL(CONFIG_URL, document.baseURI).href;
+    let resolvedUrl = CONFIG_URL;
+    try {
+      resolvedUrl = new URL(CONFIG_URL, document.baseURI).href;
+    } catch (e) {
+      // document.baseURI can be unusable inside a sandboxed preview frame
+      // (e.g. SharePoint's inline file preview) — fall back to the plain
+      // relative path for display; the fetch below still uses CONFIG_URL
+      // directly and does not depend on this.
+    }
+
     try {
       const res = await fetch(`${CONFIG_URL}?t=${Date.now()}`, { cache: "no-store" });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
