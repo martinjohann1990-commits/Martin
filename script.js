@@ -18,6 +18,10 @@
   const roundsInput = document.getElementById("rounds");
   const prepTimeInput = document.getElementById("prepTime");
 
+  const presetTabata = document.getElementById("presetTabata");
+  const presetHiit = document.getElementById("presetHiit");
+  const presetBoxen = document.getElementById("presetBoxen");
+
   const PHASES = { PREP: "prep", WORK: "work", REST: "rest", DONE: "done" };
 
   let plan = null;
@@ -66,6 +70,18 @@
       beep(660, 150);
       setTimeout(() => beep(880, 150), 180);
       setTimeout(() => beep(1046, 250), 360);
+    }
+
+    // Text-to-speech announcement
+    if ('speechSynthesis' in window) {
+      // Cancel any ongoing speech
+      window.speechSynthesis.cancel();
+      const text = PHASE_TEXT[phase];
+      if (text) {
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'de-DE';
+        window.speechSynthesis.speak(utterance);
+      }
     }
   }
 
@@ -192,6 +208,24 @@
     }
   }
 
+  function shootConfetti() {
+    const colors = ['#ff5a5f', '#3fb950', '#d4a72c', '#5b8cff', '#e0245e', '#ffad1f'];
+    for (let i = 0; i < 50; i++) {
+      const confetti = document.createElement('div');
+      confetti.classList.add('confetti');
+      confetti.style.left = Math.random() * 100 + 'vw';
+      confetti.style.backgroundColor = colors[Math.floor(Math.random() * colors.length)];
+      confetti.style.animationDuration = (Math.random() * 3 + 2) + 's';
+      confetti.style.animationDelay = (Math.random() * 2) + 's';
+      document.body.appendChild(confetti);
+
+      // Cleanup
+      setTimeout(() => {
+        confetti.remove();
+      }, 5000);
+    }
+  }
+
   function startStep(index) {
     currentIndex = index;
     const step = plan.steps[index];
@@ -203,6 +237,7 @@
       releaseWakeLock();
       pauseBtn.textContent = "Pause";
       setStatus("Training beendet.");
+      shootConfetti();
       return;
     }
 
@@ -278,6 +313,17 @@
     timerScreen.hidden = true;
     setupScreen.hidden = false;
   }
+
+  function setPreset(work, rest, rounds, prep) {
+    workTimeInput.value = work;
+    restTimeInput.value = rest;
+    roundsInput.value = rounds;
+    prepTimeInput.value = prep;
+  }
+
+  presetTabata.addEventListener("click", () => setPreset(20, 10, 8, 10));
+  presetHiit.addEventListener("click", () => setPreset(45, 15, 5, 10));
+  presetBoxen.addEventListener("click", () => setPreset(180, 60, 12, 10));
 
   startBtn.addEventListener("click", startWorkout);
   pauseBtn.addEventListener("click", togglePause);
