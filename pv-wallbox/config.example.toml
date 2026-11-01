@@ -16,7 +16,10 @@ dry_run = false            # true = nur loggen, nichts schalten
 
 [control]
 mode = "pv"                # pv | minpv | fast | off  (Startmodus, per Web-UI umschaltbar)
-phases = 3                 # 3-phasig: Minimum 6 A = ~4,1 kW, 1-phasig: ~1,4 kW
+# Phasen: "1" = immer einphasig (Start ab ~1,4 kW), "3" = immer dreiphasig (ab ~4,1 kW),
+# "auto" = einphasig starten und bei genug Überschuss auf dreiphasig umschalten.
+# Auch zur Laufzeit in der Web-UI umschaltbar.
+phase_mode = "1"
 voltage = 230
 min_current_a = 6
 max_current_a = 16
@@ -31,6 +34,10 @@ start_delay_s = 300
 stop_delay_s = 600
 min_on_s = 900
 min_off_s = 300
+phase_up_margin_w = 200    # auto: so viel über ~4,1 kW, bevor auf 3 Phasen gewechselt wird
+phase_up_delay_s = 600
+phase_down_delay_s = 600
+phase_switch_min_s = 900   # mind. Abstand zwischen zwei Phasenwechseln (schont Schütz & Auto)
 smoothing = 0.5
 stale_after_s = 900        # Cloud-Daten älter als 15 min = "keine Daten"
 stale_action = "stop"      # "stop" oder "min" (mit 6 A weiterladen)

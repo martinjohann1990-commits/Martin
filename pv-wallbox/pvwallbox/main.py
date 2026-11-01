@@ -15,7 +15,7 @@ from dataclasses import asdict, fields
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
-from .controller import MODES, Controller, ControllerConfig, Decision
+from .controller import MODES, PHASE_MODES, Controller, ControllerConfig, Decision
 from .solax_cloud import SolaxCloudClient, SolaxCloudError
 from .wallbox import DryRunWallbox, HacWallbox, WallboxState
 
@@ -32,7 +32,14 @@ class Service:
 
         ctrl_keys = {f.name for f in fields(ControllerConfig)}
         ctrl_cfg = ControllerConfig(**{k: v for k, v in cfg.get("control", {}).items() if k in ctrl_keys})
-        self.controller = Controller(ctrl_cfg, mode=self._load_mode(cfg.get("control", {}).get("mode", "pv")))
+        saved = self._load_saved()
+        mode = saved.get("mode", cfg.get("control", {}).get("mode", "pv"))
+        phase_mode = str(saved.get("phase_mode", ctrl_cfg.phase_mode))
+        self.controller = Controller(
+            ctrl_cfg,
+            mode=mode if mode in MODES else "pv",
+            phase_mode=phase_mode if phase_mode in PHASE_MODES else ctrl_cfg.phase_mode,
+        )
 
         sc = cfg["solax_cloud"]
         self.cloud = SolaxCloudClient(
@@ -42,7 +49,7 @@ class Service:
         )
         wb = cfg["wallbox"]
         dry_run = dry_run or bool(wb.get("dry_run", False))
-        self.wallbox = (DryRunWallbox(ctrl_cfg.phases, ctrl_cfg.voltage) if dry_run
+        self.wallbox = (DryRunWallbox(self.controller.state.phases, ctrl_cfg.voltage) if dry_run
                         else HacWallbox(wb["host"], int(wb.get("port", 502)), int(wb.get("unit_id", 1))))
 
         self.ev_power_samples: deque[float] = deque(maxlen=60)
@@ -56,24 +63,37 @@ class Service:
         self.lock = threading.Lock()
         self.stop_event = threading.Event()
 
-    # -- persistence of the user-selected mode -----------------------------------
-    def _load_mode(self, default: str) -> str:
+    # -- persistence of the user-selected modes -----------------------------------
+    def _load_saved(self) -> dict:
         try:
-            mode = json.loads(self.state_file.read_text()).get("mode", default)
-            return mode if mode in MODES else default
+            data = json.loads(self.state_file.read_text())
+            return data if isinstance(data, dict) else {}
         except (OSError, ValueError):
-            return default
+            return {}
+
+    def _save(self) -> None:
+        try:
+            self.state_file.write_text(json.dumps(
+                {"mode": self.controller.mode, "phase_mode": self.controller.phase_mode}))
+        except OSError as exc:
+            log.warning("could not persist settings: %s", exc)
 
     def set_mode(self, mode: str) -> None:
         if mode not in MODES:
             raise ValueError(f"unknown mode {mode!r}, allowed: {MODES}")
         with self.lock:
             self.controller.mode = mode
-        try:
-            self.state_file.write_text(json.dumps({"mode": mode}))
-        except OSError as exc:
-            log.warning("could not persist mode: %s", exc)
+            self._save()
         log.info("Mode changed to %s", mode)
+
+    def set_phase_mode(self, phase_mode) -> None:
+        phase_mode = str(phase_mode).lower()
+        if phase_mode not in PHASE_MODES:
+            raise ValueError(f"unknown phase mode {phase_mode!r}, allowed: {PHASE_MODES}")
+        with self.lock:
+            self.controller.phase_mode = phase_mode
+            self._save()
+        log.info("Phase mode changed to %s", phase_mode)
 
     # -- one control cycle ---------------------------------------------------------
     def step(self) -> None:
@@ -113,6 +133,9 @@ class Service:
 
     def _apply(self, d: Decision, wb: WallboxState) -> None:
         try:
+            if (wb.car_connected and getattr(self.wallbox, "phase_switching_supported", False)
+                    and wb.phase_setting != d.phases):
+                self.wallbox.set_phases(d.phases)
             if d.charge:
                 if wb.current_setpoint_a is None or abs(wb.current_setpoint_a - d.current_a) >= 0.5:
                     self.wallbox.set_current(d.current_a)
@@ -129,10 +152,10 @@ class Service:
             self.last_error = f"wallbox write: {exc}"
             log.error("Wallbox write failed: %s", exc)
             return
-        log.info("%-5s %s | surplus=%s W | EV=%.0f W (%s) -> %s %.0f A",
+        log.info("%-5s %s | surplus=%s W | EV=%.0f W (%s) -> %s %.0f A %d-phase",
                  self.controller.mode, d.reason,
                  "n/a" if d.surplus_w is None else f"{d.surplus_w:.0f}",
-                 wb.power_w, wb.run_mode_name, "ON" if d.charge else "OFF", d.current_a)
+                 wb.power_w, wb.run_mode_name, "ON" if d.charge else "OFF", d.current_a, d.phases)
 
     def status(self) -> dict:
         with self.lock:
@@ -140,6 +163,9 @@ class Service:
             return {
                 "mode": self.controller.mode,
                 "modes": list(MODES),
+                "phase_mode": self.controller.phase_mode,
+                "phase_modes": list(PHASE_MODES),
+                "phase_switching_supported": getattr(self.wallbox, "phase_switching_supported", None),
                 "decision": asdict(self.last_decision) if self.last_decision else None,
                 "wallbox": None if not self.last_wb else {
                     **asdict(self.last_wb), "run_mode_name": self.last_wb.run_mode_name},
@@ -181,11 +207,15 @@ def make_handler(service: Service):
                 self._send(404, b"not found", "text/plain")
 
         def do_POST(self):
-            if self.path != "/api/mode":
+            if self.path not in ("/api/mode", "/api/phase"):
                 return self._send(404, b"not found", "text/plain")
             try:
                 length = int(self.headers.get("Content-Length", 0))
-                service.set_mode(json.loads(self.rfile.read(length) or b"{}").get("mode", ""))
+                body = json.loads(self.rfile.read(length) or b"{}")
+                if self.path == "/api/mode":
+                    service.set_mode(body.get("mode", ""))
+                else:
+                    service.set_phase_mode(body.get("phase_mode", ""))
             except (ValueError, AttributeError) as exc:
                 return self._send(400, json.dumps({"error": str(exc)}).encode(), "application/json")
             self._send(200, json.dumps(service.status()).encode(), "application/json")

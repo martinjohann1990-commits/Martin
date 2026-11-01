@@ -76,7 +76,7 @@ class ControllerTest(unittest.TestCase):
     def test_battery_discharge_not_used(self):
         c = make()
         c.feed_sample(0, "a", 3000, 0, -2000, 4140)     # battery feeds the car
-        self.assertLess(c.state.surplus_w, c.cfg.min_power_w)
+        self.assertLess(c.state.surplus_w, c.cfg.min_power_w(3))
 
     def test_stale_data(self):
         c = make()
@@ -132,3 +132,63 @@ class ParseTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class PhaseTest(unittest.TestCase):
+    def feed(self, c, t, feedin, ev=0.0):
+        c.feed_sample(t, str(t), 8000, feedin, 0, ev)
+
+    def run_until(self, c, start, end, feedin, ev=0.0, step=60):
+        d = None
+        for t in range(start, end, step):
+            self.feed(c, t, feedin, ev)
+            d = c.decide(t, True)
+        return d
+
+    def test_fixed_single_phase(self):
+        c = make(phase_mode="1")
+        d = self.run_until(c, 0, 360, 2000)
+        self.assertTrue(d.charge)
+        self.assertEqual(d.phases, 1)
+        self.assertEqual(d.current_a, 8)
+        d = self.run_until(c, 360, 2000, 9000)          # lots of sun: still 1 phase, max 16 A
+        self.assertEqual((d.phases, d.current_a), (1, 16))
+
+    def test_phase_mode_from_legacy_phases(self):
+        self.assertEqual(ControllerConfig(phases=1).phase_mode, "1")
+        with self.assertRaises(ValueError):
+            ControllerConfig(phase_mode="2")
+
+    def test_auto_starts_single_phase_and_switches_up_and_down(self):
+        c = make(phase_mode="auto")
+        d = self.run_until(c, 0, 360, 2000)
+        self.assertEqual((d.charge, d.phases), (True, 1))
+        # more sun: car draws 1840 W (8 A), export 4000 -> surplus 5840 W -> after 10 min 3-phase
+        d = self.run_until(c, 360, 900, 4000, ev=1840)
+        self.assertEqual(d.phases, 1)
+        d = self.run_until(c, 900, 1100, 4000, ev=1840)
+        self.assertEqual(d.phases, 3)
+        self.assertEqual(d.current_a, 8)                # 5840 / 690
+        # clouds: surplus 2500 W -> not enough for 3 phases -> back to 1 phase, no stop
+        d = self.run_until(c, 1100, 1800, -1640, ev=4140)
+        self.assertEqual(d.phases, 3)                   # 600 s deficit, but phase_switch_min_s blocks
+        self.assertEqual(d.current_a, 6)
+        d = self.run_until(c, 1800, 2000, -1640, ev=4140)
+        self.assertTrue(d.charge)
+        self.assertEqual(d.phases, 1)
+        self.assertEqual(d.current_a, 10)               # 2500 / 230
+
+    def test_auto_starts_three_phase_with_big_surplus(self):
+        c = make(phase_mode="auto")
+        d = self.run_until(c, 0, 360, 6000)
+        self.assertEqual((d.charge, d.phases), (True, 3))
+
+    def test_auto_fast_uses_three_phases(self):
+        c = make(phase_mode="auto")
+        c.mode = "fast"
+        self.assertEqual(c.decide(0, True).phases, 3)
+
+    def test_runtime_switch_to_single_phase(self):
+        c = make(phase_mode="3")
+        c.phase_mode = "1"
+        self.assertEqual(c.decide(0, True).phases, 1)

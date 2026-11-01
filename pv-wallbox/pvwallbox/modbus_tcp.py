@@ -46,7 +46,7 @@ class ModbusTcpClient:
         while len(buf) < n:
             chunk = sock.recv(n - len(buf))
             if not chunk:
-                raise ModbusError("connection closed by wallbox")
+                raise ConnectionError("connection closed by wallbox")
             buf += chunk
         return buf
 
@@ -61,14 +61,15 @@ class ModbusTcpClient:
                     tid, _proto, length, _unit = struct.unpack(">HHHB", self._recv_exact(sock, 7))
                     body = self._recv_exact(sock, length - 1)
                     if tid != self._tid:
-                        raise ModbusError(f"transaction id mismatch ({tid} != {self._tid})")
-                    if body[0] & 0x80:
-                        raise ModbusError(f"modbus exception code {body[1]} for function 0x{pdu[0]:02x}")
-                    return body
-                except (OSError, ModbusError):
-                    self.close()
+                        raise OSError(f"transaction id mismatch ({tid} != {self._tid})")
+                except OSError:
+                    self.close()       # broken connection: reconnect once and retry
                     if attempt == 2:
                         raise
+                    continue
+                if body[0] & 0x80:     # device answered with an exception: no retry
+                    raise ModbusError(f"modbus exception code {body[1]} for function 0x{pdu[0]:02x}")
+                return body
             raise ModbusError("unreachable")
 
     # -- public API ------------------------------------------------------------

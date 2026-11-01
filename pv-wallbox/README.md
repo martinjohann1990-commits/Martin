@@ -26,6 +26,21 @@ X1/X3-HAC ◀──Modbus TCP (lokal)───▶│ pvwallbox (Raspberry Pi, �
   gefahren, `stale_action = "min"`).
 * Alle Werte sind in `config.toml` einstellbar.
 
+### Phasen (über Web-UI oder `POST /api/phase` mit `{"phase_mode": "1"}`)
+
+| Einstellung | Verhalten | Ladeleistung |
+|-------------|-----------|--------------|
+| `1`    | Immer einphasig | 1,4 – 3,7 kW (6–16 A) |
+| `3`    | Immer dreiphasig | 4,1 – 11 kW (6–16 A) |
+| `auto` | Einphasig starten, ab ~4,3 kW stabilem Überschuss (10 min) auf dreiphasig, bei Defizit zurück auf einphasig statt zu stoppen | 1,4 – 11 kW |
+
+Einphasig lohnt sich vor allem in Übergangszeit und Winter, weil schon ab ~1,4 kW
+Überschuss geladen wird statt erst ab ~4,1 kW. Die Umschaltung erfolgt über das
+Register `0xA105` der HAC (EMS-Registerblock). Ältere Firmware kennt dieses Register
+evtl. nicht – dann zeigt die Web-UI einen Hinweis, und die Phase muss in der
+SolaX-App fest eingestellt werden (`phase_mode` dann passend setzen, sonst stimmt
+die Stromberechnung nicht).
+
 ### Modi (über Web-UI oder `POST /api/mode`)
 
 | Modus   | Verhalten                                   |
@@ -81,8 +96,9 @@ docker run -d --restart=always --name pvwallbox -p 8080:8080 \
   PV-Überschussladen (deshalb die Glättung und Verzögerungen), regelt aber nicht
   sekundengenau. Für schnellere Regelung könnte man später den Wechselrichter lokal per
   Modbus auslesen – die Regel-Logik bleibt gleich.
-* **Phasen:** 3-phasig beginnt das Laden erst ab ~4,1 kW Überschuss. Wer das Auto
-  1-phasig laden lässt (Einstellung an der Wallbox), setzt `phases = 1` → Start ab ~1,4 kW.
+* **Phasen-Umschaltung** bei laufender Ladung unterbricht diese kurz (Wallbox-Status
+  „Phase Switching“). Manche Autos mögen häufiges Umschalten nicht, deshalb liegen
+  mindestens 15 min zwischen zwei Wechseln.
 * Der Dienst stellt die Wallbox beim Start eines Ladevorgangs auf den Modus **„Fast“**,
   damit sie dem vorgegebenen Ladestrom folgt. Die eingebauten Modi ECO/Green der
   Wallbox sollten dann nicht parallel genutzt werden.
