@@ -1,0 +1,46 @@
+# Kopieren nach config.toml und anpassen.
+
+[solax_cloud]
+# Token: solaxcloud.com -> Service -> API (oder "Third-party ecosystem")
+# Alternativ per Umgebungsvariable SOLAX_TOKEN_ID setzen.
+token_id = "DEIN_TOKEN"
+# Registriernummer des Datenloggers (Pocket LAN 3.0), steht auf dem Stick: z.B. "SYWNGJJMFG"
+wifi_sn = "SYWNGJJMFG"
+api_version = 2            # 2 = neue API, 1 = alte getRealtimeInfo.do
+
+[wallbox]
+host = "192.168.178.50"    # IP der X1/X3-HAC im Heimnetz
+port = 502
+unit_id = 1                # Modbus-Adresse (in der SolaX-App unter Wallbox-Einstellungen)
+dry_run = false            # true = nur loggen, nichts schalten
+
+[control]
+mode = "pv"                # pv | minpv | fast | off  (Startmodus, per Web-UI umschaltbar)
+phases = 3                 # 3-phasig: Minimum 6 A = ~4,1 kW, 1-phasig: ~1,4 kW
+voltage = 230
+min_current_a = 6
+max_current_a = 16
+# "feedin": Einspeiseleistung aus der Cloud (benötigt Zähler/CT am Wechselrichter)
+# "pv_minus_base": PV-Leistung minus angenommene Grundlast (ohne Zähler)
+surplus_source = "feedin"
+base_load_w = 400
+reserve_w = 100            # Puffer, der immer für das Haus bleibt
+allow_grid_w = 300         # so viel Netzbezug wird beim Laden toleriert, bevor gestoppt wird
+ev_before_battery = false  # true = Auto vor Hausspeicher (nur bei Hybrid-WR relevant)
+start_delay_s = 300
+stop_delay_s = 600
+min_on_s = 900
+min_off_s = 300
+smoothing = 0.5
+stale_after_s = 900        # Cloud-Daten älter als 15 min = "keine Daten"
+stale_action = "stop"      # "stop" oder "min" (mit 6 A weiterladen)
+
+[service]
+cloud_interval_s = 60      # Cloud-API erlaubt max. 10 Abfragen/Minute
+loop_interval_s = 15
+state_file = "pvwallbox-state.json"
+
+[web]
+enabled = true
+bind = "0.0.0.0"
+port = 8080

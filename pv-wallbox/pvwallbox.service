@@ -1,0 +1,14 @@
+[Unit]
+Description=PV-Ueberschussladen SolaX X1/X3-HAC
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+WorkingDirectory=/opt/pv-wallbox
+ExecStart=/usr/bin/python3 -m pvwallbox.main -c /opt/pv-wallbox/config.toml
+Restart=always
+RestartSec=30
+User=pi
+
+[Install]
+WantedBy=multi-user.target

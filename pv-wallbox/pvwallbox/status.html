@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PV-Wallbox</title>
+<style>
+  :root { --bg:#f5f6f8; --card:#fff; --fg:#1b2333; --muted:#6b7385; --accent:#14b88f; --warn:#d9822b; --line:#e3e6ec; }
+  @media (prefers-color-scheme: dark) { :root { --bg:#12151b; --card:#1c2029; --fg:#e8ebf1; --muted:#98a0b0; --line:#2b313d; } }
+  * { box-sizing:border-box; }
+  body { margin:0; font:16px/1.4 system-ui,-apple-system,sans-serif; background:var(--bg); color:var(--fg); }
+  main { max-width:520px; margin:0 auto; padding:20px 16px; }
+  h1 { font-size:22px; margin:0 0 4px; }
+  .sub { color:var(--muted); margin-bottom:16px; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+  .card { background:var(--card); border-radius:16px; padding:14px 16px; }
+  .label { color:var(--muted); font-size:13px; }
+  .value { font-size:24px; font-weight:600; font-variant-numeric:tabular-nums; }
+  .wide { grid-column:1 / -1; }
+  .modes { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin:16px 0; }
+  button { border:1px solid var(--line); background:var(--card); color:var(--fg); padding:12px 4px; border-radius:12px; font-size:15px; cursor:pointer; }
+  button.active { background:var(--accent); border-color:var(--accent); color:#fff; font-weight:600; }
+  .err { color:var(--warn); }
+</style>
+</head>
+<body>
+<main>
+  <h1>PV-Überschussladen</h1>
+  <div class="sub" id="reason">lade …</div>
+  <div class="modes" id="modes"></div>
+  <div class="grid">
+    <div class="card"><div class="label">PV-Leistung</div><div class="value" id="pv">–</div></div>
+    <div class="card"><div class="label">Netz (+ Einspeisung)</div><div class="value" id="grid">–</div></div>
+    <div class="card"><div class="label">Überschuss (geglättet)</div><div class="value" id="surplus">–</div></div>
+    <div class="card"><div class="label">Wallbox</div><div class="value" id="ev">–</div></div>
+    <div class="card wide"><div class="label">Status</div><div id="state">–</div></div>
+  </div>
+</main>
+<script>
+const LABELS = { pv: "PV", minpv: "Min+PV", fast: "Schnell", off: "Aus" };
+const W = v => v == null ? "–" : (Math.abs(v) >= 1000 ? (v/1000).toFixed(2) + " kW" : Math.round(v) + " W");
+async function setMode(m) {
+  await fetch("/api/mode", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({ mode: m }) });
+  refresh();
+}
+async function refresh() {
+  try {
+    const s = await (await fetch("/api/status")).json();
+    document.getElementById("modes").innerHTML = s.modes.map(m =>
+      `<button class="${m === s.mode ? "active" : ""}" onclick="setMode('${m}')">${LABELS[m] || m}</button>`).join("");
+    const d = s.decision || {};
+    document.getElementById("reason").textContent = d.reason ? `${d.charge ? "Lädt mit " + d.current_a + " A" : "Pausiert"} – ${d.reason}` : "warte auf Daten …";
+    document.getElementById("pv").textContent = W(s.pv && s.pv.pv_power_w);
+    document.getElementById("grid").textContent = W(s.pv && s.pv.feedin_power_w);
+    document.getElementById("surplus").textContent = W(d.surplus_w);
+    document.getElementById("ev").textContent = W(s.wallbox && s.wallbox.power_w);
+    const st = [];
+    if (s.wallbox) st.push(`Wallbox: ${s.wallbox.run_mode_name}`);
+    if (s.pv) st.push(`Cloud-Daten von ${s.pv.upload_time}${s.data_fresh ? "" : " (veraltet!)"}`);
+    document.getElementById("state").innerHTML = st.join("<br>") + (s.error ? `<br><span class="err">${s.error}</span>` : "");
+  } catch (e) {
+    document.getElementById("reason").textContent = "Dienst nicht erreichbar";
+  }
+}
+refresh(); setInterval(refresh, 10000);
+</script>
+</body>
+</html>
