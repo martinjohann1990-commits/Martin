@@ -1,0 +1,31 @@
+# Paketliste für debloat.sh
+# Format: <kategorie> <paketname>   # Beschreibung
+# Kategorien:
+#   tracking  – Telemetrie, Werbung, Crash-Reports (Standard, gilt als sicher)
+#   apps      – vorinstallierte Amazon-Apps (nur mit --apps)
+#   updates   – automatische System-Updates (nur mit --updates, NICHT empfohlen)
+# Nicht installierte Pakete werden automatisch übersprungen.
+# NIEMALS hier eintragen: com.amazon.tv.launcher, com.amazon.tv.settings*, com.amazon.venezia,
+# com.amazon.dcp, com.amazon.device.software.ota.override – sonst drohen Bootschleifen/kaputte Menüs.
+
+tracking com.amazon.client.metrics          # Nutzungs-Telemetrie
+tracking com.amazon.client.metrics.api      # Telemetrie-API
+tracking com.amazon.device.crashmanager     # Crash-Reports an Amazon
+tracking com.amazon.device.logmanager       # Log-Upload
+tracking com.amazon.kso                     # Werbe-/Angebotsdienst ("Special Offers")
+tracking com.amazon.tv.csapp                # Kundenservice-Overlay
+tracking com.amazon.tmm.tutorial            # Einführungs-Tutorials
+tracking com.amazon.hedwig                  # Werbe-Benachrichtigungen
+tracking com.amazon.ags.app                 # Amazon GameCircle
+
+apps com.amazon.bueller.music               # Amazon Music
+apps com.amazon.imdb.tv.android.app         # Freevee / IMDb TV
+apps com.amazon.amazonvideo.livingroom      # Prime Video (nicht entfernen, wenn du es nutzt!)
+apps com.amazon.alexa.externalmediaplayer.fireos  # Alexa-Mediensteuerung
+apps com.amazon.tv.livetv                   # Live-TV-Integration
+apps com.amazon.photos.importer             # Amazon Photos
+apps com.amazon.aria                        # Amazon Silk-Komponente
+apps com.amazon.cloud9                      # Silk Browser
+
+updates com.amazon.device.software.ota      # System-Updates
+updates com.amazon.tv.forcedotaupdater.v2   # Erzwungene Updates
