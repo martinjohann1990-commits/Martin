@@ -63,16 +63,35 @@ die Stromberechnung nicht).
 4. **Zähler/CT:** Für `surplus_source = "feedin"` braucht der Wechselrichter einen
    Netzzähler (Einspeisung ≠ 0 in der Cloud). Ohne Zähler `surplus_source = "pv_minus_base"`
    und `base_load_w` auf die typische Grundlast setzen.
-5. Konfiguration anlegen und erst im Trockenlauf testen:
+5. Konfiguration anlegen, Verbindung testen und erst im Trockenlauf starten:
 
 ```bash
 cp config.example.toml config.toml   # anpassen
+python3 -m pvwallbox.main --check            # Verbindungstest (liest nur)
+python3 -m pvwallbox.main --check-write      # zusätzlich Schreibtest
 python3 -m pvwallbox.main --once --dry-run   # ein Durchlauf, zeigt Status als JSON
 python3 -m pvwallbox.main --dry-run          # Dauerbetrieb, schaltet nichts
 python3 -m pvwallbox.main                    # scharf
 ```
 
 Web-UI: `http://<ip-des-rechners>:8080`
+
+### Verbindungstest (`--check`)
+
+Prüft Schritt für Schritt und nennt bei jedem Fehler die wahrscheinliche Ursache:
+
+1. **Konfiguration** – Datei vorhanden und lesbar?
+2. **SolaX Cloud** – Token gültig, Daten aktuell (sonst: Wechselrichter/Logger offline),
+   liefert die Cloud Einspeisewerte (sonst: kein Zähler → `pv_minus_base`)?
+3. **Netzwerk** – Wallbox unter der IP erreichbar, Port 502 offen?
+   Unterscheidet *falsche IP / Gast-WLAN* (Timeout) von *Modbus TCP nicht aktiv* (Port geschlossen).
+4. **Modbus** – antwortet die Wallbox? Bei falscher `unit_id` werden übliche Adressen
+   automatisch durchprobiert. Erkennt auch RS485-Adapter, die die Wallbox nicht erreichen.
+5. **Phasenumschaltung** – kennt die Firmware die Phasen-Register?
+6. **Schreibtest** (nur `--check-write`) – schreibt den aktuellen Ladestrom unverändert
+   zurück; am Ladevorgang ändert sich nichts.
+
+Rückgabewert 0 = alles OK, 1 = Problem gefunden.
 
 ### Dauerbetrieb
 

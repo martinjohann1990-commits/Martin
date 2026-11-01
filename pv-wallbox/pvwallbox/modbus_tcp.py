@@ -14,7 +14,9 @@ import threading
 
 
 class ModbusError(Exception):
-    pass
+    def __init__(self, message: str, code: int | None = None):
+        super().__init__(message)
+        self.code = code  # Modbus exception code (1 = illegal function, 2 = illegal address, ...)
 
 
 class ModbusTcpClient:
@@ -68,7 +70,7 @@ class ModbusTcpClient:
                         raise
                     continue
                 if body[0] & 0x80:     # device answered with an exception: no retry
-                    raise ModbusError(f"modbus exception code {body[1]} for function 0x{pdu[0]:02x}")
+                    raise ModbusError(f"modbus exception code {body[1]} for function 0x{pdu[0]:02x}", body[1])
                 return body
             raise ModbusError("unreachable")
 

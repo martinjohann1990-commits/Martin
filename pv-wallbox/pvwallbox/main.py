@@ -231,8 +231,16 @@ def main() -> None:
     ap.add_argument("-c", "--config", default="config.toml")
     ap.add_argument("--dry-run", action="store_true", help="do not write to the wallbox")
     ap.add_argument("--once", action="store_true", help="run a single cycle and print status")
+    ap.add_argument("--check", action="store_true",
+                    help="Verbindungstest: SolaX Cloud und Wallbox Schritt für Schritt prüfen (schreibt nichts)")
+    ap.add_argument("--check-write", action="store_true",
+                    help="wie --check, testet zusätzlich Schreibrechte (schreibt den aktuellen Ladestrom unverändert zurück)")
     ap.add_argument("-v", "--verbose", action="store_true")
     args = ap.parse_args()
+
+    if args.check or args.check_write:
+        from .check import run_check
+        raise SystemExit(run_check(args.config, write_test=args.check_write))
 
     logging.basicConfig(level=logging.DEBUG if args.verbose else logging.INFO,
                         format="%(asctime)s %(levelname)s %(message)s")

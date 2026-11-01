@@ -12,14 +12,19 @@ class FakeHac:
         self.inp = {0x0B: (-5) & 0xFFFF, 0x1D: 2, 0xA02A: 2}
         self.hold = {0x060D: 2, 0x0628: 1600, 0x0627: 0, 0xA105: 2}
         self.supports_ems = True
+        self.unit_id = 1          # requests for other unit ids are silently ignored
         self.srv = socket.socket()
         self.srv.bind(("127.0.0.1", 0))
         self.srv.listen()
         self.port = self.srv.getsockname()[1]
-        threading.Thread(target=self.serve, daemon=True).start()
+        threading.Thread(target=self.accept_loop, daemon=True).start()
 
-    def serve(self):
-        conn, _ = self.srv.accept()
+    def accept_loop(self):
+        while True:
+            conn, _ = self.srv.accept()
+            threading.Thread(target=self.serve, args=(conn,), daemon=True).start()
+
+    def serve(self, conn):
         with conn:
             while True:
                 hdr = conn.recv(7)
@@ -27,6 +32,8 @@ class FakeHac:
                     return
                 tid, _, length, unit = struct.unpack(">HHHB", hdr)
                 pdu = conn.recv(length - 1)
+                if unit != self.unit_id:
+                    continue
                 fc, addr, val = struct.unpack(">BHH", pdu)
                 if addr >= 0xA000 and not self.supports_ems:
                     resp = struct.pack(">BB", fc | 0x80, 2)  # illegal data address
