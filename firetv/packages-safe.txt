@@ -1,0 +1,22 @@
+# Sichere Bloatware fuer Fire TV Stick 4K (2. Gen), Fire OS 8.x
+# Eine Paket-ID pro Zeile. Zeilen mit # werden ignoriert.
+# Alles laesst sich mit "restore" wieder herstellen.
+
+# --- Werbung / Shopping ---
+com.amazon.alexashopping
+com.amazon.device.sale.service
+com.amazon.kso
+
+# --- Telemetrie / Logging ---
+com.amazon.device.crashmanager
+com.amazon.tv.fw.metrics
+com.amazon.dp.logger
+com.amazon.logan
+
+# --- Ungenutzte Amazon-Dienste ---
+com.amazon.ags.app
+com.amazon.firebat
+com.amazon.imdb.tv.android.app
+com.amazon.bueller.music
+com.amazon.tv.releasenotes
+com.amazon.tv.legal.notices

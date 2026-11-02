@@ -1,0 +1,6 @@
+# AUTOMATISCHE SYSTEM-UPDATES - nur mit --block-updates.
+# Achtung: Ohne Updates keine Sicherheits-Patches. Updates koennen
+# ausserdem Bloatware zurueckbringen bzw. Launcher-Overrides blockieren.
+com.amazon.device.software.ota
+com.amazon.device.software.ota.override
+com.amazon.tv.forcedotaupdater.v2

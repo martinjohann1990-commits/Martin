@@ -1,0 +1,11 @@
+# OPTIONAL - nur mit --optional. Vorher Hinweise in der README lesen!
+
+# Amazon Photos (wird auch fuer den Bildschirmschoner genutzt)
+com.amazon.bueller.photos
+# Silk Browser
+com.amazon.cloud9
+# Live-TV-Integration auf der Startseite
+com.amazon.tv.livetv
+com.amazon.tifobserver
+# Prime Video (nur entfernen, wenn du Prime Video nicht nutzt)
+com.amazon.avod.thirdpartyclient
